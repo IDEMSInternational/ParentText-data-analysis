@@ -243,7 +243,10 @@ flow_data_function <- function(flow_name){
              group_by(response, .drop = FALSE) %>%
              summarise(count = n(), perc = round(n()/nrow(.)*100,2)) %>%
              mutate("Count (%)" := str_c(`count`, ' (', round(`perc`, 1), ")")) %>%
-             dplyr::select(-c(count, perc)))
+             dplyr::select(-c(count, perc)) %>%
+             mutate(response = factor(ifelse(response == TRUE, "Yes", "No"))) %>% map_df(rev))
+             #mutate(response = forcats::fct_relevel(response, c("Yes", "No"))))
+    
   }
 }
 
