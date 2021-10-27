@@ -606,11 +606,13 @@ server <- function(input, output) {
   })
   
   all_flows_response <- reactive({
-    colnames(supportive_calm_flow_df)[2] <- "Supportive - Calm flow"
-    colnames(supportive_praise_flow_df)[2] <- "Supportive - Praise flow"
-    colnames(supportive_flow_df)[2] <- "Supportive flow"
-    colnames(check_in_flow_df)[2] <- "Check-in flows"
     colnames(content_flow_df)[2] <- "Content flows"
+    colnames(check_in_flow_df)[2] <- "Check-in flows"
+    colnames(supportive_calm_flow_df)[2] <- "Calm flow"
+    colnames(supportive_praise_flow_df)[2] <- "Praise flow"
+    colnames(supportive_flow_df)[2] <- "Other supportive flows"
+    
+    
     
     table_flows_df <- left_join(left_join(left_join(left_join(supportive_calm_flow_df, supportive_praise_flow_df), supportive_flow_df), check_in_flow_df), content_flow_df)
     colnames(table_flows_df)[1] <- "Response"
