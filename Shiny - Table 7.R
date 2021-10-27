@@ -217,8 +217,8 @@ ui <- dashboardPage(
   sidebar = dashboardSidebar(
     sidebarMenu(
       menuItem("Demographics", tabName = "demographics", icon = icon("users")),
-      menuItem("Behaviours", tabName = "behaviours", icon = icon("brain")),
-      menuItem("Survey", tabName = "survey", icon = icon("clipboard"))
+      menuItem("Engagement", tabName = "behaviours", icon = icon("clipboard")),
+      menuItem("Behaviours", tabName = "survey", icon = icon("brain"))
     )),
   
   dashboardBody(
