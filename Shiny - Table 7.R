@@ -1,4 +1,3 @@
-# Load packages
 library(shiny)
 library(shinythemes)
 library(shinyjs)
@@ -78,7 +77,7 @@ update_data <- function() {
   
   marital_status <- factor(contacts_unflat$fields$marital_status)
   marital_status <- forcats::fct_recode(marital_status,
-                                                   `Prefer not to say`  = "no")
+                                        `Prefer not to say`  = "no")
   marital_status <- forcats::fct_relevel(marital_status, c("Single", "Married", "Partnered", "Divorced", "Widowed", "Prefer not to say"))
   
   has_disability <- factor(contacts_unflat$fields$has_disability)
@@ -87,28 +86,28 @@ update_data <- function() {
                                         No = "no",
                                         `supp_disab`= "supp_disab")
   has_disability <- forcats::fct_relevel(has_disability,
-                                       c("Yes", "No", "supp_disab"))
+                                         c("Yes", "No", "supp_disab"))
   
   parenting_goals <- factor(as.numeric(contacts_unflat$fields$parenting_goal))
   parenting_goals <- forcats::fct_recode(parenting_goals,
-                                        `Improve my relationship with my child` = "1",
-                                        `My child to behave better` = "2",
-                                        `My child to do better at school` = "3",
-                                        `To talk to my child about COVID-19` = "4",
-                                        `Feel less stress loneliness or anger` = "5",
-                                        `Worry less about money` = "6",
-                                        `Less conflict in my family` = "7",
-                                        `Know more about how to keep my child safe`= "8",
-                                        `How to support children living with disabilities` = "9",
-                                        `Other goal` = "0")
+                                         `Improve my relationship with my child` = "1",
+                                         `My child to behave better` = "2",
+                                         `My child to do better at school` = "3",
+                                         `To talk to my child about COVID-19` = "4",
+                                         `Feel less stress loneliness or anger` = "5",
+                                         `Worry less about money` = "6",
+                                         `Less conflict in my family` = "7",
+                                         `Know more about how to keep my child safe`= "8",
+                                         `How to support children living with disabilities` = "9",
+                                         `Other goal` = "0")
   parenting_goals <- str_wrap(parenting_goals, width = 15)
   parenting_goals <- forcats::fct_relevel(parenting_goals,
-                                         c("Improve my\nrelationship\nwith my child","My child to\nbehave better",
-                                           "My child to\ndo better at\nschool", "To talk to my\nchild about\nCOVID-19",
-                                           "Feel less\nstress\nloneliness or\nanger", "Worry less\nabout money ",
-                                         "Less conflict\nin my family", "Know more about\nhow to keep my\nchild safe",
-                                         "How to support\nchildren living\nwith disabilities", "Other goal"))
-                                                                           
+                                          c("Improve my\nrelationship\nwith my child","My child to\nbehave better",
+                                            "My child to\ndo better at\nschool", "To talk to my\nchild about\nCOVID-19",
+                                            "Feel less\nstress\nloneliness or\nanger", "Worry less\nabout money ",
+                                            "Less conflict\nin my family", "Know more about\nhow to keep my\nchild safe",
+                                            "How to support\nchildren living\nwith disabilities", "Other goal"))
+  
   # Calculations -----------------------------------------------------------------
   # active users # N = contacts for which the time difference between the current time and the datetime variable "last_seen_on" is less than 24 h 
   active_users_24hr <- difftime(lubridate::now(tzone = "UTC"), as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"), units = "hours") <= 24
@@ -217,8 +216,8 @@ ui <- dashboardPage(
   sidebar = dashboardSidebar(
     sidebarMenu(
       menuItem("Demographics", tabName = "demographics", icon = icon("users")),
-      menuItem("Engagement", tabName = "behaviours", icon = icon("clipboard")),
-      menuItem("Behaviours", tabName = "survey", icon = icon("brain"))
+      menuItem("Engagement", tabName = "engagement", icon = icon("clipboard")),
+      menuItem("Behaviours", tabName = "behaviours", icon = icon("brain"))
     )),
   
   dashboardBody(
@@ -287,15 +286,15 @@ ui <- dashboardPage(
                             status = "primary", # primary, success, info, warning, danger
                             solidHeader = TRUE,
                             plotlyOutput(outputId = "parenting_goals_plot", height = "240", width = "100%")
-                            )
-                       ),
+                       )
+                ),
                 
               )),
       
       # Second tab content
-      tabItem(tabName = "behaviours",
+      tabItem(tabName = "engagement",
               br(),
-              fluidRow(h2(paste0("     Behaviours"), align="centre")),
+              fluidRow(h2(paste0("     Engagement"), align="centre")),
               shiny::tableOutput("all_flows_response"), #fluidRow closure
               #shiny::tableOutput("supportive_praise_response"), #fluidRow closure
               #shiny::tableOutput("supportive_response"),#fluidRow closure
@@ -310,15 +309,15 @@ ui <- dashboardPage(
                             status = "primary", # primary, success, info, warning, danger
                             solidHeader = TRUE,
                             plotlyOutput(outputId = "plot_flow", height = "240", width = "100%")
-                            ))),
+                       ))),
               shiny::tableOutput("active_users_24hr_summary"),
               shiny::tableOutput("active_users_7d_summary"),
-              shiny::tableOutput("comp_prog_summary")),
+              shiny::tableOutput("comp_prog_summary"),
+              shiny::tableOutput("completed_survey_summary")),
       
-      tabItem(tabName = "survey",
+      tabItem(tabName = "behaviours",
               br(),
-              fluidRow(h2(paste0("     Survey"), align="centre")),
-              shiny::tableOutput("completed_survey_summary"))
+              fluidRow(h2(paste0("     Behaviours"), align="centre")))
     )
   )#dashboard Body closure
 )  #dashboard Page closure
@@ -614,7 +613,7 @@ server <- function(input, output) {
     
     
     
-    table_flows_df <- left_join(left_join(left_join(left_join(supportive_calm_flow_df, supportive_praise_flow_df), supportive_flow_df), check_in_flow_df), content_flow_df)
+    table_flows_df <- left_join(left_join(left_join(left_join(content_flow_df, check_in_flow_df), supportive_calm_flow_df), supportive_praise_flow_df), supportive_flow_df)
     colnames(table_flows_df)[1] <- "Response"
     table_flows_df
   })
