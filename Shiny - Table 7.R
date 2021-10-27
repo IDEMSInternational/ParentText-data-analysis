@@ -9,7 +9,6 @@ library(httr)
 library(jsonlite)
 library(tidyverse)
 
-setwd("C:/Users/lzc1n17/OneDrive - University of Southampton/PhD/IDEMS/ParentText")
 source("Functions.R")
 # source("Code Book.R")
 
