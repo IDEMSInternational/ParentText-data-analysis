@@ -5,9 +5,9 @@ library(tidyverse)
 
 # 1. Package environment ------------------------------------------------
 # for this to work you need to change the directory to where the token key is stored.
-key <- read.table("C:/Users/lzc1n17/OneDrive - University of Southampton/PhD/IDEMS/ParentText/PT_malaysia_key.txt", quote="\"", comment.char="")
+key <- read.table("./tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
 set_rapidpro_key(key = key)
-set_rapidpro_site(site = "https://rapidpro.idems.international/api/v2/")
+set_rapidpro_site(site = "https://app.rapidpro.io/api/v2/")
 set_rapidpro_uuid_names()
 get_rapidpro_uuid_names()
 
