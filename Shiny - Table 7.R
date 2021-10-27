@@ -9,6 +9,7 @@ library(httr)
 library(jsonlite)
 library(tidyverse)
 
+setwd("C:/Users/lzc1n17/OneDrive - University of Southampton/PhD/IDEMS/ParentText")
 source("Functions.R")
 # source("Code Book.R")
 
@@ -21,6 +22,8 @@ set_rapidpro_uuid_names()
 
 update_data <- function() {
   contacts_unflat <- get_user_data(flatten = FALSE)
+  
+  contacts_unflat <- contacts_unflat %>% filter(as.POSIXct("2021-10-14", format="%Y-%m-%d", tzone = "UTC") < as.POSIXct(contacts_unflat$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
   
   # Variables Manipulation -------------------------------------------------------
   # get enrolled and consented data
@@ -44,6 +47,7 @@ update_data <- function() {
   parent_gender <- factor(ifelse(parent_gender %in% c("female", "f", "woman", "Woman"), "Woman",
                                  ifelse(parent_gender %in% c("male", "m", "man", "Man"), "Man",
                                         ifelse(parent_gender %in% "no", NA, parent_gender))))
+  parent_gender <- forcats::fct_relevel(parent_gender, c("Woman", "Man"))
   
   child_age_group <- contacts_unflat$fields$age_group_for_tips
   know_age_group <- contacts_unflat$fields$know_age_group_for_tips
@@ -53,12 +57,14 @@ update_data <- function() {
                                          Baby = "baby",
                                          Child = "child",
                                          Teen = "teen")
+  child_age_group <- forcats::fct_relevel(child_age_group, c("Baby", "Child", "Teen", "Default"))
   
   child_gender <- factor(contacts_unflat$fields$survey_behave_sex)
   child_gender <-  forcats::fct_recode(child_gender,
                                        Boy = "male",
                                        Girl = "female", 
                                        `Prefer not to say` = "no")
+  child_gender <- forcats::fct_relevel(child_gender, c("Girl", "Boy", "Prefer not to say"))
   
   parent_child_relationship <- factor(contacts_unflat$fields$survey_behave_relationship)
   parent_child_relationship <- forcats::fct_recode(parent_child_relationship,
@@ -67,10 +73,43 @@ update_data <- function() {
                                                    `Aunt/Uncle`= "uncle",
                                                    `Foster Parent` = "foster",
                                                    Other = "other",
-                                                   `Prefer Not to Say`  = "no")
+                                                   `Prefer not to say`  = "no")
+  parent_child_relationship <- forcats::fct_relevel(parent_child_relationship,
+                                                    c("Parent", "Grandparent", "Aunt/Uncle", "Foster Parent", "Other", "Prefer not to say"))
   
-  df <- data.frame(enrolled, consent, program, parent_gender, child_gender, child_age_group, parent_child_relationship)
+  marital_status <- factor(contacts_unflat$fields$marital_status)
+  marital_status <- forcats::fct_recode(marital_status,
+                                                   `Prefer not to say`  = "no")
+  marital_status <- forcats::fct_relevel(marital_status, c("Single", "Married", "Partnered", "Divorced", "Widowed", "Prefer not to say"))
   
+  has_disability <- factor(contacts_unflat$fields$has_disability)
+  has_disability <- forcats::fct_recode(has_disability,
+                                        Yes = "yes",
+                                        No = "no",
+                                        `supp_disab`= "supp_disab")
+  has_disability <- forcats::fct_relevel(has_disability,
+                                       c("Yes", "No", "supp_disab"))
+  
+  parenting_goals <- factor(as.numeric(contacts_unflat$fields$parenting_goal))
+  parenting_goals <- forcats::fct_recode(parenting_goals,
+                                        `Improve my relationship with my child` = "1",
+                                        `My child to behave better` = "2",
+                                        `My child to do better at school` = "3",
+                                        `To talk to my child about COVID-19` = "4",
+                                        `Feel less stress loneliness or anger` = "5",
+                                        `Worry less about money` = "6",
+                                        `Less conflict in my family` = "7",
+                                        `Know more about how to keep my child safe`= "8",
+                                        `How to support children living with disabilities` = "9",
+                                        `Other goal` = "0")
+  parenting_goals <- str_wrap(parenting_goals, width = 15)
+  parenting_goals <- forcats::fct_relevel(parenting_goals,
+                                         c("Improve my\nrelationship\nwith my child","My child to\nbehave better",
+                                           "My child to\ndo better at\nschool", "To talk to my\nchild about\nCOVID-19",
+                                           "Feel less\nstress\nloneliness or\nanger", "Worry less\nabout money ",
+                                         "Less conflict\nin my family", "Know more about\nhow to keep my\nchild safe",
+                                         "How to support\nchildren living\nwith disabilities", "Other goal"))
+                                                                           
   # Calculations -----------------------------------------------------------------
   # active users # N = contacts for which the time difference between the current time and the datetime variable "last_seen_on" is less than 24 h 
   active_users_24hr <- difftime(lubridate::now(tzone = "UTC"), as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"), units = "hours") <= 24
@@ -85,7 +124,7 @@ update_data <- function() {
   active_users_24hr <- forcats::fct_recode(active_users_24hr,
                                            "No" = "FALSE",
                                            "Yes" = "TRUE")
-  
+  active_users_24hr <- forcats::fct_relevel(active_users_24hr, c("Yes", "No"))
   
   active_users_7d <- difftime(lubridate::now(tzone = "UTC"), as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"), units = "hours") <= 7*24
   active_users_7d <- factor(active_users_7d)
@@ -99,25 +138,21 @@ update_data <- function() {
   active_users_7d <- forcats::fct_recode(active_users_7d,
                                          "No" = "FALSE",
                                          "Yes" = "TRUE")
-  df <- data.frame(df, active_users_24hr, active_users_7d)
-  
+  active_users_7d <- forcats::fct_relevel(active_users_7d, c("Yes", "No"))
   
   # comp_prog_overall
   # TODO: only should be lookign at this for those who consented
   n_skills <- as.numeric(as.character(contacts_unflat$fields$n_skills))
-  df <- data.frame(df, n_skills)
   
   # Participant age etc
   # TODO: only should be lookign at this for those who consented
   parent_age <- as.numeric(as.character(contacts_unflat$fields$age))
   
   survey_completed_wk1 <- str_count(contacts_unflat$fields$surveyparenting_completion, fixed("|"))
-  if (length(survey_completed_wk1) == 0){survey_completed_wk1 <- rep(NA, nrow(df))}
+  if (length(survey_completed_wk1) == 0){survey_completed_wk1 <- rep(NA, length(enrolled))}
   
   survey_completed_wk2 <- str_count(contacts_unflat$fields$fields.surveyparentingbehave_completion, fixed("|"))
-  if (length(survey_completed_wk2) == 0){survey_completed_wk2 <- rep(NA, nrow(df))}
-  
-  df <- data.frame(df, parent_age, survey_completed_wk1, survey_completed_wk2)
+  if (length(survey_completed_wk2) == 0){survey_completed_wk2 <- rep(NA, length(enrolled))}
   
   # sum of response to content, calm, check in, supportive, praise messages
   # supportive
@@ -140,11 +175,35 @@ update_data <- function() {
                               "PLH - Content - Positive - Safe or unsafe touch - Timed intro", "PLH - Content - Relax - Take a pause - Timed intro", "PLH - Content - Relax - Exercise", "PLH - Content - Time - One on one time baby - Timed intro",
                               "PLH - Content - Time - One on one time child - Timed intro", "PLH - Content - Time - One on one time teen - Timed intro", "PLH - Content - Positive - introduction", "PLH - Content - Positive - Positive instructions", "PLH - Content - Relax - Quick Pause", "PLH - Content - Relax - Anger management", "PLH - Content - Relax - Anger management 2", "PLH - Content - Positive - IPV", "PLH - Content - Positive - Community safety")
   
+  df <- data.frame(enrolled, consent, program, parent_gender, child_gender, child_age_group, parent_child_relationship, 
+                   marital_status, has_disability, parenting_goals,
+                   active_users_24hr, active_users_7d, n_skills, parent_age, survey_completed_wk1, survey_completed_wk2)
   
+  objects_to_return <- NULL
+  objects_to_return[[1]] <- df
+  objects_to_return[[2]] <- supportive_calm
+  objects_to_return[[3]] <- supportive_praise
+  objects_to_return[[4]] <- check_in_flow_names
+  objects_to_return[[5]] <- content_tip_flow_names
+  objects_to_return[[6]] <- supportive_flow_names
+  objects_to_return[[7]] <- enrolled
+  objects_to_return[[8]] <- consent
+  objects_to_return[[9]] <- program
+  return(objects_to_return)
 }
 
 update_data()
 
+updated_data <- update_data()
+df <- updated_data[[1]]
+supportive_calm <- updated_data[[2]]
+supportive_praise <- updated_data[[3]]
+check_in_flow_names <- updated_data[[4]]
+content_tip_flow_names <- updated_data[[5]]
+supportive_flow_names <- updated_data[[6]]
+enrolled <- updated_data[[7]]
+consent <- updated_data[[8]]
+program <- updated_data[[9]]
 
 # retention_exit ---------------------------------------------------------------
 # number of contacts for which the contact field "exit_message" is not empty &
@@ -154,60 +213,115 @@ update_data()
 
 # Define UI
 ui <- dashboardPage(
-  header = dashboardHeader(title = "Table 7 Dashboard"),
+  header = dashboardHeader(title = "ParentText Dashboard"),
   
   sidebar = dashboardSidebar(
     sidebarMenu(
-      menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
-      menuItem("Flows Data", tabName = "flowsdata", icon = icon("water"))
+      menuItem("Demographics", tabName = "demographics", icon = icon("users")),
+      menuItem("Behaviours", tabName = "behaviours", icon = icon("brain")),
+      menuItem("Survey", tabName = "survey", icon = icon("clipboard"))
     )),
-  
   
   dashboardBody(
     fluidRow(
+      shinydashboard::valueBoxOutput("myvaluebox1", width=3),
+      shinydashboard::valueBoxOutput("myvaluebox2", width=3),
+      shinydashboard::valueBoxOutput("myvaluebox3", width=3),
+      shinydashboard::valueBoxOutput("myvaluebox4", width=3)
+    ),
+    fluidRow(
       column(
         width = 12,
-        align = "center",
+        #align = "center",
         fluidRow(
-          tags$head(tags$style(HTML(".small-box {height: 120px}"))),
-          uiOutput("mstatvalbox"),
-          
+          column(6,
+                 box( height=NULL, width=NULL,
+                      #background = "light-blue",
+                      collapsible = FALSE,
+                      title = NULL,
+                      #status = "success",
+                      solidHeader = TRUE,
+                      checkboxInput(inputId = "groupby", label = strong("Group by variables"), value = FALSE),
+                      uiOutput("groups"))),
         ) #fluid row closure
       ) #Outer column closure
     ),
     tabItems(
       # First tab content
       
-      tabItem(tabName = "dashboard",
-              
-              checkboxInput(inputId = "groupby", label = strong("Group by variables"), value = TRUE),
-              uiOutput("groups"),
-              
+      tabItem(tabName = "demographics",
+              br(),
+              fluidRow(h2(paste0("     Demographics"), align="centre")),
               #shiny::tableOutput("enrolled_summary"),
               shiny::tableOutput("consent_summary"),
-              plotlyOutput(outputId = "plot_category", height = "300px", width = "50%"),
+              
+              fluidRow(
+                column(6,
+                       box( height="300px",  width=NULL,
+                            collapsible = FALSE,
+                            title = "Consent Frequency",
+                            status = "primary", # primary, success, info, warning, danger
+                            solidHeader = TRUE,
+                            plotlyOutput(outputId = "plot_consent", height = "240")
+                       ),  style='width: 500px; height: 400px'),
+                column(6,
+                       box(height="300px", width="450px",
+                           title = "Enrollment Frequency",
+                           status = "primary",
+                           solidHeader = TRUE,
+                           collapsible = FALSE,
+                           plotlyOutput(outputId = "plot_category", height = "240", width = "100%")
+                       ),  style='width: 500px; height: 400px') 
+              ),
               shiny::tableOutput("parent_gender_summary"),
+              shiny::tableOutput("parent_age_summary"),
               shiny::tableOutput("child_gender_summary"),
               shiny::tableOutput("child_age_group_summary"),
               shiny::tableOutput("parent_child_relationship_summary"),
-              shiny::tableOutput("active_users_24hr_summary"),
-              shiny::tableOutput("active_users_7d_summary"),
-              shiny::tableOutput("comp_prog_summary"),
-              shiny::tableOutput("parent_age_summary"),
-              shiny::tableOutput("completed_survey_summary")),
+              shiny::tableOutput("marital_status_summary"),
+              shiny::tableOutput("has_disability_summary"),
+              fluidRow(
+                column(9,
+                       box( height="300px",  width=12,
+                            collapsible = FALSE,
+                            title = "Parenting Goals",
+                            status = "primary", # primary, success, info, warning, danger
+                            solidHeader = TRUE,
+                            plotlyOutput(outputId = "parenting_goals_plot", height = "240", width = "100%")
+                            )
+                       ),
+                
+              )),
       
       # Second tab content
-      tabItem(tabName = "flowsdata",
-              shiny::tableOutput("supportive_calm_response"), #fluidRow closure
+      tabItem(tabName = "behaviours",
+              br(),
+              fluidRow(h2(paste0("     Behaviours"), align="centre")),
+              shiny::tableOutput("all_flows_response"), #fluidRow closure
               #shiny::tableOutput("supportive_praise_response"), #fluidRow closure
               #shiny::tableOutput("supportive_response"),#fluidRow closure
               #shiny::tableOutput("check_in_response"),
               #shiny::tableOutput("content_response"),
               shiny::tableOutput("response_message_overall"),
-              plotlyOutput(outputId = "plot_flow", height = "300px", width = "50%"),
-      )
+              fluidRow(
+                column(6,
+                       box( height="300px",  width=NULL,
+                            collapsible = FALSE,
+                            title = "Plot of Flows",
+                            status = "primary", # primary, success, info, warning, danger
+                            solidHeader = TRUE,
+                            plotlyOutput(outputId = "plot_flow", height = "240", width = "100%")
+                            ))),
+              shiny::tableOutput("active_users_24hr_summary"),
+              shiny::tableOutput("active_users_7d_summary"),
+              shiny::tableOutput("comp_prog_summary")),
+      
+      tabItem(tabName = "survey",
+              br(),
+              fluidRow(h2(paste0("     Survey"), align="centre")),
+              shiny::tableOutput("completed_survey_summary"))
     )
-    )#dashboard Body closure
+  )#dashboard Body closure
 )  #dashboard Page closure
 
 # Define server function
@@ -218,8 +332,26 @@ server <- function(input, output) {
   observe({
     autoRefresh()
     
-    update_data()
+    updated_data <- update_data()
+    df <- updated_data[[1]]
+    supportive_calm <- updated_data[[2]]
+    supportive_praise <- updated_data[[3]]
+    check_in_flow_names <- updated_data[[4]]
+    content_tip_flow_names <- updated_data[[5]]
+    supportive_flow_names <- updated_data[[6]]    
+    enrolled <- updated_data[[7]]
   })
+  
+  updated_data <- update_data()
+  df <- updated_data[[1]]
+  supportive_calm <- updated_data[[2]]
+  supportive_praise <- updated_data[[3]]
+  check_in_flow_names <- updated_data[[4]]
+  content_tip_flow_names <- updated_data[[5]]
+  supportive_flow_names <- updated_data[[6]]
+  enrolled <- updated_data[[7]]
+  consent <- updated_data[[8]]
+  program <- updated_data[[9]]
   
   # Subset data
   selected_data <- reactive({
@@ -261,7 +393,7 @@ server <- function(input, output) {
       ggplot(df, aes(x = enrolled, fill = (!!!rlang::syms(input$grouper)))) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
-        labs(x = "Enrolled", y = "Count", title = "Enrollment frequency")
+        labs(x = "Enrolled", y = "Count")
       
       # Note: Plotly doesnt not render well with a pie chart made this way.
       #df_enrolled <- df %>% filter(enrolled = TRUE)
@@ -274,16 +406,62 @@ server <- function(input, output) {
       ggplot(df, aes(x = enrolled)) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
-        labs(x = "Enrolled", y = "Count", title = "Enrollment frequency")
+        labs(x = "Enrolled", y = "Count")
+    }
+  })
+  
+  output$plot_consent <- renderPlotly({
+    req(input$grouper)
+    if(input$groupby == TRUE){
+      ggplot(df, aes(x = consent, fill = (!!!rlang::syms(input$grouper)))) +
+        geom_histogram(stat = "count") +
+        viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
+        labs(x = "Consented", y = "Count")
+      
+      # Note: Plotly doesnt not render well with a pie chart made this way.
+      #df_enrolled <- df %>% filter(enrolled = TRUE)
+      #ggplot(df_enrolled, aes(x = "", fill =(!!!rlang::syms(input$grouper)))) +
+      #  geom_bar(position = "stack") +
+      #  coord_polar(theta = "y") +
+      #  viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
+      #  labs(x = "Consent", y = "Count", title = "Consent frequency")
+    } else {
+      ggplot(df, aes(x = consent)) +
+        geom_histogram(stat = "count") +
+        viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
+        labs(x = "Consent", y = "Count")
+    }
+  })
+  
+  output$parenting_goals_plot <- renderPlotly({
+    req(input$grouper)
+    if(input$groupby == TRUE){
+      ggplot(df, aes(x = parenting_goals, fill = (!!!rlang::syms(input$grouper)))) +
+        geom_histogram(stat = "count") +
+        viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
+        labs(x = "Parenting goals", y = "Count")
+      
+      # Note: Plotly doesnt not render well with a pie chart made this way.
+      #df_enrolled <- df %>% filter(enrolled = TRUE)
+      #ggplot(df_enrolled, aes(x = "", fill =(!!!rlang::syms(input$grouper)))) +
+      #  geom_bar(position = "stack") +
+      #  coord_polar(theta = "y") +
+      #  viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
+      #  labs(x = "Enrolled", y = "Count", title = "Enrollment frequency")
+    } else {
+      ggplot(df, aes(x = parenting_goals)) +
+        geom_histogram(stat = "count") +
+        viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
+        labs(x = "Parenting goals", y = "Count")
     }
   })
   
   consent_summary <- reactive({
     req(input$grouper)
     if(input$groupby == TRUE){
-      summary_PT(df, c(consent, !!!rlang::syms(input$grouper)), enrolled, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, c(consent, !!!rlang::syms(input$grouper)), enrolled, "Yes", TRUE, naming_convention = TRUE) %>% map_df(rev)
     } else {
-      summary_PT(df, consent, enrolled, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, "consent", enrolled, "Yes", TRUE, naming_convention = TRUE) %>% map_df(rev)
     }
   })
   
@@ -319,6 +497,22 @@ server <- function(input, output) {
       summary_PT(df, parent_child_relationship, consent, "Yes", TRUE, naming_convention = TRUE)
     }
   })
+  has_disability_summary <- reactive({
+    req(input$grouper)
+    if(input$groupby == TRUE){
+      summary_PT(df, c(has_disability, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
+    } else {
+      summary_PT(df, has_disability, consent, "Yes", TRUE, naming_convention = TRUE)
+    }
+  })
+  marital_status_summary <-  reactive({
+    req(input$grouper)
+    if(input$groupby == TRUE){
+      summary_PT(df, c(marital_status, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
+    } else {
+      summary_PT(df, marital_status, consent, "Yes", TRUE, naming_convention = TRUE)
+    }
+  })
   active_users_24hr_summary <- reactive({
     req(input$grouper)
     if(input$groupby == TRUE){
@@ -350,6 +544,7 @@ server <- function(input, output) {
     colnames(comp_prog_df) <- naming_conventions(colnames(comp_prog_df))
     comp_prog_df
   })
+  
   parent_age_summary <- reactive({
     req(input$grouper)
     if(input$groupby == TRUE){
@@ -371,34 +566,47 @@ server <- function(input, output) {
       completed_survey <- df %>% group_by(!!!rlang::syms(input$grouper)) %>%
         filter(consent == "Yes") %>%
         summarise(completed_survey_wk1 = sum(!is.na(survey_completed_wk1)),
-                  completed_survey_wk2 = sum(!is.na(survey_completed_wk2)))
+                  completed_survey_wk2 = sum(!is.na(survey_completed_wk2)),
+                  completed_survey_perc_wk1 = sum(!is.na(survey_completed_wk1))/nrow(.)*100,
+                  completed_survey_perc_wk2 = sum(!is.na(survey_completed_wk2))/nrow(.)*100)
     } else {
       completed_survey <- df %>%
         filter(consent == "Yes") %>%
         summarise(completed_survey_wk1 = sum(!is.na(survey_completed_wk1)),
-                  completed_survey_wk2 = sum(!is.na(survey_completed_wk2)))
+                  completed_survey_wk2 = sum(!is.na(survey_completed_wk2)),
+                  completed_survey_perc_wk1 = sum(!is.na(survey_completed_wk1))/nrow(.)*100,
+                  completed_survey_perc_wk2 = sum(!is.na(survey_completed_wk2))/nrow(.)*100)
     }
+    completed_survey <- completed_survey %>%
+      mutate("Completed survey week 1 (%)" := str_c(`completed_survey_wk1`, ' (', round(`completed_survey_perc_wk1`, 1), ")")) %>%
+      mutate("Completed survey week 2 (%)" := str_c(`completed_survey_wk2`, ' (', round(`completed_survey_perc_wk2`, 1), ")")) %>%
+      dplyr::select(-c(completed_survey_wk1, completed_survey_wk2, completed_survey_perc_wk1, completed_survey_perc_wk2))
     colnames(completed_survey) <- naming_conventions(colnames(completed_survey))
     completed_survey
   })
   
   supportive_calm_flow_df <- flow_data_function(supportive_calm)
-  if (is.null(supportive_calm_flow_df)) { supportive_calm_flow_df <- data.frame(response = c(FALSE, TRUE), count = c(NA, NA)); colnames(supportive_calm_flow_df)[2] <- "Count (%)"}
+  if (is.null(supportive_calm_flow_df)) { supportive_calm_flow_df <- data.frame(response = c("No", "Yes"), count = c(NA, NA)); colnames(supportive_calm_flow_df)[2] <- "Count (%)"}
   supportive_praise_flow_df <- flow_data_function(supportive_praise)
-  if (is.null(supportive_praise_flow_df)) { supportive_praise_flow_df <- data.frame(response = c(FALSE, TRUE), count = c(NA, NA)); colnames(supportive_praise_flow_df)[2] <- "Count (%)"}
+  if (is.null(supportive_praise_flow_df)) { supportive_praise_flow_df <- data.frame(response = c("No", "Yes"), count = c(NA, NA)); colnames(supportive_praise_flow_df)[2] <- "Count (%)"}
   supportive_flow_df <- flow_data_function(supportive_flow_names)
   check_in_flow_df <- flow_data_function(check_in_flow_names)
   content_flow_df <- flow_data_function(content_tip_flow_names)
   
   response_message_overall <- reactive({
-    all_flows_df <- rbind(supportive_calm_flow_df, supportive_praise_flow_df, supportive_flow_df, check_in_flow_df, content_flow_df)
+    all_flows_df <- rbind(content_flow_df, check_in_flow_df, supportive_calm_flow_df, supportive_praise_flow_df, supportive_flow_df)
     all_flows_df <- separate(all_flows_df, `Count (%)`, into = "Value") %>% mutate(Value = as.numeric(as.character(Value)))
-    all_flows_df_sum <- all_flows_df %>% group_by(response) %>% summarise(sum(Value, na.rm = TRUE))
-    colnames(all_flows_df_sum) <- c("Overall response", "Sum")
-    all_flows_df_sum
+    all_flows_df_total <- sum(all_flows_df$Value, na.rm = TRUE) 
+    all_flows_df_summary <- all_flows_df %>% group_by(response) %>% summarise(n = sum(Value, na.rm = TRUE),
+                                                                              perc = n/all_flows_df_total*100)
+    all_flows_df_summary <- all_flows_df_summary %>%
+      mutate("Count (%)" := str_c(`n`, ' (', round(`perc`, 1), ")")) %>%
+      dplyr::select(-c(n, perc))
+    colnames(all_flows_df_summary)[1] <- c("Overall response")
+    all_flows_df_summary %>% map_df(rev)
   })
   
-  supportive_calm_response <- reactive({
+  all_flows_response <- reactive({
     colnames(supportive_calm_flow_df)[2] <- "Supportive - Calm flow"
     colnames(supportive_praise_flow_df)[2] <- "Supportive - Praise flow"
     colnames(supportive_flow_df)[2] <- "Supportive flow"
@@ -430,119 +638,52 @@ server <- function(input, output) {
       viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy")
   })
   
+  df_enrolled <- summary_PT(df, enrolled, enrolled, "Yes")
+  df_enrolled <- df_enrolled %>% mutate(group = enrolled, count = enrolled_n) %>% dplyr::select(c(group, count))
+  
+  df_consented <- summary_PT(df, consent, consent, "Yes")
+  df_consented <- df_consented %>% mutate(group = consent, count = consent_n) %>% dplyr::select(c(group, count))
+  
+  df_program <- summary_PT(df, program, program, "Yes")
+  df_program <- df_program %>% mutate(group = program, count = program_n) %>% dplyr::select(c(group, count))
+  
+  df_active_24 <- (summary_PT(df, active_users_24hr, program) %>% filter(active_users_24hr == "Yes"))$active_users_24hr_n
+  
+  output$myvaluebox1 <- shinydashboard::renderValueBox({
+    shinydashboard::valueBox(df_enrolled$count,subtitle = "Enrolled",icon = icon("user"),
+                             color = "aqua"
+    )
+  })
+  output$myvaluebox2 <- shinydashboard::renderValueBox({
+    shinydashboard::valueBox(df_consented$count,subtitle = "Consented",icon = icon("check"),
+                             color = "green"
+    )
+  })
+  output$myvaluebox3 <- shinydashboard::renderValueBox({
+    shinydashboard::valueBox(df_program$count,subtitle = "In Program",icon = icon("clipboard"),
+                             color = "yellow"
+    )
+  })
+  output$myvaluebox4 <- shinydashboard::renderValueBox({
+    shinydashboard::valueBox(df_active_24,subtitle = "Active in last 24 hours",icon = icon("signal"),
+                             color = "purple"
+    )
+  })
   #output$enrolled_summary <- shiny::renderTable({(enrolled_summary())})
   output$consent_summary <- shiny::renderTable({(consent_summary())})
   output$parent_gender_summary <- shiny::renderTable({(parent_gender_summary())})
+  output$parent_age_summary <- shiny::renderTable({(parent_age_summary())})
   output$child_gender_summary <- shiny::renderTable({(child_gender_summary())})
   output$child_age_group_summary <- shiny::renderTable({(child_age_group_summary())})
   output$parent_child_relationship_summary <- shiny::renderTable({(parent_child_relationship_summary())})
+  output$marital_status_summary <- shiny::renderTable({(marital_status_summary())})
+  output$has_disability_summary <- shiny::renderTable({(has_disability_summary())})
   output$active_users_24hr_summary <- shiny::renderTable({(active_users_24hr_summary())})
   output$active_users_7d_summary <- shiny::renderTable({(active_users_7d_summary())})
-  output$comp_prog_summary <- shiny::renderTable({(comp_prog_summary())})
-  output$parent_age_summary <- shiny::renderTable({(parent_age_summary())})
+  output$comp_prog_summary <- shiny::renderTable({(comp_prog_summary())}, caption = "Number of skills in toolkit")
   output$completed_survey_summary <- shiny::renderTable({{completed_survey_summary()}})
-  output$supportive_calm_response <- shiny::renderTable({(supportive_calm_response())}, caption = "Count (%) for each flow")
-  #output$supportive_praise_response <- shiny::renderTable({(supportive_praise_response())})
-  #output$supportive_response <- shiny::renderTable({(supportive_response())})
-  #output$check_in_response <- shiny::renderTable({(check_in_response())})
-  #output$content_response <- shiny::renderTable({(content_response())})
+  output$all_flows_response <- shiny::renderTable({(all_flows_response())}, caption = "Count (%) for each flow")
   output$response_message_overall <- shiny::renderTable({(response_message_overall())})
-  
-  output$mstatvalbox <- renderUI({
-    req(input$grouper)
-    mstatvalbox <- lapply(1:4, function(i) {
-      
-      #getting multicolor based on value of i
-      if (i == 1){
-        mcol ="aqua"
-      }
-      else if (i == 2){
-        mcol ="green"
-      }
-      else if (i == 3){
-        mcol ="yellow"
-      }
-      else if (i == 4){
-        mcol ="purple"
-      }
-      #else if (i == 5){
-      #  mcol ="orange"
-      #}
-      
-      df_enrolled <- summary_PT(df, enrolled, enrolled, "Yes")
-      df_enrolled <- df_enrolled %>% mutate(group = enrolled, count = enrolled_n) %>% dplyr::select(c(group, count))
-      
-      df_consented <- summary_PT(df, consent, consent, "Yes")
-      df_consented <- df_consented %>% mutate(group = consent, count = consent_n) %>% dplyr::select(c(group, count))
-      
-      df_program <- summary_PT(df, program, program, "Yes")
-      df_program <- df_program %>% mutate(group = program, count = program_n) %>% dplyr::select(c(group, count))
-      
-      df_active_24 <- (summary_PT(df, active_users_24hr, program) %>% filter(active_users_24hr == "Yes"))$active_users_24hr_n
-      #df_active_7 <- (summary_PT(df, active_users_7d, program) %>% filter(active_users_7d == "Yes"))$active_users_7d_n
-      
-      df_all <- rbind(df_enrolled, df_consented, df_program, df_active_24)#, df_active_7)
-      df_all[1] <- c("Enrolled", "Consented", "In Program", "Active in last 24 hours")#, "Active in last 7 days") 
-      
-      #if(input$grouper == "child_gender"){
-      #  df2 <- summary_PT(df, child_gender, consent, "Yes")
-      #  df2 <- df2 %>% mutate(group = child_gender, count = child_gender_n, perc = child_gender_perc) %>% dplyr::select(c(group, count, perc))
-      #  df_all <- rbind(df3, df2)
-      #  df_all[1] <- c("Total Enrolled and Consented", "Men", "Women", "Unknown gender") 
-      #} else if(input$grouper == "child_age_group"){
-      #  df2 <- summary_PT(df, child_age_group, consent, "Yes")
-      #  df2 <- df2 %>% mutate(group = child_age_group, count = child_age_group_n, perc = child_age_group_perc) %>% dplyr::select(c(group, count, perc))
-      #  df2 <- rbind(df2, c("NA", 0, 0))
-      #  df_all <- rbind(df3, df2)
-      #  df_all[1] <- c("Total Enrolled and Consented", "Men", "Women", "Unknown gender") 
-      #} else {
-      #  df2 <- summary_PT(df, parent_gender, consent, "Yes")
-      #  df2 <- df2 %>% mutate(group = parent_gender, count = parent_gender_n, perc = parent_gender_perc) %>% dplyr::select(c(group, count, perc))
-      #  df_all <- rbind(df3, df2)
-      #  df_all[1] <- c("Total Enrolled and Consented", "Men", "Women", "Unknown gender") 
-      #}
-      
-      inputName <- paste0("M",df_all[i,1])
-      div(id=inputName,
-          column(width = 3,
-                 valueBox(
-                   value = tags$p(df_all[i,2],style = "font-size: 150%;"),
-                   subtitle = tags$p(df_all[i,1], style = "font-size: 85%;"),
-                   color =mcol ,
-                   width = "600px")),
-          
-          
-          tags$style(".popover-title{
-         background-color:#8A7B57;
-         color:white;
-         text-align:center;
-         font-size:18px;
-         overflow-wrap:break-word;
-         }"),
-          
-          tags$style(".popover{
-         background-color:#FFF2B3;
-         text-align:left;
-         font-size:15px;
-         border:solid;  # see here for boarder design: https://www.w3schools.com/css/css_border.asp
-         border-radius:unset;
-         border-color: black;
-         border-width: 2px;
-         min-width:350px;
-         #width:300px;
-         # max-width:800px;
-         height:325px;
-         # max-height:600px;
-         overflow-wrap:break-word;
-         }"),
-          
-      )
-      
-    })
-    
-    # Create a tagList of sliders (this is important)
-    do.call(tagList, mstatvalbox)
-  })
 }
 
 # Create Shiny object
