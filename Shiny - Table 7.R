@@ -5,133 +5,145 @@ library(shinyjs)
 #library(rpivotTable)
 library(plotly)
 library(shinydashboard)
+library(httr)
+library(jsonlite)
+library(tidyverse)
+
+source("Functions.R")
+# source("Code Book.R")
 
 # RapidPro set up --------------------------------------------------------------
 # for this to work you need to change the directory to where the token key is stored.
-key <- read.table("C:/Users/lzc1n17/OneDrive - University of Southampton/PhD/IDEMS/ParentText/PT_malaysia_key.txt", quote="\"", comment.char="")
+key <- read.table("./tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
 set_rapidpro_key(key = key)
 set_rapidpro_site(site = "https://app.rapidpro.io/api/v2/")
 set_rapidpro_uuid_names()
-contacts_unflat <- get_user_data(flatten = FALSE)
 
-# Variables Manipulation -------------------------------------------------------
-# get enrolled and consented data
-enrolled <- NULL
-consent <- NULL
-program <- NULL
-for (i in 1:length(contacts_unflat$groups)){
-  contact_name <- contacts_unflat$groups[[i]]
-  if (length(contact_name)==0) {
-    enrolled[i] <- NA
-    consent[i] <- NA
-    program[i] <- NA
-  } else{
-    enrolled[i] <- ifelse(any(contact_name$name %in% "joined"), "Yes", "No")
-    consent[i] <- ifelse(any(contact_name$name %in% "consent"), "Yes", "No")
-    program[i] <- ifelse(any(contact_name$name %in% "in program"), "Yes", "No")
+update_data <- function() {
+  contacts_unflat <- get_user_data(flatten = FALSE)
+  
+  # Variables Manipulation -------------------------------------------------------
+  # get enrolled and consented data
+  enrolled <- NULL
+  consent <- NULL
+  program <- NULL
+  for (i in 1:length(contacts_unflat$groups)){
+    contact_name <- contacts_unflat$groups[[i]]
+    if (length(contact_name)==0) {
+      enrolled[i] <- NA
+      consent[i] <- NA
+      program[i] <- NA
+    } else{
+      enrolled[i] <- ifelse(any(contact_name$name %in% "joined"), "Yes", "No")
+      consent[i] <- ifelse(any(contact_name$name %in% "consent"), "Yes", "No")
+      program[i] <- ifelse(any(contact_name$name %in% "in program"), "Yes", "No")
+    }
   }
-}
-
-parent_gender <- contacts_unflat$fields$gender
-parent_gender <- factor(ifelse(parent_gender %in% c("female", "f", "woman", "Woman"), "Woman",
-                               ifelse(parent_gender %in% c("male", "m", "man", "Man"), "Man",
-                                      ifelse(parent_gender %in% "no", NA, parent_gender))))
-
-child_age_group <- contacts_unflat$fields$age_group_for_tips
-know_age_group <- contacts_unflat$fields$know_age_group_for_tips
-child_age_group <- ifelse(child_age_group == "child" & know_age_group == "no", "Default", child_age_group)
-child_age_group <- factor(child_age_group)
-child_age_group <- forcats::fct_recode(child_age_group,
-                                       Baby = "baby",
-                                       Child = "child",
-                                       Teen = "teen")
-
-child_gender <- factor(contacts_unflat$fields$survey_behave_sex)
-child_gender <-  forcats::fct_recode(child_gender,
-                                     Boy = "male",
-                                     Girl = "female", 
-                                     `Prefer not to say` = "no")
-
-parent_child_relationship <- factor(contacts_unflat$fields$survey_behave_relationship)
-parent_child_relationship <- forcats::fct_recode(parent_child_relationship,
-                                                 Parent = "parent",
-                                                 Grandparent = "grandparent",
-                                                 `Aunt/Uncle`= "uncle",
-                                                 `Foster Parent` = "foster",
-                                                 Other = "other",
-                                                 `Prefer Not to Say`  = "no")
-
-df <- data.frame(enrolled, consent, program, parent_gender, child_gender, child_age_group, parent_child_relationship)
-
-
-# Calculations -----------------------------------------------------------------
-# active users # N = contacts for which the time difference between the current time and the datetime variable "last_seen_on" is less than 24 h 
-active_users_24hr <- Sys.time() - as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT%H:%M:%OS") <= 24
-active_users_24hr <- factor(active_users_24hr)
-if (length(levels(active_users_24hr)) == 1){
-  if (levels(active_users_24hr) == "FALSE"){
-    levels(active_users_24hr) <- c(levels(active_users_24hr),"TRUE")
-  } else if (levels(active_users_24hr) == "TRUE"){
-    levels(active_users_24hr) <- c(levels(active_users_24hr),"FALSE")
+  
+  parent_gender <- contacts_unflat$fields$gender
+  parent_gender <- factor(ifelse(parent_gender %in% c("female", "f", "woman", "Woman"), "Woman",
+                                 ifelse(parent_gender %in% c("male", "m", "man", "Man"), "Man",
+                                        ifelse(parent_gender %in% "no", NA, parent_gender))))
+  
+  child_age_group <- contacts_unflat$fields$age_group_for_tips
+  know_age_group <- contacts_unflat$fields$know_age_group_for_tips
+  child_age_group <- ifelse(child_age_group == "child" & know_age_group == "no", "Default", child_age_group)
+  child_age_group <- factor(child_age_group)
+  child_age_group <- forcats::fct_recode(child_age_group,
+                                         Baby = "baby",
+                                         Child = "child",
+                                         Teen = "teen")
+  
+  child_gender <- factor(contacts_unflat$fields$survey_behave_sex)
+  child_gender <-  forcats::fct_recode(child_gender,
+                                       Boy = "male",
+                                       Girl = "female", 
+                                       `Prefer not to say` = "no")
+  
+  parent_child_relationship <- factor(contacts_unflat$fields$survey_behave_relationship)
+  parent_child_relationship <- forcats::fct_recode(parent_child_relationship,
+                                                   Parent = "parent",
+                                                   Grandparent = "grandparent",
+                                                   `Aunt/Uncle`= "uncle",
+                                                   `Foster Parent` = "foster",
+                                                   Other = "other",
+                                                   `Prefer Not to Say`  = "no")
+  
+  df <- data.frame(enrolled, consent, program, parent_gender, child_gender, child_age_group, parent_child_relationship)
+  
+  # Calculations -----------------------------------------------------------------
+  # active users # N = contacts for which the time difference between the current time and the datetime variable "last_seen_on" is less than 24 h 
+  active_users_24hr <- difftime(lubridate::now(tzone = "UTC"), as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"), units = "hours") <= 24
+  active_users_24hr <- factor(active_users_24hr)
+  if (length(levels(active_users_24hr)) == 1){
+    if (levels(active_users_24hr) == "FALSE"){
+      levels(active_users_24hr) <- c(levels(active_users_24hr),"TRUE")
+    } else if (levels(active_users_24hr) == "TRUE"){
+      levels(active_users_24hr) <- c(levels(active_users_24hr),"FALSE")
+    }
   }
-}
-active_users_24hr <- forcats::fct_recode(active_users_24hr,
+  active_users_24hr <- forcats::fct_recode(active_users_24hr,
+                                           "No" = "FALSE",
+                                           "Yes" = "TRUE")
+  
+  
+  active_users_7d <- difftime(lubridate::now(tzone = "UTC"), as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"), units = "hours") <= 7*24
+  active_users_7d <- factor(active_users_7d)
+  if (length(levels(active_users_7d)) == 1){
+    if (levels(active_users_7d) == "FALSE"){
+      levels(active_users_7d) <- c(levels(active_users_7d),"TRUE")
+    } else if (levels(active_users_7d) == "TRUE"){
+      levels(active_users_7d) <- c(levels(active_users_7d),"FALSE")
+    }
+  }
+  active_users_7d <- forcats::fct_recode(active_users_7d,
                                          "No" = "FALSE",
                                          "Yes" = "TRUE")
-
-
-active_users_7d <- Sys.time() - as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT%H:%M:%OS") <= 7*24
-active_users_7d <- factor(active_users_7d)
-if (length(levels(active_users_7d)) == 1){
-  if (levels(active_users_7d) == "FALSE"){
-    levels(active_users_7d) <- c(levels(active_users_7d),"TRUE")
-  } else if (levels(active_users_7d) == "TRUE"){
-    levels(active_users_7d) <- c(levels(active_users_7d),"FALSE")
-  }
+  df <- data.frame(df, active_users_24hr, active_users_7d)
+  
+  
+  # comp_prog_overall
+  # TODO: only should be lookign at this for those who consented
+  n_skills <- as.numeric(as.character(contacts_unflat$fields$n_skills))
+  df <- data.frame(df, n_skills)
+  
+  # Participant age etc
+  # TODO: only should be lookign at this for those who consented
+  parent_age <- as.numeric(as.character(contacts_unflat$fields$age))
+  
+  survey_completed_wk1 <- str_count(contacts_unflat$fields$surveyparenting_completion, fixed("|"))
+  if (length(survey_completed_wk1) == 0){survey_completed_wk1 <- rep(NA, nrow(df))}
+  
+  survey_completed_wk2 <- str_count(contacts_unflat$fields$fields.surveyparentingbehave_completion, fixed("|"))
+  if (length(survey_completed_wk2) == 0){survey_completed_wk2 <- rep(NA, nrow(df))}
+  
+  df <- data.frame(df, parent_age, survey_completed_wk1, survey_completed_wk2)
+  
+  # sum of response to content, calm, check in, supportive, praise messages
+  # supportive
+  supportive_flow_names <- c("PLH - Content - Extra - CheckIn - COVID",
+                             "PLH - Supportive - Family", "PLH - Supportive - Help reminder", "PLH - Supportive - Share", "PLH - Supportive - Share - Enrollment", "GG - PLH - Supportive - Share - Enrollment", "PLH - Supportive - Budget", "PLH - Supportive - Activities for babies", "PLH - Supportive - Activities",
+                             "PLH - Supportive - Behave reminder", "PLH - Supportive - Children reminder", "PLH - Supportive - Covid", "PLH - Supportive - Development", "PLH - Supportive - Disabilities")
+  
+  supportive_calm <- "PLH - Supportive - Calm"
+  
+  supportive_praise <- "PLH - Supportive - Praise"
+  
+  check_in_flow_names <- c("PLH - Content - Extra - CheckIn - COVID", "PLH - Content - Positive - CheckIn - Book sharing", "PLH - Content - Positive - CheckIn - Budget adults", "PLH - Content - Positive - CheckIn - Budget with children", "PLH - Content - Positive - CheckIn - Community safety", "PLH - Content - Positive - CheckIn - Consequences", "PLH - Content - Positive - CheckIn - Crisis", "PLH - Content - Positive - CheckIn - Crying", "PLH - Content - Positive - CheckIn - Education", "PLH - Content - Positive - CheckIn - Emotion", "PLH - Content - Positive - CheckIn - Family", "PLH - Content - Positive - CheckIn - Ignore",
+                           #"PLH - Content - Positive - CheckIn - Instructions",
+                           "PLH - Content - Positive - CheckIn - IPV 1", "PLH - Content - Positive - CheckIn - IPV 2", "PLH - Content - Positive - CheckIn - IPV 3", "PLH - Content - Positive - CheckIn - IPV 4", "PLH - Content - Positive - CheckIn - IPV 5", "PLH - Content - Positive - CheckIn - Online adults", "PLH - Content - Positive - CheckIn - Online children", "PLH - Content - Positive - CheckIn - Praise", "PLH - Content - Positive - CheckIn - ProblemSolving", "PLH - Content - Positive - CheckIn - Redirect", "PLH - Content - Positive - CheckIn - Routines", "PLH - Content - Positive - CheckIn - Rules", "PLH - Content - Positive - CheckIn - Safe or unsafe touch", "PLH - Content - Relax - CheckIn - Anger management", "PLH - Content - Relax - CheckIn - Connect", "PLH - Content - Relax - CheckIn - List of things",
+                           "PLH - Content - Relax - CheckIn - Loving Kindness", "PLH - Content - Relax - CheckIn - Notice how you feel", "PLH - Content - Relax - CheckIn - Three is a magical number", "PLH - Content - Time - CheckIn - One on one time")
+  
+  content_tip_flow_names <- c("PLH - Content - Positive - Behave - Consequences - Timed intro", "PLH - Content - Positive - Behave - Crisis - Timed intro", "PLH - Content - Positive - Behave - Crying - Timed intro", "PLH - Content - Positive - Behave - Emotion - Timed intro", "PLH - Content - Positive - Behave - Ignore - Timed intro", "PLH - Content - Positive - Behave - Praise - Timed intro", "PLH - Content - Positive - Behave - ProblemSolving - Timed intro", "PLH - Content - Positive - Behave - Redirect - Timed intro", "PLH - Content - Positive - Behave - Routines - Timed intro",
+                              "PLH - Content - Positive - Book sharing - Timed intro", "PLH - Content - Positive - Budget adults - Timed intro", "PLH - Content - Positive - Budget with children - Timed intro","PLH - Content - Positive - Education - Timed intro",
+                              "PLH - Content - Positive - Family - Timed intro", "PLH - Content - Positive - Online adults - Timed intro", "PLH - Content - Positive - Online children - Timed intro", "PLH - Content - Positive - Rules - Timed intro",
+                              "PLH - Content - Positive - Safe or unsafe touch - Timed intro", "PLH - Content - Relax - Take a pause - Timed intro", "PLH - Content - Relax - Exercise", "PLH - Content - Time - One on one time baby - Timed intro",
+                              "PLH - Content - Time - One on one time child - Timed intro", "PLH - Content - Time - One on one time teen - Timed intro", "PLH - Content - Positive - introduction", "PLH - Content - Positive - Positive instructions", "PLH - Content - Relax - Quick Pause", "PLH - Content - Relax - Anger management", "PLH - Content - Relax - Anger management 2", "PLH - Content - Positive - IPV", "PLH - Content - Positive - Community safety")
+  
+  
 }
-active_users_7d <- forcats::fct_recode(active_users_7d,
-                                       "No" = "FALSE",
-                                       "Yes" = "TRUE")
-df <- data.frame(df, active_users_24hr, active_users_7d)
 
-
-# comp_prog_overall
-# TODO: only should be lookign at this for those who consented
-n_skills <- as.numeric(as.character(contacts_unflat$fields$n_skills))
-df <- data.frame(df, n_skills)
-
-# Participant age etc
-# TODO: only should be lookign at this for those who consented
-parent_age <- as.numeric(as.character(contacts_unflat$fields$age))
-
-survey_completed_wk1 <- str_count(contacts_unflat$fields$surveyparenting_completion, fixed("|"))
-if (length(survey_completed_wk1) == 0){survey_completed_wk1 <- rep("NA", nrow(df))}
-
-survey_completed_wk2 <- str_count(contacts_unflat$fields$fields.surveyparentingbehave_completion, fixed("|"))
-if (length(survey_completed_wk2) == 0){survey_completed_wk2 <- rep("NA", nrow(df))}
-
-df <- data.frame(df, parent_age, survey_completed_wk1, survey_completed_wk2)
-
-# sum of response to content, calm, check in, supportive, praise messages
-# supportive
-supportive_flow_names <- c("PLH - Content - Extra - CheckIn - COVID",
-                           "PLH - Supportive - Family", "PLH - Supportive - Help reminder", "PLH - Supportive - Share", "PLH - Supportive - Share - Enrollment", "GG - PLH - Supportive - Share - Enrollment", "PLH - Supportive - Budget", "PLH - Supportive - Activities for babies", "PLH - Supportive - Activities",
-                           "PLH - Supportive - Behave reminder", "PLH - Supportive - Children reminder", "PLH - Supportive - Covid", "PLH - Supportive - Development", "PLH - Supportive - Disabilities")
-
-supportive_calm <- "PLH - Supportive - Calm"
-
-supportive_praise <- "PLH - Supportive - Praise"
-
-check_in_flow_names <- c("PLH - Content - Extra - CheckIn - COVID", "PLH - Content - Positive - CheckIn - Book sharing", "PLH - Content - Positive - CheckIn - Budget adults", "PLH - Content - Positive - CheckIn - Budget with children", "PLH - Content - Positive - CheckIn - Community safety", "PLH - Content - Positive - CheckIn - Consequences", "PLH - Content - Positive - CheckIn - Crisis", "PLH - Content - Positive - CheckIn - Crying", "PLH - Content - Positive - CheckIn - Education", "PLH - Content - Positive - CheckIn - Emotion", "PLH - Content - Positive - CheckIn - Family", "PLH - Content - Positive - CheckIn - Ignore",
-                         #"PLH - Content - Positive - CheckIn - Instructions",
-                         "PLH - Content - Positive - CheckIn - IPV 1", "PLH - Content - Positive - CheckIn - IPV 2", "PLH - Content - Positive - CheckIn - IPV 3", "PLH - Content - Positive - CheckIn - IPV 4", "PLH - Content - Positive - CheckIn - IPV 5", "PLH - Content - Positive - CheckIn - Online adults", "PLH - Content - Positive - CheckIn - Online children", "PLH - Content - Positive - CheckIn - Praise", "PLH - Content - Positive - CheckIn - ProblemSolving", "PLH - Content - Positive - CheckIn - Redirect", "PLH - Content - Positive - CheckIn - Routines", "PLH - Content - Positive - CheckIn - Rules", "PLH - Content - Positive - CheckIn - Safe or unsafe touch", "PLH - Content - Relax - CheckIn - Anger management", "PLH - Content - Relax - CheckIn - Connect", "PLH - Content - Relax - CheckIn - List of things",
-                         "PLH - Content - Relax - CheckIn - Loving Kindness", "PLH - Content - Relax - CheckIn - Notice how you feel", "PLH - Content - Relax - CheckIn - Three is a magical number", "PLH - Content - Time - CheckIn - One on one time")
-
-content_tip_flow_names <- c("PLH - Content - Positive - Behave - Consequences - Timed intro", "PLH - Content - Positive - Behave - Crisis - Timed intro", "PLH - Content - Positive - Behave - Crying - Timed intro", "PLH - Content - Positive - Behave - Emotion - Timed intro", "PLH - Content - Positive - Behave - Ignore - Timed intro", "PLH - Content - Positive - Behave - Praise - Timed intro", "PLH - Content - Positive - Behave - ProblemSolving - Timed intro", "PLH - Content - Positive - Behave - Redirect - Timed intro", "PLH - Content - Positive - Behave - Routines - Timed intro",
-                            "PLH - Content - Positive - Book sharing - Timed intro", "PLH - Content - Positive - Budget adults - Timed intro", "PLH - Content - Positive - Budget with children - Timed intro","PLH - Content - Positive - Education - Timed intro",
-                            "PLH - Content - Positive - Family - Timed intro", "PLH - Content - Positive - Online adults - Timed intro", "PLH - Content - Positive - Online children - Timed intro", "PLH - Content - Positive - Rules - Timed intro",
-                            "PLH - Content - Positive - Safe or unsafe touch - Timed intro", "PLH - Content - Relax - Take a pause - Timed intro", "PLH - Content - Relax - Exercise", "PLH - Content - Time - One on one time baby - Timed intro",
-                            "PLH - Content - Time - One on one time child - Timed intro", "PLH - Content - Time - One on one time teen - Timed intro", "PLH - Content - Positive - introduction", "PLH - Content - Positive - Positive instructions", "PLH - Content - Relax - Quick Pause", "PLH - Content - Relax - Anger management", "PLH - Content - Relax - Anger management 2", "PLH - Content - Positive - IPV", "PLH - Content - Positive - Community safety")
+update_data()
 
 
 # retention_exit ---------------------------------------------------------------
@@ -200,6 +212,14 @@ ui <- dashboardPage(
 
 # Define server function
 server <- function(input, output) {
+  
+  autoRefresh <- reactiveTimer(6 * 60 * 60 * 1000)
+  
+  observe({
+    autoRefresh()
+    
+    update_data()
+  })
   
   # Subset data
   selected_data <- reactive({
