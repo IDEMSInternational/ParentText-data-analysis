@@ -75,38 +75,38 @@ update_data <- function() {
   parent_child_relationship <- forcats::fct_relevel(parent_child_relationship,
                                                     c("Parent", "Grandparent", "Aunt/Uncle", "Foster Parent", "Other", "Prefer not to say"))
   
-  marital_status <- factor(contacts_unflat$fields$marital_status)
-  marital_status <- forcats::fct_recode(marital_status,
+  parent_relationship_status <- factor(contacts_unflat$fields$marital_status)
+  parent_relationship_status <- forcats::fct_recode(parent_relationship_status,
                                         `Prefer not to say`  = "no")
-  marital_status <- forcats::fct_relevel(marital_status, c("Single", "Married", "Partnered", "Divorced", "Widowed", "Prefer not to say"))
+  parent_relationship_status <- forcats::fct_relevel(parent_relationship_status, c("Single", "Married", "Partnered", "Divorced", "Widowed", "Prefer not to say"))
   
-  has_disability <- factor(contacts_unflat$fields$has_disability)
-  has_disability <- forcats::fct_recode(has_disability,
+  child_living_with_disabilities <- factor(contacts_unflat$fields$has_disability)
+  child_living_with_disabilities <- forcats::fct_recode(child_living_with_disabilities,
                                         Yes = "yes",
                                         No = "no",
                                         `supp_disab`= "supp_disab")
-  has_disability <- forcats::fct_relevel(has_disability,
+  child_living_with_disabilities <- forcats::fct_relevel(child_living_with_disabilities,
                                          c("Yes", "No", "supp_disab"))
   
   parenting_goals <- factor(as.numeric(contacts_unflat$fields$parenting_goal))
   parenting_goals <- forcats::fct_recode(parenting_goals,
-                                         `Improve my relationship with my child` = "1",
-                                         `My child to behave better` = "2",
-                                         `My child to do better at school` = "3",
-                                         `To talk to my child about COVID-19` = "4",
-                                         `Feel less stress loneliness or anger` = "5",
-                                         `Worry less about money` = "6",
-                                         `Less conflict in my family` = "7",
-                                         `Know more about how to keep my child safe`= "8",
-                                         `How to support children living with disabilities` = "9",
-                                         `Other goal` = "0")
+                                         `Relationship` = "1",
+                                         `Behaviour` = "2",
+                                         `School` = "3",
+                                         `COVID-19` = "4",
+                                         `Stress` = "5",
+                                         `Finances` = "6",
+                                         `Family conflict` = "7",
+                                         `Safety`= "8",
+                                         `Disabilities` = "9",
+                                         `Other` = "0")
   parenting_goals <- str_wrap(parenting_goals, width = 15)
   parenting_goals <- forcats::fct_relevel(parenting_goals,
-                                          c("Improve my\nrelationship\nwith my child","My child to\nbehave better",
-                                            "My child to\ndo better at\nschool", "To talk to my\nchild about\nCOVID-19",
-                                            "Feel less\nstress\nloneliness or\nanger", "Worry less\nabout money ",
-                                            "Less conflict\nin my family", "Know more about\nhow to keep my\nchild safe",
-                                            "How to support\nchildren living\nwith disabilities", "Other goal"))
+                                          c("Relationship","Behaviour",
+                                            "School", "COVID-19",
+                                            "Stress", "Finances",
+                                            "Family conflict", "Safety",
+                                            "Disabilities", "Other"))
   
   # Calculations -----------------------------------------------------------------
   # active users # N = contacts for which the time difference between the current time and the datetime variable "last_seen_on" is less than 24 h 
@@ -174,7 +174,7 @@ update_data <- function() {
                               "PLH - Content - Time - One on one time child - Timed intro", "PLH - Content - Time - One on one time teen - Timed intro", "PLH - Content - Positive - introduction", "PLH - Content - Positive - Positive instructions", "PLH - Content - Relax - Quick Pause", "PLH - Content - Relax - Anger management", "PLH - Content - Relax - Anger management 2", "PLH - Content - Positive - IPV", "PLH - Content - Positive - Community safety")
   
   df <- data.frame(enrolled, consent, program, parent_gender, child_gender, child_age_group, parent_child_relationship, 
-                   marital_status, has_disability, parenting_goals,
+                   parent_relationship_status, child_living_with_disabilities, parenting_goals,
                    active_users_24hr, active_users_7d, n_skills, parent_age, survey_completed_wk1, survey_completed_wk2)
   
   objects_to_return <- NULL
@@ -276,8 +276,8 @@ ui <- dashboardPage(
               shiny::tableOutput("child_gender_summary"),
               shiny::tableOutput("child_age_group_summary"),
               shiny::tableOutput("parent_child_relationship_summary"),
-              shiny::tableOutput("marital_status_summary"),
-              shiny::tableOutput("has_disability_summary"),
+              shiny::tableOutput("parent_relationship_status_summary"),
+              shiny::tableOutput("child_living_with_disabilities_summary"),
               fluidRow(
                 column(9,
                        box( height="300px",  width=12,
@@ -495,20 +495,20 @@ server <- function(input, output) {
       summary_PT(df, parent_child_relationship, consent, "Yes", TRUE, naming_convention = TRUE)
     }
   })
-  has_disability_summary <- reactive({
+  child_living_with_disabilities_summary <- reactive({
     req(input$grouper)
     if(input$groupby == TRUE){
-      summary_PT(df, c(has_disability, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, c(child_living_with_disabilities, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
     } else {
-      summary_PT(df, has_disability, consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, child_living_with_disabilities, consent, "Yes", TRUE, naming_convention = TRUE)
     }
   })
-  marital_status_summary <-  reactive({
+  parent_relationship_status_summary <-  reactive({
     req(input$grouper)
     if(input$groupby == TRUE){
-      summary_PT(df, c(marital_status, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, c(parent_relationship_status, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
     } else {
-      summary_PT(df, marital_status, consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, parent_relationship_status, consent, "Yes", TRUE, naming_convention = TRUE)
     }
   })
   active_users_24hr_summary <- reactive({
@@ -676,8 +676,8 @@ server <- function(input, output) {
   output$child_gender_summary <- shiny::renderTable({(child_gender_summary())})
   output$child_age_group_summary <- shiny::renderTable({(child_age_group_summary())})
   output$parent_child_relationship_summary <- shiny::renderTable({(parent_child_relationship_summary())})
-  output$marital_status_summary <- shiny::renderTable({(marital_status_summary())})
-  output$has_disability_summary <- shiny::renderTable({(has_disability_summary())})
+  output$parent_relationship_status_summary <- shiny::renderTable({(parent_relationship_status_summary())})
+  output$child_living_with_disabilities_summary <- shiny::renderTable({(child_living_with_disabilities_summary())})
   output$active_users_24hr_summary <- shiny::renderTable({(active_users_24hr_summary())})
   output$active_users_7d_summary <- shiny::renderTable({(active_users_7d_summary())})
   output$comp_prog_summary <- shiny::renderTable({(comp_prog_summary())}, caption = "Number of skills in toolkit")
