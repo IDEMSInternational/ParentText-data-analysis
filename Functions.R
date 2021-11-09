@@ -97,15 +97,20 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, resu
       }
     }
   }
+  
+  if (flow_name == "PLH - Supportive - Praise"){
+    uuid_flow <- "268c5b73-9d19-496b-b3c4-1896c5b53b4f"
+  } else {
+    uuid_flow <- uuid_data[which(uuid_data$name == flow_name),]
+  }
+    source_1 <- paste(rapidpro_site, call_type, uuid_flow[1], sep = "")
+    response <- httr::GET(source_1, config = httr::add_headers(Authorization = paste("Token", token)))
+    raw <- httr::content(response, as = "text")
+    results <- jsonlite::fromJSON(raw)
 
-  uuid_flow <- uuid_data[which(uuid_data$name == flow_name),]
-  source_1 <- paste(rapidpro_site, call_type, uuid_flow[1], sep = "")
-  response <- httr::GET(source_1, config = httr::add_headers(Authorization = paste("Token", token)))
-  raw <- httr::content(response, as = "text")
-  results <- jsonlite::fromJSON(raw)
   if (length(results$results) == 0){
-   #stop("no data in flow")
-   flow_interaction <- NULL
+    #stop("no data in flow")
+    flow_interaction <- NULL
   } else {
     result_flow <- results$results
     uuid <- result_flow$contact$uuid
@@ -114,13 +119,12 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, resu
     flow_interaction <- tibble::tibble(uuid, response) #, category)
     flow_interaction <- flow_interaction %>% mutate(flow_type = uuid_flow[1]) 
   }
- # if (flatten){
- #   flow_interaction <- jsonlite::flatten(flow_interaction)
- # }
+  # if (flatten){
+  #   flow_interaction <- jsonlite::flatten(flow_interaction)
+  # }
   return(flow_interaction)
 }
 # TODO: result1 is the name. Need to get the result names.
-
 
 get_flow_data2 <- function(flow_name = NULL, uuid_name, result, call_type="runs.json?flow=", rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key()){
   uuid_flow <- uuid_name
