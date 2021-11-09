@@ -222,11 +222,11 @@ ui <- dashboardPage(
   
   dashboardBody(
     fluidRow(
-      shinydashboard::valueBoxOutput("myvaluebox1", width=3),
-      shinydashboard::valueBoxOutput("myvaluebox2", width=3),
-      shinydashboard::valueBoxOutput("myvaluebox3", width=3),
-      shinydashboard::valueBoxOutput("myvaluebox4", width=3)
-    ),
+      shinydashboard::valueBoxOutput("myvaluebox1", width=2),
+      shinydashboard::valueBoxOutput("myvaluebox2", width=2),
+      shinydashboard::valueBoxOutput("myvaluebox3", width=2),
+      shinydashboard::valueBoxOutput("myvaluebox4", width=2),
+      shinydashboard::valueBoxOutput("myvaluebox5", width=2)),
     fluidRow(
       column(
         width = 12,
@@ -648,7 +648,8 @@ server <- function(input, output) {
   df_program <- df_program %>% mutate(group = program, count = program_n) %>% dplyr::select(c(group, count))
   
   df_active_24 <- (summary_PT(df, active_users_24hr, program) %>% filter(active_users_24hr == "Yes"))$active_users_24hr_n
-  
+  df_active_7d <- (summary_PT(df, active_users_7d, program) %>% filter(active_users_7d == "Yes"))$active_users_7d_n
+
   output$myvaluebox1 <- shinydashboard::renderValueBox({
     shinydashboard::valueBox(df_enrolled$count,subtitle = "Enrolled",icon = icon("user"),
                              color = "aqua"
@@ -665,8 +666,13 @@ server <- function(input, output) {
     )
   })
   output$myvaluebox4 <- shinydashboard::renderValueBox({
-    shinydashboard::valueBox(df_active_24,subtitle = "Active in last 24 hours",icon = icon("signal"),
+    shinydashboard::valueBox(df_active_24,subtitle = "Active in last 24 hours",icon = icon("clock"),
                              color = "purple"
+    )
+  })
+  output$myvaluebox5 <- shinydashboard::renderValueBox({
+    shinydashboard::valueBox(df_active_7d, subtitle = "Active in last 7 days",icon = icon("signal"),
+                             color = "fuchsia"
     )
   })
   #output$enrolled_summary <- shiny::renderTable({(enrolled_summary())})
