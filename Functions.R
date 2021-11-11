@@ -254,6 +254,86 @@ flow_data_function <- function(flow_name){
   }
 }
 
+
+# Information at survey level ----------------------------------------------------------------
+
+survey_datetime_split <- function(parenting_variable, survey_no = 1){
+  # split the string by different surveys taken
+  split_parenting <- str_split(parenting_variable, pattern = fixed("|"))
+  
+  # for each individual, get each survey value (split by ,)
+  parenting_response <- NULL
+  for (i in 1:length(split_parenting)){
+    split_parenting_2 <- str_split(split_parenting[[i]], ",") 
+    
+    # if it is NA, keep as NA
+    if (is.na(split_parenting_2[[1]][3])){
+      parenting_response[i] <- NA
+    } else{
+      # which survey to consider? Baseline = 1, week1 = 2, etc.
+      # so get that correct week lot of surveys
+      for (j in 2:length(split_parenting_2) - 1){
+        if (as.numeric(as.character(split_parenting_2[[j]][2])) != survey_no) {
+          split_parenting_2[[j]][3] ="1970-01-01T00:00:00.873007+08:00"
+        }
+      }
+      
+      # take the response value corresponding to the most recent date
+      response <- NA
+      date <- as.POSIXct("1970-01-01T00:00:00.873007+08:00", format="%Y-%m-%dT%H:%M:%OS", tz = "UTC")
+      
+      for (j in 2:length(split_parenting_2) - 1){
+        if (date < as.POSIXct(split_parenting_2[[j]][3], format="%Y-%m-%dT%H:%M:%OS", tz = "UTC")) {
+          response <- split_parenting_2[[j]][1]
+        }
+      }
+      parenting_response[i] <- as.numeric(as.character(response))
+    }
+  }
+  return(parenting_response)
+}
+
+survey_datetime_split_multiple <- function(parenting_variable, survey_max = 9){
+  survey_entry <- NULL
+  for (i in 1:survey_max){
+    survey_entry[[i]] <- survey_datetime_split(parenting_variable, survey_no = i)
+  }
+  week <- c(rep("Base", length(parenting_variable)),
+            rep("2", length(parenting_variable)),
+            rep("3", length(parenting_variable)),
+            rep("4", length(parenting_variable)),
+            rep("5", length(parenting_variable)),
+            rep("6", length(parenting_variable)),
+            rep("7", length(parenting_variable)),
+            rep("8", length(parenting_variable)),
+            rep("9", length(parenting_variable)))
+  vals <- unlist(survey_entry)
+  return(data.frame(week, vals))
+}
+
+# Function based on http://www.cookbook-r.com/Graphs/Plotting_means_and_error_bars_(ggplot2)/
+# for plotting means and error bars
+summarySE <- function(data=NULL, var, groups=NULL, na.rm=FALSE,
+                      conf.interval=.95, .drop=TRUE) {
+
+  # Summary - vector with N, mean, and sd for each group var
+  datac <- data %>%
+      group_by(across({{ groups }})) %>%
+      summarise(N = sum(!is.na({{ var }})),
+                mean = mean({{ var }}, na.rm = na.rm),
+                sd = sd({{ var }}, na.rm = na.rm))  
+
+  # Calculate standard error of the mean
+  datac$se <- datac$sd / sqrt(datac$N)
+  
+  # Confidence interval multiplier for standard error
+  # Calculate t-statistic for confidence interval
+  ciMult <- qt(conf.interval/2 + .5, datac$N-1)
+  datac$ci <- datac$se * ciMult
+  
+  return(datac)
+}
+
 #' * General level
 #' *** Number of runs (proportions)
 #' *** Number of interactions (responded==TRUE) (proportions)
@@ -266,14 +346,14 @@ response_rate_graphs<-function(flow_interaction, flow_name){
   print(flow_interaction %>% group_by(response) %>% summarise(n())) 
   print(flow_interaction %>% group_by(category) %>% summarise(n())) 
   
-#  ggplot(flow_interaction, aes(x = response)) +
-#    geom_bar() +
-#    labs(x = "Response", y = "Frequency", title = paste(flow_name ," - Response"))
-#  
-#  flow_interaction_response <- flow_interaction %>% filter(response == TRUE)
-#  ggplot(flow_interaction_response, aes(x = category)) +
-#    geom_bar() +
-#    labs(x = "Response", y = "Frequency", title = paste(flow_name ," - Response"))
+  #  ggplot(flow_interaction, aes(x = response)) +
+  #    geom_bar() +
+  #    labs(x = "Response", y = "Frequency", title = paste(flow_name ," - Response"))
+  #  
+  #  flow_interaction_response <- flow_interaction %>% filter(response == TRUE)
+  #  ggplot(flow_interaction_response, aes(x = category)) +
+  #    geom_bar() +
+  #    labs(x = "Response", y = "Frequency", title = paste(flow_name ," - Response"))
 }
 
 # TODO: Result level - what is WFR
@@ -284,5 +364,3 @@ create_user_dataframe <- function(flow_interaction){
   temp<-flow_interaction %>% group_by(uuid,response) %>% summarise(n=n()) %>% mutate(freq=100*n/sum(n))
   temp2<-flow_interaction %>% filter(response == TRUE) %>% group_by(uuid,category) %>% summarise(n=n()) %>% mutate(freq=100*n/sum(n))
 }
-
-
