@@ -14,7 +14,6 @@ source("Functions.R")
 # RapidPro set up --------------------------------------------------------------
 # for this to work you need to change the directory to where the token key is stored.
 key <- read.table("./tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
-key <- "b6e753174017ea75090d37ccf188d9fa7d6735dd"
 set_rapidpro_key(key = key)
 set_rapidpro_site(site = "https://app.rapidpro.io/api/v2/")
 set_rapidpro_uuid_names()
