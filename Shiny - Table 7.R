@@ -352,6 +352,7 @@ ui <- dashboardPage(
                                                   
                                                   box(width = NULL,
                                                       collapsible = FALSE,
+                                                      solidHeader = TRUE,
                                                       splitLayout(tags$i(class = "fa fa-birthday-cake fa-5x"),
                                                                   shinydashboard::valueBoxOutput("parentagemeansd", width = 12),
                                                                   cellWidths = c("20%", "80%"),
@@ -359,12 +360,14 @@ ui <- dashboardPage(
                                                   
                                                   box(width = NULL,
                                                       collapsible = FALSE,
+                                                      solidHeader = TRUE,
                                                       splitLayout(tags$i(class = "fa fa-home fa-5x"),
                                                                   shinydashboard::valueBoxOutput("parent_child_relationship_summary", width = 12),
                                                                   cellWidths = c("20%", "80%"),
                                                                   cellArgs = list(style = "vertical-align: top"))),
                                                   
                                                   box(width = NULL,
+                                                      solidHeader = TRUE,
                                                       collapsible = FALSE,
                                                       splitLayout(tags$i(class = "fa fa-ring fa-5x"),
                                                                   shinydashboard::valueBoxOutput("parent_relationship_status_summary", width = 12),
@@ -372,6 +375,7 @@ ui <- dashboardPage(
                                                                   cellArgs = list(style = "vertical-align: top")))
                                               ),
                                               box(width=NULL,
+                                                  solidHeader = TRUE,
                                                   collapsible = FALSE,
                                                   title = "Child Demographics",
                                                   status = "primary", # primary, success, info, warning, danger
@@ -435,6 +439,7 @@ ui <- dashboardPage(
                                                   
                                                   box(width = NULL,
                                                       collapsible = FALSE,
+                                                      solidHeader = TRUE,
                                                       splitLayout(tags$i(class = "fa fa-wheelchair fa-5x"),
                                                                   shinydashboard::valueBoxOutput("child_living_with_disabilities_summary", width = 12),
                                                                   cellWidths = c("20%", "80%"),
