@@ -14,6 +14,7 @@ source("Functions.R")
 # RapidPro set up --------------------------------------------------------------
 # for this to work you need to change the directory to where the token key is stored.
 key <- read.table("./tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
+key <- "b6e753174017ea75090d37ccf188d9fa7d6735dd"
 set_rapidpro_key(key = key)
 set_rapidpro_site(site = "https://app.rapidpro.io/api/v2/")
 set_rapidpro_uuid_names()
@@ -237,6 +238,10 @@ update_data <- function() {
   parenting_survey <- rbind(positive_parenting, child_maltreatment, play, praise, physical_abuse, psychological_abuse, financial_stress, food_insecurity, parenting_efficacy, sex_prevention, child_behave)
   parenting_survey <- parenting_survey %>% mutate(week = fct_relevel(week, c("Base", "2", "3", "4", "5", "6", "7", "8", "9")))
   parenting_survey <- parenting_survey %>% mutate(Group = fct_relevel(Group, c("Positive parenting", "Child maltreament", "Play", "Praise", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
+  
+  # last online plot
+  last_online <- as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT", tz = "UTC")
+  df$last_online <- last_online
   
   objects_to_return <- NULL
   objects_to_return[[1]] <- df
@@ -578,6 +583,11 @@ ui <- dashboardPage(
                                                        br(),
                                                        fluidRow(
                                                          column(10, align = "center",
+                                                                plotlyOutput(outputId = "last_online_plot"),
+                                                         )),
+                                                       br(),
+                                                       fluidRow(
+                                                         column(10, align = "center",
                                                                 splitLayout(tags$i(class = "fas fa-check fa-6x"),
                                                                             shinydashboard::valueBoxOutput("comp_prog_summary", width = 12),
                                                                             cellWidths = c("20%", "80%"),
@@ -619,6 +629,11 @@ ui <- dashboardPage(
                                                                   cellWidths = c("10%", "40%", "10%", "40%"),
                                                                   cellArgs = list(style = "vertical-align: top"))),
                                                          width = 10),
+                                                       br(),
+                                                       fluidRow(
+                                                         column(10, align = "center",
+                                                                plotlyOutput(outputId = "last_online_group_plot"),#, height = "580px")
+                                                         )),
                                                        br(),
                                                        fluidRow(
                                                          column(10, align = "center",
@@ -835,6 +850,25 @@ server <- function(input, output) {
       geom_histogram(stat = "count") +
       viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
       labs(x = "Enrolled", y = "Count") +
+      theme_classic()
+  })
+  
+  output$last_online_plot <- renderPlotly({
+    ggplot(df, aes(x = last_online)) +
+      geom_point(stat="count") +
+      geom_line(stat = "count") +
+      labs(x = "Date Last Online", y = "Frequency") +
+      viridis::scale_colour_viridis(discrete = TRUE, na.value = "navy") +
+      theme_classic()
+  })
+  
+  output$last_online_group_plot <- renderPlotly({
+    req(input$grouper_engagement)
+    ggplot(df, aes(x = last_online, colour = (!!!rlang::syms(input$grouper_engagement)))) +
+      geom_point(stat="count") +
+      geom_line(stat = "count") +
+      labs(x = "Date Last Online", y = "Frequency") +
+      viridis::scale_colour_viridis(discrete = TRUE, na.value = "navy") +
       theme_classic()
   })
   
