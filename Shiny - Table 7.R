@@ -226,7 +226,7 @@ update_data <- function() {
   # using datetime not just _rate because in _rate it doesn't state which survey the score is corresponding to
   # e.g. see contacts_unflat$fields$surveybehave_rate_datetime[[1]]
   child_behave <- survey_datetime_split_multiple(contacts_unflat$fields$surveybehave_rate_datetime) %>% mutate(Group = "Child Behaviour")
-  
+
   play1 <- play %>% replace(is.na(.), 0)
   praise1 <- praise %>% replace(is.na(.), 0)
   physical_abuse1 <- physical_abuse %>% replace(is.na(.), 0)
@@ -1099,7 +1099,7 @@ server <- function(input, output) {
   })
   
   output$parenting_survey_plot <- renderPlotly({
-    parenting_survey1 <- parenting_survey %>% mutate(week = as.numeric(week))
+    parenting_survey1 <- parenting_survey %>% mutate(week = as.numeric(week)) %>% filter(Group != "Sexual abuse prevention")
     parenting_survey_plot <- summarySE(parenting_survey1, groups = c(week, Group), var = vals, na.rm = TRUE)
     ggplot(parenting_survey_plot, aes(x=week, y=mean, colour=Group, group = Group), width = 2) + 
       geom_line() +
@@ -1386,7 +1386,7 @@ server <- function(input, output) {
     comp_prog_df <- df %>% summarise(program_completion_mean = round(mean(n_skills, na.rm = TRUE), 2),
                                      program_completion_sd = round(sd(n_skills, na.rm = TRUE), 2))
     shinydashboard::valueBox(paste(comp_prog_df[1], " (", comp_prog_df[2], ")", sep = ""),
-                             subtitle = "Average (and SD) \n number of skills",
+                             subtitle = "Average (and SD) \n number of completed skills per individual",
                              color = "light-blue")
   })
   output$enrolled_summary <- shiny::renderTable({(enrolled_summary())}, striped = TRUE)
@@ -1416,7 +1416,7 @@ server <- function(input, output) {
   output$completed_survey_summary <- shiny::renderTable({{completed_survey_summary()}}, striped = TRUE)
   output$completed_survey_group_summary <- shiny::renderTable({{completed_survey_group_summary()}}, striped = TRUE)
   output$all_flows_response <- shiny::renderTable({(all_flows_response())}, caption = "Count (%) for each flow", striped = TRUE)
-  output$parenting_survey_summary <- shiny::renderTable({(parenting_survey_summary())}, caption = "How many times in the past week ...", striped = TRUE)
+  output$parenting_survey_summary <- shiny::renderTable({(parenting_survey_summary())}, caption = "How many times in the past week ... \n For Sexual abuse prevention, the timeframe is how many days in the past month.", striped = TRUE)
 }
 
 # Create Shiny object
