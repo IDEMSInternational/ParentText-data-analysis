@@ -213,7 +213,7 @@ update_data <- function() {
                                                                          "Hyperactivity", "Hits\n others")))
   
   # behaviour outcome -------------------
-
+  
   # get all survey values
   play <- survey_datetime_split_multiple(contacts_unflat$fields$surveytime_datetime) %>% mutate(Group = "Play")
   praise <- survey_datetime_split_multiple(contacts_unflat$fields$surveypraise_datetime) %>% mutate(Group = "Praise")
@@ -295,6 +295,10 @@ ui <- dashboardPage(
       tabItem(tabName = "demographics",
               tabsetPanel(type = "tabs",
                           tabPanel("Overall",
+                                   fluidRow(column(10,
+                                                   box(width = NULL,
+                                                       collapsible = FALSE,
+                                                       solidHeader = TRUE,
                                    fluidRow(
                                      column(10, align = "center",
                                             splitLayout(
@@ -375,7 +379,6 @@ ui <- dashboardPage(
                                                                   cellArgs = list(style = "vertical-align: top")))
                                               ),
                                               box(width=NULL,
-                                                  solidHeader = TRUE,
                                                   collapsible = FALSE,
                                                   title = "Child Demographics",
                                                   status = "primary", # primary, success, info, warning, danger
@@ -459,9 +462,13 @@ ui <- dashboardPage(
                                             )
                                      )
                                    ) # close fluid row
-                          ), # close tab panel
+                          )))), # close box, col, fluid row, tab panel
                           tabPanel("By groups",
-                                   fluidRow(
+                                   fluidRow(column(10,
+                                                   box(width = NULL,
+                                                       collapsible = FALSE,
+                                                       solidHeader = TRUE,
+                                                       fluidRow(
                                      column(
                                        width = 12,
                                        #align = "center",
@@ -585,7 +592,7 @@ ui <- dashboardPage(
                                             ) # close fluid row
                                      )
                                    )
-                          ) # close tab panel
+                                                   )))) # close box, col, fluid row, tab panel
               ) # close tabset panel
       ), # close tab
       
