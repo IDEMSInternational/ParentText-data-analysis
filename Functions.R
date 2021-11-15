@@ -192,6 +192,12 @@ naming_conventions <- function(x) {
   x
 }
 
+# wrapping text but retaining the levels
+str_wrap_factor <- function(x, ...) {
+  levels(x) <- str_wrap(levels(x), ...)
+  x
+}
+
 #' 4. Information at flow level --------------------------------------------------------------
 
 # Table 7 Functions -----------------
@@ -353,10 +359,6 @@ response_rate_graphs<-function(flow_interaction, flow_name){
   #    geom_bar() +
   #    labs(x = "Response", y = "Frequency", title = paste(flow_name ," - Response"))
 }
-
-# TODO: Result level - what is WFR
-
-
 
 create_user_dataframe <- function(flow_interaction){
   temp<-flow_interaction %>% group_by(uuid,response) %>% summarise(n=n()) %>% mutate(freq=100*n/sum(n))
