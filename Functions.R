@@ -29,13 +29,23 @@ get_rapidpro_site = function() {
   get("rapidpro_site", envir = pkg.env)
 }
 
-# Function to get a list of the UUID of flows
-get_flow_names <- function(call_type="flows.json", rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE){
-  source_1 <- paste(rapidpro_site, call_type, sep = "")
-  response <- httr::GET(source_1, config = httr::add_headers(Authorization = paste("Token", token)))
+# Calling data
+httr_get_call <- function(get_command, token = get_rapidpro_key()){
+  response <- httr::GET(get_command, config = httr::add_headers(Authorization = paste("Token", token)))
   raw <- httr::content(response, as = "text")
   results <- jsonlite::fromJSON(raw)
-  flow_names <- results$results
+  if(!is.null(results$'next')){
+    bind_rows(results$results, httr_get_call(results$'next',token))
+  } else {
+    return(results$results)
+  }
+}
+
+# Function to get a list of the UUID of flows
+get_flow_names <- function(call_type = "flows.json", rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE){
+  # TODO put in checks - check site is correct, then token, then call_type
+  get_command <- paste(rapidpro_site, call_type, sep = "")
+  flow_names <- httr_get_call(get_command = get_command, token = token)
   if (flatten){
     flow_names <- jsonlite::flatten(flow_names)
   }
@@ -53,12 +63,8 @@ get_rapidpro_uuid_names = function(){
 #' 2. Retreiving Information -------------------------------------------
 #' Get general data
 get_data_from_rapidpro_api <- function(call_type, rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE){
-  # TODO put in checks - check site is correct, then token, then call_type
-  source_1 <- paste(rapidpro_site, call_type, sep = "")
-  response <- httr::GET(source_1, config = httr::add_headers(Authorization = paste("Token", token)))
-  raw <- httr::content(response, as = "text")
-  results <- jsonlite::fromJSON(raw)
-  user_result <- results$results
+  get_command <- paste(rapidpro_site, call_type, sep = "")
+  user_result <- httr_get_call(get_command = get_command, token = token)
   if (flatten){
     user_result <- jsonlite::flatten(user_result)
   }
@@ -68,11 +74,8 @@ get_data_from_rapidpro_api <- function(call_type, rapidpro_site = get_rapidpro_s
 # Get user (contacts) data
 get_user_data <- function(call_type="contacts.json", rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE){
   # todo: checks/error handling messages.
-  source_1 <- paste(rapidpro_site, call_type, sep = "")
-  response <- httr::GET(source_1, config = httr::add_headers(Authorization = paste("Token", token)))
-  raw <- httr::content(response, as = "text")
-  results <- jsonlite::fromJSON(raw)
-  user_result <- results$results
+  get_command <- paste(rapidpro_site, call_type, sep = "")
+  user_result <- httr_get_call(get_command = get_command, token = token)
   if (flatten){
     user_result <- jsonlite::flatten(user_result)
   }
@@ -98,21 +101,15 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, resu
     }
   }
   
-  if (flow_name == "PLH - Supportive - Praise"){
-    uuid_flow <- "268c5b73-9d19-496b-b3c4-1896c5b53b4f"
-  } else {
-    uuid_flow <- uuid_data[which(uuid_data$name == flow_name),]
-  }
-    source_1 <- paste(rapidpro_site, call_type, uuid_flow[1], sep = "")
-    response <- httr::GET(source_1, config = httr::add_headers(Authorization = paste("Token", token)))
-    raw <- httr::content(response, as = "text")
-    results <- jsonlite::fromJSON(raw)
-
-  if (length(results$results) == 0){
+  uuid_flow <- uuid_data[which(uuid_data$name == flow_name),]
+  get_command <- paste(rapidpro_site, call_type, uuid_flow[1], sep = "")
+  flow_result <- httr_get_call(get_command = get_command, token = token)
+  
+  if (length(flow_result) == 0){
     #stop("no data in flow")
     flow_interaction <- NULL
   } else {
-    result_flow <- results$results
+    result_flow <- flow_result
     uuid <- result_flow$contact$uuid
     response <- result_flow$responded
     category <- result_flow$values$result$category            
@@ -125,6 +122,7 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, resu
   return(flow_interaction)
 }
 # TODO: result1 is the name. Need to get the result names.
+
 
 get_flow_data2 <- function(flow_name = NULL, uuid_name, result, call_type="runs.json?flow=", rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key()){
   uuid_flow <- uuid_name
@@ -171,7 +169,7 @@ get_user_group_data <- function(user_data = get_user_data(), name = NULL, uuid =
     } else{
       if(which(get_user_data()$name == name) != which(get_user_data()$uuid == uuid)){
         warning("name and uuid supplied do not match. Using the name supplied.")
-    }
+      }
     }
   }
   
@@ -198,14 +196,14 @@ naming_conventions <- function(x) {
 
 # Table 7 Functions -----------------
 summary_PT <- function(data = df, summary_var, denominator = NULL, denominator_level = "Yes", together = FALSE, naming_convention = FALSE){
-
+  
   if (!is.null(denominator)) {
     summary_perc <- data %>%
       filter({{ denominator }} == denominator_level) %>%
       group_by(across({{ summary_var }}), .drop = FALSE) %>%
       summarise("{{summary_var}}_n" := n(),
                 "{{summary_var}}_perc" := n()/nrow(.) * 100)
-
+    
     if (together == TRUE){
       colnames(summary_perc)[length(summary_perc)-1] <- "n"
       colnames(summary_perc)[length(summary_perc)] <- "perc"
@@ -217,7 +215,7 @@ summary_PT <- function(data = df, summary_var, denominator = NULL, denominator_l
     if (naming_convention == TRUE){
       colnames(summary_perc) <- naming_conventions(colnames(summary_perc))
     }
-
+    
     return(summary_perc)
   } else {
     summary_n <- data %>%
@@ -249,11 +247,10 @@ flow_data_function <- function(flow_name){
              mutate("Count (%)" := str_c(`count`, ' (', round(`perc`, 1), ")")) %>%
              dplyr::select(-c(count, perc)) %>%
              mutate(response = factor(ifelse(response == TRUE, "Yes", "No"))) %>% map_df(rev))
-             #mutate(response = forcats::fct_relevel(response, c("Yes", "No"))))
+    #mutate(response = forcats::fct_relevel(response, c("Yes", "No"))))
     
   }
 }
-
 
 # Information at survey level ----------------------------------------------------------------
 
@@ -333,6 +330,7 @@ summarySE <- function(data=NULL, var, groups=NULL, na.rm=FALSE,
   
   return(datac)
 }
+
 
 #' * General level
 #' *** Number of runs (proportions)
