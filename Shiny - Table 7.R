@@ -41,16 +41,32 @@ update_data <- function() {
     }
   }
   
+   enrolled <- enrolled
+   consent <- consent
+   program <- program
+  
+  enrolled <- factor(enrolled)
+  consent <- factor(consent)
+  program <- factor(program)
+  enrolled <- forcats::fct_expand(enrolled, c("Yes", "No"))
+  consent <- forcats::fct_expand(consent, c("Yes", "No"))
+  program <- forcats::fct_expand(program, c("Yes", "No"))
+  enrolled <- forcats::fct_relevel(enrolled, c("Yes", "No"))
+  consent <- forcats::fct_relevel(consent, c("Yes", "No"))
+  program <- forcats::fct_relevel(program, c("Yes", "No"))
+
   parent_gender <- contacts_unflat$fields$gender
   parent_gender <- factor(ifelse(parent_gender %in% c("female", "f", "woman", "Woman"), "Woman",
                                  ifelse(parent_gender %in% c("male", "m", "man", "Man"), "Man",
                                         ifelse(parent_gender %in% "no", NA, parent_gender))))
+  parent_gender <- fct_expand(parent_gender, "Woman", "Man")
   parent_gender <- forcats::fct_relevel(parent_gender, c("Woman", "Man"))
   
   child_age_group <- contacts_unflat$fields$age_group_for_tips
   know_age_group <- contacts_unflat$fields$know_age_group_for_tips
   child_age_group <- ifelse(child_age_group == "child" & know_age_group == "no", "Default", child_age_group)
   child_age_group <- factor(child_age_group)
+  child_age_group <- fct_expand(child_age_group, "Baby", "Child", "Teen", "Default")
   child_age_group <- forcats::fct_recode(child_age_group,
                                          Baby = "baby",
                                          Child = "child",
@@ -58,6 +74,7 @@ update_data <- function() {
   child_age_group <- forcats::fct_relevel(child_age_group, c("Baby", "Child", "Teen", "Default"))
   
   child_gender <- factor(contacts_unflat$fields$survey_behave_sex)
+  child_gender <- fct_expand(child_gender, "Girl", "Boy", "Prefer not to say")
   child_gender <-  forcats::fct_recode(child_gender,
                                        Boy = "male",
                                        Girl = "female", 
@@ -65,6 +82,7 @@ update_data <- function() {
   child_gender <- forcats::fct_relevel(child_gender, c("Girl", "Boy", "Prefer not to say"))
   
   parent_child_relationship <- factor(contacts_unflat$fields$survey_behave_relationship)
+  parent_child_relationship <- fct_expand(parent_child_relationship, "Parent", "Grandparent", "Aunt/Uncle", "Foster Parent", "Other", "Prefer not to say")
   parent_child_relationship <- forcats::fct_recode(parent_child_relationship,
                                                    Parent = "parent",
                                                    Grandparent = "grandparent",
@@ -78,17 +96,20 @@ update_data <- function() {
   parent_relationship_status <- factor(contacts_unflat$fields$marital_status)
   parent_relationship_status <- forcats::fct_recode(parent_relationship_status,
                                                     `Prefer not to say`  = "no")
+  parent_relationship_status <- fct_expand(parent_relationship_status, "Single", "Married", "Partnered", "Divorced", "Widowed", "Prefer not to say")
   parent_relationship_status <- forcats::fct_relevel(parent_relationship_status, c("Single", "Married", "Partnered", "Divorced", "Widowed", "Prefer not to say"))
   
   child_living_with_disabilities <- factor(contacts_unflat$fields$has_disability)
+  child_living_with_disabilities <- fct_expand(child_living_with_disabilities, "Yes", "No")
   child_living_with_disabilities <- forcats::fct_recode(child_living_with_disabilities,
                                                         Yes = "yes",
                                                         No = "no",
                                                         `supp_disab`= "supp_disab")
   child_living_with_disabilities <- forcats::fct_relevel(child_living_with_disabilities,
                                                          c("Yes", "No", "supp_disab"))
-  
+
   parenting_goals <- factor(as.numeric(contacts_unflat$fields$parenting_goal))
+  parenting_goals <- forcats::fct_expand(parenting_goals, c("Relationship","Behaviour", "School", "COVID-19", "Stress", "Finances", "Family conflict", "Safety", "Disabilities", "Other"))
   parenting_goals <- forcats::fct_recode(parenting_goals,
                                          `Relationship` = "1",
                                          `Behaviour` = "2",
@@ -100,14 +121,14 @@ update_data <- function() {
                                          `Safety`= "8",
                                          `Disabilities` = "9",
                                          `Other` = "0")
-  parenting_goals <- str_wrap(parenting_goals, width = 15)
   parenting_goals <- forcats::fct_relevel(parenting_goals,
                                           c("Relationship","Behaviour",
                                             "School", "COVID-19",
                                             "Stress", "Finances",
                                             "Family conflict", "Safety",
                                             "Disabilities", "Other"))
-  
+  parenting_goals_wrap <- str_wrap_factor(parenting_goals, width = 15)
+
   # Calculations -----------------------------------------------------------------
   # active users # N = contacts for which the time difference between the current time and the datetime variable "last_seen_on" is less than 24 h 
   active_users_24hr <- difftime(lubridate::now(tzone = "UTC"), as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"), units = "hours") <= 24
@@ -119,6 +140,7 @@ update_data <- function() {
       levels(active_users_24hr) <- c(levels(active_users_24hr),"FALSE")
     }
   }
+  active_users_24hr <- forcats::fct_expand(active_users_24hr, c("Yes", "No"))
   active_users_24hr <- forcats::fct_recode(active_users_24hr,
                                            "No" = "FALSE",
                                            "Yes" = "TRUE")
@@ -133,6 +155,7 @@ update_data <- function() {
       levels(active_users_7d) <- c(levels(active_users_7d),"FALSE")
     }
   }
+  active_users_7d <- forcats::fct_expand(active_users_7d, c("Yes", "No"))
   active_users_7d <- forcats::fct_recode(active_users_7d,
                                          "No" = "FALSE",
                                          "Yes" = "TRUE")
@@ -149,7 +172,7 @@ update_data <- function() {
   survey_completed_wk1 <- str_count(contacts_unflat$fields$surveyparenting_completion, fixed("|"))
   if (length(survey_completed_wk1) == 0){survey_completed_wk1 <- rep(NA, length(enrolled))}
   
-  survey_completed_wk2 <- str_count(contacts_unflat$fields$fields.surveyparentingbehave_completion, fixed("|"))
+  survey_completed_wk2 <- str_count(contacts_unflat$fields$surveyparentingbehave_completion, fixed("|"))
   if (length(survey_completed_wk2) == 0){survey_completed_wk2 <- rep(NA, length(enrolled))}
   
   # sum of response to content, calm, check in, supportive, praise messages
@@ -173,44 +196,41 @@ update_data <- function() {
                               "PLH - Content - Positive - Safe or unsafe touch - Timed intro", "PLH - Content - Relax - Take a pause - Timed intro", "PLH - Content - Relax - Exercise", "PLH - Content - Time - One on one time baby - Timed intro",
                               "PLH - Content - Time - One on one time child - Timed intro", "PLH - Content - Time - One on one time teen - Timed intro", "PLH - Content - Positive - introduction", "PLH - Content - Positive - Positive instructions", "PLH - Content - Relax - Quick Pause", "PLH - Content - Relax - Anger management", "PLH - Content - Relax - Anger management 2", "PLH - Content - Positive - IPV", "PLH - Content - Positive - Community safety")
   
-  df <- data.frame(enrolled, consent, program, parent_gender, child_gender, child_age_group, parent_child_relationship, 
-                   parent_relationship_status, child_living_with_disabilities, parenting_goals,
+  df <- data.frame(enrolled, consent, program,  enrolled,  consent,  program, parent_gender, child_gender, child_age_group, parent_child_relationship, 
+                   parent_relationship_status, child_living_with_disabilities, parenting_goals, parenting_goals_wrap,
                    active_users_24hr, active_users_7d, n_skills, parent_age, survey_completed_wk1, survey_completed_wk2)
   
   
   df$challenging_type <- contacts_unflat$fields$survey_behave_most_challenging
   df <- df %>%
     mutate(challenging_type = ifelse(child_age_group == "Baby" & challenging_type == "1", "Crying",
-                                     ifelse(child_age_group == "Baby" & challenging_type == "2", "Problems\n sleeping",
+                                     ifelse(child_age_group == "Baby" & challenging_type == "2", "Problems sleeping",
                                             ifelse(child_age_group == "Baby" & challenging_type == "3","Acting clingy",
                                                    ifelse(child_age_group == "Baby" & challenging_type == "4","Whining",
-                                                          ifelse(child_age_group == "Baby" & challenging_type == "5","Bad\n tempered",
-                                                                 ifelse(child_age_group == "Baby" & challenging_type == "6","Problems\n eating",
+                                                          ifelse(child_age_group == "Baby" & challenging_type == "5","Bad tempered",
+                                                                 ifelse(child_age_group == "Baby" & challenging_type == "6","Problems eating",
                                                                         ifelse(child_age_group == "Baby" & challenging_type == "7","Stubborn/fussy",
-                                                                               ifelse(child_age_group == "Baby" & challenging_type == "8","Naughty\n behaviour",
-                                                                                      ifelse(child_age_group == "Baby" & challenging_type == "9","Temper\n Tantrums",
-                                                                                             ifelse(child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "1","Refuses\n to obey",
+                                                                               ifelse(child_age_group == "Baby" & challenging_type == "8","Naughty behaviour",
+                                                                                      ifelse(child_age_group == "Baby" & challenging_type == "9","Temper Tantrums",
+                                                                                             ifelse(child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "1","Refuses to obey",
                                                                                                     ifelse(child_age_group %in% c("Child", "Default") & challenging_type == "2","Gets angry",
-                                                                                                           ifelse(child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "3","Rude\n behaviour",
+                                                                                                           ifelse(child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "3","Rude behaviour",
                                                                                                                   ifelse(child_age_group %in% c("Child", "Default") & challenging_type == "4","Mood swings",
-                                                                                                                         ifelse(child_age_group %in% c("Child", "Default") & challenging_type == "5","Does not\n follow rules",
+                                                                                                                         ifelse(child_age_group %in% c("Child", "Default") & challenging_type == "5","Does not follow rules",
                                                                                                                                 ifelse(child_age_group %in% c("Child", "Default") & challenging_type == "6","Stubbornness",
-                                                                                                                                       ifelse(child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "7","Breaks\n things",
-                                                                                                                                              ifelse(child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "8","Gets into\n fights",
-                                                                                                                                                     ifelse(child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "9","Teases\n others",
-                                                                                                                                                            ifelse(child_age_group %in% c("Teen") & challenging_type == "2","Temper\n Tantrums",
+                                                                                                                                       ifelse(child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "7","Breaks things",
+                                                                                                                                              ifelse(child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "8","Gets into fights",
+                                                                                                                                                     ifelse(child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "9","Teases others",
+                                                                                                                                                            ifelse(child_age_group %in% c("Teen") & challenging_type == "2","Temper Tantrums",
                                                                                                                                                                    ifelse(child_age_group %in% c("Teen") & challenging_type == "4","Whining",
                                                                                                                                                                           ifelse(child_age_group %in% c("Teen") & challenging_type == "5","Hyperactivity",
-                                                                                                                                                                                 ifelse(child_age_group %in% c("Teen") & challenging_type == "6","Hits\n others",
+                                                                                                                                                                                 ifelse(child_age_group %in% c("Teen") & challenging_type == "6","Hits others",
                                                                                                                                                                                         challenging_type)))))))))))))))))))))))
-  df <- df %>% mutate(challenging_type = fct_relevel(challenging_type, c("Crying", "Problems\n sleeping", "Acting clingy",
-                                                                         "Whining", "Bad\n tempered", "Problems\n eating",
-                                                                         "Stubborn/fussy", "Naughty\n behaviour", "Temper\n Tantrums",
-                                                                         "Refuses\n to obey", "Gets angry",
-                                                                         "Rude\n behaviour", "Mood swings",
-                                                                         "Does not\n follow rules", "Stubbornness", "Breaks\n things",
-                                                                         "Gets into\n fights", "Teases\n others",
-                                                                         "Hyperactivity", "Hits\n others")))
+
+  
+  df <- df %>% mutate(challenging_type = forcats::fct_expand(challenging_type, c("Crying", "Problems sleeping", "Acting clingy", "Whining", "Bad tempered", "Problems eating", "Stubborn/fussy", "Naughty behaviour", "Temper Tantrums", "Refuses to obey", "Gets angry", "Rude behaviour", "Mood swings", "Does not follow rules", "Stubbornness", "Breaks things", "Gets into fights", "Teases others", "Hyperactivity", "Hits others")))
+  df <- df %>% mutate(challenging_type = forcats::fct_relevel(challenging_type, c("Crying", "Problems sleeping", "Acting clingy", "Whining", "Bad tempered", "Problems eating", "Stubborn/fussy", "Naughty behaviour", "Temper Tantrums", "Refuses to obey", "Gets angry", "Rude behaviour", "Mood swings", "Does not follow rules", "Stubbornness", "Breaks things", "Gets into fights", "Teases others", "Hyperactivity", "Hits others")))
+  df$challenging_type_wrap <- str_wrap_factor(df$challenging_type, width = 10)
   
   # behaviour outcome -------------------
   
@@ -236,6 +256,7 @@ update_data <- function() {
   
   parenting_survey <- rbind(positive_parenting, child_maltreatment, play, praise, physical_abuse, psychological_abuse, financial_stress, food_insecurity, parenting_efficacy, sex_prevention, child_behave)
   parenting_survey <- parenting_survey %>% mutate(week = fct_relevel(week, c("Base", "2", "3", "4", "5", "6", "7", "8", "9")))
+  parenting_survey <- parenting_survey %>% mutate(Group = fct_expand(Group, c("Positive parenting", "Child maltreament", "Play", "Praise", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
   parenting_survey <- parenting_survey %>% mutate(Group = fct_relevel(Group, c("Positive parenting", "Child maltreament", "Play", "Praise", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
   
   # last online plot
@@ -255,8 +276,6 @@ update_data <- function() {
   objects_to_return[[10]] <- parenting_survey
   return(objects_to_return)
 }
-
-update_data()
 
 updated_data <- update_data()
 df <- updated_data[[1]]
@@ -824,13 +843,13 @@ server <- function(input, output) {
   
   enrolled_summary_group <- reactive({
     req(input$grouper)
-    enrolled_table <- summary_PT(df, c(enrolled, (!!!rlang::syms(input$grouper))), naming_convention = TRUE) %>% map_df(rev)
+    enrolled_table <- summary_PT(df, c(enrolled, (!!!rlang::syms(input$grouper))), naming_convention = TRUE)
     names(enrolled_table)[length(enrolled_table)] <- "Count"
     enrolled_table
   })
   
   enrolled_summary <- reactive({
-    enrolled_table <- summary_PT(df, enrolled, naming_convention = TRUE) %>% map_df(rev)
+    enrolled_table <- summary_PT(df, enrolled, naming_convention = TRUE)
     names(enrolled_table)[2] <- "Count"
     enrolled_table
   })
@@ -889,7 +908,7 @@ server <- function(input, output) {
   })
   
   output$parenting_goals_plot <- renderPlotly({
-    ggplot(df, aes(x = parenting_goals)) +
+    ggplot(df, aes(x = parenting_goals_wrap)) +
       geom_histogram(stat = "count") +
       viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
       labs(x = "Parenting goals", y = "Count") +
@@ -898,7 +917,7 @@ server <- function(input, output) {
   
   output$parenting_goals_group_plot <- renderPlotly({
     req(input$grouper)
-    ggplot(df, aes(x = parenting_goals, fill = (!!!rlang::syms(input$grouper)))) +
+    ggplot(df, aes(x = parenting_goals_wrap, fill = (!!!rlang::syms(input$grouper)))) +
       geom_histogram(stat = "count") +
       viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
       labs(x = "Parenting goals", y = "Count") +
@@ -907,12 +926,12 @@ server <- function(input, output) {
   
   
   consent_summary <- reactive({
-    summary_PT(df, "consent", enrolled, "Yes", TRUE, naming_convention = TRUE) %>% map_df(rev)
+    summary_PT(df, "consent", enrolled, "Yes", TRUE, naming_convention = TRUE)
   })
   
   consent_summary_group <- reactive({
     req(input$grouper)
-    summary_PT(df, c(consent, !!!rlang::syms(input$grouper)), enrolled, "Yes", TRUE, naming_convention = TRUE) %>% map_df(rev)
+    summary_PT(df, c(consent, !!!rlang::syms(input$grouper)), enrolled, "Yes", TRUE, naming_convention = TRUE)
   })
   
   parent_gender_summary <- reactive({
@@ -1115,7 +1134,7 @@ server <- function(input, output) {
   output$behaviour_baby_plot <- renderPlotly({
     df_baby <- df %>% filter(child_age_group == "Baby")
     
-    ggplot(df_baby, aes(x = challenging_type)) +
+    ggplot(df_baby, aes(x = challenging_type_wrap)) +
       geom_histogram(stat = "count") +
       viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
       labs(x = NULL, y = NULL) +
@@ -1126,7 +1145,7 @@ server <- function(input, output) {
   output$behaviour_child_plot <- renderPlotly({
     df_child <- df %>% filter(child_age_group == "Child")
     
-    ggplot(df_child, aes(x = challenging_type)) +
+    ggplot(df_child, aes(x = challenging_type_wrap)) +
       geom_histogram(stat = "count") +
       viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
       labs(x = NULL, y = NULL) +
@@ -1137,7 +1156,7 @@ server <- function(input, output) {
   output$behaviour_teen_plot <- renderPlotly({
     df_teen <- df %>% filter(child_age_group == "Teen")
     
-    ggplot(df_teen, aes(x = challenging_type)) +
+    ggplot(df_teen, aes(x = challenging_type_wrap)) +
       geom_histogram(stat = "count") +
       viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
       labs(x = NULL, y = NULL) +
@@ -1148,7 +1167,7 @@ server <- function(input, output) {
   output$behaviour_default_plot <- renderPlotly({
     df_default <- df %>% filter(child_age_group == "Default")
     
-    ggplot(df_default, aes(x = challenging_type)) +
+    ggplot(df_default, aes(x = challenging_type_wrap)) +
       geom_histogram(stat = "count") +
       viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
       labs(x = NULL, y = NULL) +
@@ -1160,7 +1179,7 @@ server <- function(input, output) {
     req(input$grouper_behaviour)
     df_baby <- df %>% filter(child_age_group == "Baby")
     
-    ggplot(df_baby, aes(x = challenging_type, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
+    ggplot(df_baby, aes(x = challenging_type_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
       geom_histogram(stat = "count") +
       viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
       labs(x = NULL, y = NULL) +
@@ -1173,7 +1192,7 @@ server <- function(input, output) {
     req(input$grouper_behaviour)
     df_child <- df %>% filter(child_age_group == "Child")
     
-    ggplot(df_child, aes(x = challenging_type, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
+    ggplot(df_child, aes(x = challenging_type_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
       geom_histogram(stat = "count") +
       viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
       labs(x = NULL, y = NULL) +
@@ -1186,7 +1205,7 @@ server <- function(input, output) {
     req(input$grouper_behaviour)
     df_teen <- df %>% filter(child_age_group == "Teen")
     
-    ggplot(df_teen, aes(x = challenging_type, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
+    ggplot(df_teen, aes(x = challenging_type_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
       geom_histogram(stat = "count") +
       viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
       labs(x = NULL, y = NULL) +
@@ -1199,7 +1218,7 @@ server <- function(input, output) {
     req(input$grouper_behaviour)
     df_default <- df %>% filter(child_age_group == "Default")
     
-    ggplot(df_default, aes(x = challenging_type, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
+    ggplot(df_default, aes(x = challenging_type_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
       geom_histogram(stat = "count") +
       viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
       labs(x = NULL, y = NULL) +
@@ -1232,30 +1251,30 @@ server <- function(input, output) {
   
   # Output render ------------------------------------------------------------
   
-  df_enrolled <- summary_PT(df, enrolled, enrolled, "Yes")
-  df_enrolled <- df_enrolled %>% mutate(group = enrolled, count = enrolled_n) %>% dplyr::select(c(group, count))
+  df_enrolled <- summary_PT(df,  enrolled,  enrolled, "Yes")
+  df_enrolled <- df_enrolled %>% mutate(group =  enrolled, count = enrolled_n) %>% dplyr::select(c(group, count))
   
-  df_consented <- summary_PT(df, consent, consent, "Yes")
-  df_consented <- df_consented %>% mutate(group = consent, count = consent_n) %>% dplyr::select(c(group, count))
+  df_consented <- summary_PT(df,  consent,  consent, "Yes")
+  df_consented <- df_consented %>% mutate(group =  consent, count = consent_n) %>% dplyr::select(c(group, count))
   
-  df_program <- summary_PT(df, program, program, "Yes")
-  df_program <- df_program %>% mutate(group = program, count = program_n) %>% dplyr::select(c(group, count))
+  df_program <- summary_PT(df,  program,  program, "Yes")
+  df_program <- df_program %>% mutate(group =  program, count = program_n) %>% dplyr::select(c(group, count))
   
   df_active_24 <- (summary_PT(df, active_users_24hr, program) %>% filter(active_users_24hr == "Yes"))$active_users_24hr_n
   df_active_7d <- (summary_PT(df, active_users_7d, program) %>% filter(active_users_7d == "Yes"))$active_users_7d_n
   
   output$myvaluebox1 <- shinydashboard::renderValueBox({
-    shinydashboard::valueBox(df_enrolled$count,subtitle = "Enrolled", icon = icon("user"),
+    shinydashboard::valueBox(df_enrolled$count[1], subtitle = "Enrolled", icon = icon("user"),
                              color = "aqua"
     )
   })
   output$myvaluebox2 <- shinydashboard::renderValueBox({
-    shinydashboard::valueBox(df_consented$count,subtitle = "Consented",icon = icon("check"),
+    shinydashboard::valueBox(df_consented$count[1],subtitle = "Consented",icon = icon("check"),
                              color = "green"
     )
   })
   output$myvaluebox3 <- shinydashboard::renderValueBox({
-    shinydashboard::valueBox(df_program$count,subtitle = "In Program",icon = icon("clipboard"),
+    shinydashboard::valueBox(df_program$count[1],subtitle = "In Program",icon = icon("clipboard"),
                              color = "yellow"
     )
   })
