@@ -20,8 +20,9 @@ set_rapidpro_uuid_names()
 
 update_data <- function() {
   contacts_unflat <- get_user_data(flatten = FALSE)
-  
   contacts_unflat <- contacts_unflat %>% filter(as.POSIXct("2021-10-14", format="%Y-%m-%d", tzone = "UTC") < as.POSIXct(contacts_unflat$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+  
+  ID <- contacts_unflat$uuid
   
   # Variables Manipulation -------------------------------------------------------
   # get enrolled and consented data
@@ -40,10 +41,6 @@ update_data <- function() {
       program[i] <- ifelse(any(contact_name$name %in% "in program"), "Yes", "No")
     }
   }
-  
-  enrolled <- enrolled
-  consent <- consent
-  program <- program
   
   enrolled <- factor(enrolled)
   consent <- factor(consent)
@@ -175,6 +172,42 @@ update_data <- function() {
   survey_completed_wk2 <- str_count(contacts_unflat$fields$surveyparentingbehave_completion, fixed("|"))
   if (length(survey_completed_wk2) == 0){survey_completed_wk2 <- rep(NA, length(enrolled))}
   
+  
+  challenging_type <- contacts_unflat$fields$survey_behave_most_challenging
+  challenging_type <- dplyr::case_when(
+    child_age_group == "Baby" & challenging_type == "1" ~ "Crying",
+    child_age_group == "Baby" & challenging_type == "2" ~ "Problems sleeping",
+    child_age_group == "Baby" & challenging_type == "3" ~ "Acting clingy",
+    child_age_group == "Baby" & challenging_type == "4" ~ "Whining",
+    child_age_group == "Baby" & challenging_type == "5" ~ "Bad tempered",
+    child_age_group == "Baby" & challenging_type == "6" ~ "Problems eating",
+    child_age_group == "Baby" & challenging_type == "7" ~ "Stubborn/fussy",
+    child_age_group == "Baby" & challenging_type == "8" ~ "Naughty behaviour",
+    child_age_group == "Baby" & challenging_type == "9" ~ "Temper Tantrums",
+    child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "1" ~ "Refuses to obey",
+    child_age_group %in% c("Child", "Default") & challenging_type == "2" ~ "Gets angry",
+    child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "3" ~ "Rude behaviour",
+    child_age_group %in% c("Child", "Default") & challenging_type == "4" ~ "Mood swings",
+    child_age_group %in% c("Child", "Default") & challenging_type == "5" ~ "Does not follow rules",
+    child_age_group %in% c("Child", "Default") & challenging_type == "6" ~ "Stubbornness",
+    child_age_group %in% c("Child", "Default" ~ "Teen") & challenging_type == "7" ~ "Breaks things",
+    child_age_group %in% c("Child", "Default" ~ "Teen") & challenging_type == "8" ~ "Gets into fights",
+    child_age_group %in% c("Child", "Default" ~ "Teen") & challenging_type == "9" ~ "Teases others",
+    child_age_group %in% c("Teen") & challenging_type == "2" ~ "Temper Tantrums",
+    child_age_group %in% c("Teen") & challenging_type == "4" ~ "Whining",
+    child_age_group %in% c("Teen") & challenging_type == "5" ~ "Hyperactivity",
+    child_age_group %in% c("Teen") & challenging_type == "6" ~ "Hits others")
+    
+  challenging_type <- forcats::fct_expand(challenging_type, c("Crying", "Problems sleeping", "Acting clingy", "Whining", "Bad tempered", "Problems eating", "Stubborn/fussy", "Naughty behaviour", "Temper Tantrums", "Refuses to obey", "Gets angry", "Rude behaviour", "Mood swings", "Does not follow rules", "Stubbornness", "Breaks things", "Gets into fights", "Teases others", "Hyperactivity", "Hits others"))
+  challenging_type <- forcats::fct_relevel(challenging_type, c("Crying", "Problems sleeping", "Acting clingy", "Whining", "Bad tempered", "Problems eating", "Stubborn/fussy", "Naughty behaviour", "Temper Tantrums", "Refuses to obey", "Gets angry", "Rude behaviour", "Mood swings", "Does not follow rules", "Stubbornness", "Breaks things", "Gets into fights", "Teases others", "Hyperactivity", "Hits others"))
+  challenging_type_wrap <- str_wrap_factor(challenging_type, width = 10)
+  
+  df <- data.frame(ID, enrolled, consent, program,  enrolled,  consent,  program, parent_gender, child_gender, child_age_group, parent_child_relationship, 
+                   parent_relationship_status, child_living_with_disabilities, parenting_goals, parenting_goals_wrap,
+                   active_users_24hr, active_users_7d, n_skills, parent_age, survey_completed_wk1, survey_completed_wk2,
+                   challenging_type, challenging_type_wrap)
+  
+  # flow level data --------------------------------
   # sum of response to content, calm, check in, supportive, praise messages
   # supportive
   supportive_flow_names <- c("PLH - Content - Extra - CheckIn - COVID",
@@ -202,71 +235,41 @@ update_data <- function() {
   check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names)
   content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names)
   
-  df <- data.frame(enrolled, consent, program,  enrolled,  consent,  program, parent_gender, child_gender, child_age_group, parent_child_relationship, 
-                   parent_relationship_status, child_living_with_disabilities, parenting_goals, parenting_goals_wrap,
-                   active_users_24hr, active_users_7d, n_skills, parent_age, survey_completed_wk1, survey_completed_wk2)
-  
-  
-  df$challenging_type <- contacts_unflat$fields$survey_behave_most_challenging
-  df <- df %>%
-    mutate(challenging_type = ifelse(child_age_group == "Baby" & challenging_type == "1", "Crying",
-                                     ifelse(child_age_group == "Baby" & challenging_type == "2", "Problems sleeping",
-                                            ifelse(child_age_group == "Baby" & challenging_type == "3","Acting clingy",
-                                                   ifelse(child_age_group == "Baby" & challenging_type == "4","Whining",
-                                                          ifelse(child_age_group == "Baby" & challenging_type == "5","Bad tempered",
-                                                                 ifelse(child_age_group == "Baby" & challenging_type == "6","Problems eating",
-                                                                        ifelse(child_age_group == "Baby" & challenging_type == "7","Stubborn/fussy",
-                                                                               ifelse(child_age_group == "Baby" & challenging_type == "8","Naughty behaviour",
-                                                                                      ifelse(child_age_group == "Baby" & challenging_type == "9","Temper Tantrums",
-                                                                                             ifelse(child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "1","Refuses to obey",
-                                                                                                    ifelse(child_age_group %in% c("Child", "Default") & challenging_type == "2","Gets angry",
-                                                                                                           ifelse(child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "3","Rude behaviour",
-                                                                                                                  ifelse(child_age_group %in% c("Child", "Default") & challenging_type == "4","Mood swings",
-                                                                                                                         ifelse(child_age_group %in% c("Child", "Default") & challenging_type == "5","Does not follow rules",
-                                                                                                                                ifelse(child_age_group %in% c("Child", "Default") & challenging_type == "6","Stubbornness",
-                                                                                                                                       ifelse(child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "7","Breaks things",
-                                                                                                                                              ifelse(child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "8","Gets into fights",
-                                                                                                                                                     ifelse(child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "9","Teases others",
-                                                                                                                                                            ifelse(child_age_group %in% c("Teen") & challenging_type == "2","Temper Tantrums",
-                                                                                                                                                                   ifelse(child_age_group %in% c("Teen") & challenging_type == "4","Whining",
-                                                                                                                                                                          ifelse(child_age_group %in% c("Teen") & challenging_type == "5","Hyperactivity",
-                                                                                                                                                                                 ifelse(child_age_group %in% c("Teen") & challenging_type == "6","Hits others",
-                                                                                                                                                                                        challenging_type)))))))))))))))))))))))
-  
-  
-  df <- df %>% mutate(challenging_type = forcats::fct_expand(challenging_type, c("Crying", "Problems sleeping", "Acting clingy", "Whining", "Bad tempered", "Problems eating", "Stubborn/fussy", "Naughty behaviour", "Temper Tantrums", "Refuses to obey", "Gets angry", "Rude behaviour", "Mood swings", "Does not follow rules", "Stubbornness", "Breaks things", "Gets into fights", "Teases others", "Hyperactivity", "Hits others")))
-  df <- df %>% mutate(challenging_type = forcats::fct_relevel(challenging_type, c("Crying", "Problems sleeping", "Acting clingy", "Whining", "Bad tempered", "Problems eating", "Stubborn/fussy", "Naughty behaviour", "Temper Tantrums", "Refuses to obey", "Gets angry", "Rude behaviour", "Mood swings", "Does not follow rules", "Stubbornness", "Breaks things", "Gets into fights", "Teases others", "Hyperactivity", "Hits others")))
-  df$challenging_type_wrap <- str_wrap_factor(df$challenging_type, width = 10)
-  
-  # behaviour outcome -------------------
-  
+  # Survey Level Data ---------------------------------------------------------------------------------------------------------------------------
   # get all survey values
-  play <- survey_datetime_split_multiple(contacts_unflat$fields$surveytime_datetime) %>% mutate(Group = "Play")
-  praise <- survey_datetime_split_multiple(contacts_unflat$fields$surveypraise_datetime) %>% mutate(Group = "Praise")
-  stress <- survey_datetime_split_multiple(contacts_unflat$fields$surveystress_datetime) %>% mutate(Group = "Stress")
-  physical_abuse <- survey_datetime_split_multiple(contacts_unflat$fields$surveydiscipline_datetime) %>% mutate(Group = "Physical abuse")
-  psychological_abuse <- survey_datetime_split_multiple(contacts_unflat$fields$surveyshout_datetime) %>% mutate(Group = "Psychological abuse")
-  financial_stress <- survey_datetime_split_multiple(contacts_unflat$fields$surveymoneyweek_datetime) %>% mutate(Group = "Financial stress")
-  food_insecurity <- data.frame(vals = survey_datetime_split(contacts_unflat$fields$surveymoneymonth_datetime)) %>% mutate(week = "Base", Group = "Food insecurity")
-  parenting_efficacy <- survey_datetime_split_multiple(contacts_unflat$fields$surveypositive_datetime) %>% mutate(Group = "Parenting efficacy")
-  sex_prevention <- survey_datetime_split_multiple(contacts_unflat$fields$surveysexualabuse_datetime) %>% mutate(Group = "Sexual abuse prevention")
+  week <- c(rep("Base", nrow(contacts_unflat)),
+            rep("2", nrow(contacts_unflat)),
+            rep("3", nrow(contacts_unflat)),
+            rep("4", nrow(contacts_unflat)),
+            rep("5", nrow(contacts_unflat)),
+            rep("6", nrow(contacts_unflat)),
+            rep("7", nrow(contacts_unflat)),
+            rep("8", nrow(contacts_unflat)),
+            rep("9", nrow(contacts_unflat)))
+  
+  
+  play <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveytime_datetime))) %>% mutate(Group = "Play")
+  praise <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveypraise_datetime))) %>% mutate(Group = "Praise")
+  stress <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveystress_datetime))) %>% mutate(Group = "Stress")
+  physical_abuse <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveydiscipline_datetime))) %>% mutate(Group = "Physical abuse")
+  food_insecurity <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveymoneymonth_datetime))) %>% mutate(Group = "Food insecurity")
+  psychological_abuse <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveyshout_datetime))) %>% mutate(Group = "Psychological abuse")
+  financial_stress <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveymoneyweek_datetime))) %>% mutate(Group = "Financial stress")
+  parenting_efficacy <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveypositive_datetime))) %>% mutate(Group = "Parenting efficacy")
+  sex_prevention <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveysexualabuse_datetime))) %>% mutate(Group = "Sexual abuse prevention")
   # using datetime not just _rate because in _rate it doesn't state which survey the score is corresponding to
   # e.g. see contacts_unflat$fields$surveybehave_rate_datetime[[1]]
-  child_behave <- survey_datetime_split_multiple(contacts_unflat$fields$surveybehave_rate_datetime) %>% mutate(Group = "Child Behaviour")
+  child_behave <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveybehave_rate_datetime))) %>% mutate(Group = "Child Behaviour")
   
-  play1 <- play %>% replace(is.na(.), 0)
-  praise1 <- praise %>% replace(is.na(.), 0)
-  physical_abuse1 <- physical_abuse %>% replace(is.na(.), 0)
-  psychological_abuse1 <- psychological_abuse %>% replace(is.na(.), 0)
-  positive_parenting <- data.frame(vals = ifelse(is.na(play$vals) & is.na(praise$vals), NA, play1$vals + praise1$vals)) %>% mutate(week = play1$week, Group = "Positive parenting")
-  child_maltreatment <- data.frame(vals = ifelse(is.na(physical_abuse$vals) & is.na(psychological_abuse$vals), NA, physical_abuse1$vals + psychological_abuse1$vals)) %>% mutate(week = psychological_abuse1$week, Group = "Child maltreatment")
-  
+  positive_parenting <- data.frame(week, vals = pmax(play$vals, praise$vals, na.rm = TRUE)) %>% mutate(Group = "Positive parenting")
+  child_maltreatment <- data.frame(week, vals = pmax(physical_abuse$vals, psychological_abuse$vals, na.rm = TRUE)) %>% mutate(Group = "Child maltreatment")
   parenting_survey <- rbind(positive_parenting, child_maltreatment, play, praise, stress, physical_abuse, psychological_abuse, financial_stress, food_insecurity, parenting_efficacy, sex_prevention, child_behave)
   parenting_survey <- parenting_survey %>% mutate(week = fct_relevel(week, c("Base", "2", "3", "4", "5", "6", "7", "8", "9")))
   parenting_survey <- parenting_survey %>% mutate(Group = fct_expand(Group, c("Positive parenting", "Child maltreatment", "Play", "Praise", "Stress", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
   parenting_survey <- parenting_survey %>% mutate(Group = fct_relevel(Group, c("Positive parenting", "Child maltreatment", "Play", "Praise", "Stress", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
+  parenting_survey$ID <- contacts_unflat$uuid
   
-  # last online plot
+  # last online plot -------------------------------------------------------------------------------------------------------------
   last_online <- as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT", tz = "UTC")
   df$last_online <- last_online
   
@@ -941,8 +944,8 @@ server <- function(input, output) {
                 completed_survey_perc_wk1 = sum(!is.na(survey_completed_wk1))/nrow(.)*100,
                 completed_survey_perc_wk2 = sum(!is.na(survey_completed_wk2))/nrow(.)*100)
     completed_survey <- completed_survey %>%
-      mutate("Completed survey week 1 (%)" := str_c(`completed_survey_wk1`, ' (', round(`completed_survey_perc_wk1`, 1), ")")) %>%
-      mutate("Completed survey week 2 (%)" := str_c(`completed_survey_wk2`, ' (', round(`completed_survey_perc_wk2`, 1), ")")) %>%
+      mutate("Completed survey week 1 (%)" := str_c(`completed_survey_wk1`, ' (', round(`completed_survey_perc_wk1`, 2), ")")) %>%
+      mutate("Completed survey week 2 (%)" := str_c(`completed_survey_wk2`, ' (', round(`completed_survey_perc_wk2`, 2), ")")) %>%
       dplyr::select(-c(completed_survey_wk1, completed_survey_wk2, completed_survey_perc_wk1, completed_survey_perc_wk2))
     colnames(completed_survey) <- naming_conventions(colnames(completed_survey))
     completed_survey
@@ -957,8 +960,8 @@ server <- function(input, output) {
                 completed_survey_perc_wk1 = sum(!is.na(survey_completed_wk1))/nrow(.)*100,
                 completed_survey_perc_wk2 = sum(!is.na(survey_completed_wk2))/nrow(.)*100)
     completed_survey <- completed_survey %>%
-      mutate("Completed survey week 1 (%)" := str_c(`completed_survey_wk1`, ' (', round(`completed_survey_perc_wk1`, 1), ")")) %>%
-      mutate("Completed survey week 2 (%)" := str_c(`completed_survey_wk2`, ' (', round(`completed_survey_perc_wk2`, 1), ")")) %>%
+      mutate("Completed survey week 1 (%)" := str_c(`completed_survey_wk1`, ' (', round(`completed_survey_perc_wk1`, 2), ")")) %>%
+      mutate("Completed survey week 2 (%)" := str_c(`completed_survey_wk2`, ' (', round(`completed_survey_perc_wk2`, 2), ")")) %>%
       dplyr::select(-c(completed_survey_wk1, completed_survey_wk2, completed_survey_perc_wk1, completed_survey_perc_wk2))
     colnames(completed_survey) <- naming_conventions(colnames(completed_survey))
     completed_survey
@@ -979,7 +982,7 @@ server <- function(input, output) {
     all_flows_df_summary <- all_flows_df %>% group_by(response) %>% summarise(n = sum(Value, na.rm = TRUE),
                                                                               perc = n/all_flows_df_total*100)
     all_flows_df_summary <- all_flows_df_summary %>%
-      mutate("Count (%)" := str_c(`n`, ' (', round(`perc`, 1), ")")) %>%
+      mutate("Count (%)" := str_c(`n`, ' (', round(`perc`, 2), ")")) %>%
       dplyr::select(-c(n, perc))
     colnames(all_flows_df_summary)[2] <- c("Overall response")
     all_flows_df_summary <- all_flows_df_summary %>% map_df(rev)
