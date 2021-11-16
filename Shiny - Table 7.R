@@ -40,6 +40,11 @@ update_data <- function() {
       program[i] <- ifelse(any(contact_name$name %in% "in program"), "Yes", "No")
     }
   }
+  
+  enrolled <- enrolled
+  consent <- consent
+  program <- program
+  
   enrolled <- factor(enrolled)
   consent <- factor(consent)
   program <- factor(program)
@@ -193,9 +198,9 @@ update_data <- function() {
   
   supportive_calm_flow <- get_flow_data(flow_name = supportive_calm)
   supportive_praise_flow <- get_flow_data(flow_name = supportive_praise)
-  supportive_flow_names_flow <- flow_data_function1(supportive_flow_names)
-  check_in_flow_names_flow <- flow_data_function1(check_in_flow_names)
-  content_tip_flow_names_flow <- flow_data_function1(content_tip_flow_names)
+  supportive_flow_names_flow <- get_flow_data(flow_name = supportive_flow_names)
+  check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names)
+  content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names)
   
   df <- data.frame(enrolled, consent, program,  enrolled,  consent,  program, parent_gender, child_gender, child_age_group, parent_child_relationship, 
                    parent_relationship_status, child_living_with_disabilities, parenting_goals, parenting_goals_wrap,
