@@ -890,6 +890,15 @@ server <- function(input, output) {
     req(input$grouper_engagement)
     summary_PT(df, c(active_users_7d, !!!rlang::syms(input$grouper_engagement)), program, together = TRUE, naming_convention = TRUE)
   })
+
+  comp_prog_summary <- reactive({
+    comp_prog_df <- df %>% 
+      filter(consent == "Yes") %>%
+      summarise(program_completion_mean = round(mean(n_skills, na.rm = TRUE), 2),
+                program_completion_sd = round(sd(n_skills, na.rm = TRUE), 2))
+    colnames(comp_prog_df) <- naming_conventions(colnames(comp_prog_df))
+    comp_prog_df
+  })
   
   comp_prog_group_summary <- reactive({
     req(input$grouper_engagement)
