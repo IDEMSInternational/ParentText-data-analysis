@@ -82,6 +82,8 @@ get_user_data <- function(call_type="contacts.json", rapidpro_site = get_rapidpr
   return(user_result)
 }
 
+
+
 # Get run (flow) data
 get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, result, call_type="runs.json?flow=", rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, checks = FALSE){
   # todo: checks/error handling messages.
@@ -100,49 +102,30 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, resu
       }
     }
   }
-  
-  uuid_flow <- uuid_data[which(uuid_data$name == flow_name),]
-  get_command <- paste(rapidpro_site, call_type, uuid_flow[1], sep = "")
-  flow_result <- httr_get_call(get_command = get_command, token = token)
-  
-  if (length(flow_result) == 0){
-    #stop("no data in flow")
-    flow_interaction <- NULL
-  } else {
-    result_flow <- flow_result
-    uuid <- result_flow$contact$uuid
-    response <- result_flow$responded
-    category <- result_flow$values$result$category            
-    flow_interaction <- tibble::tibble(uuid, response) #, category)
-    flow_interaction <- flow_interaction %>% mutate(flow_type = uuid_flow[1]) 
+  flow_interaction <- NULL
+  for (i in 1:length(flow_name)){
+    uuid_flow <- uuid_data[which(uuid_data$name == flow_name[i]),]
+    get_command <- paste(rapidpro_site, call_type, uuid_flow[1], sep = "")
+    result_flow <- httr_get_call(get_command = get_command, token = token)
+    if (length(result_flow) == 0){
+      flow_interaction[[i]] <- NULL
+    } else {
+      uuid <- result_flow$contact$uuid
+      response <- result_flow$responded
+      category <- result_flow$values$result$category            
+      flow_interaction[[i]] <- tibble::tibble(uuid, response) #, category)
+      flow_interaction[[i]] <- flow_interaction[[i]] %>% mutate(flow_type = uuid_flow[1])
+      #if (flatten){
+      flow_interaction[[i]] <- jsonlite::flatten(flow_interaction[[i]])
+      #}
+    }
   }
-  # if (flatten){
-  #   flow_interaction <- jsonlite::flatten(flow_interaction)
-  # }
+  names(flow_interaction) <- flow_name[1:length(flow_interaction)]
   return(flow_interaction)
 }
+
+
 # TODO: result1 is the name. Need to get the result names.
-
-
-get_flow_data2 <- function(flow_name = NULL, uuid_name, result, call_type="runs.json?flow=", rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key()){
-  uuid_flow <- uuid_name
-  source_1 <- paste(rapidpro_site, call_type, uuid_flow[1], sep = "")
-  response <- httr::GET(source_1, config = httr::add_headers(Authorization = paste("Token", token)))
-  raw <- httr::content(response, as = "text")
-  results <- jsonlite::fromJSON(raw)
-  if (length(results$results) == 0){
-    #stop("no data in flow")
-    flow_interaction <- NULL
-  } else {
-    result_flow <- results$results
-    uuid <- result_flow$contact$uuid
-    response <- result_flow$responded
-    #category <- result_flow$values$result$category            
-    flow_interaction <- tibble::tibble(uuid, response, category)
-    flow_interaction <- flow_interaction %>% mutate(flow_type = uuid_flow[1]) 
-  }
-  return(flow_interaction)
-}
 
 #' 3. Information at user level -----------------------------------------------------
 #' * Contact field values with possibility to choose which variables to display?
@@ -198,21 +181,7 @@ str_wrap_factor <- function(x, ...) {
   x
 }
 
-flow_data_function1 <- function(flow_name){
-  response_message <- NULL
-  for (i in 1:length(flow_name)){
-    response_message[[i]] <- get_flow_data(flow_name = flow_name[i])
-  }
-  if (!is.null(response_message)){
-    names(response_message) <- flow_name[1:length(response_message)]
-    for (i in 1:length(response_message)){
-      if (!is.null(response_message[[i]])){
-        response_message[[i]] <- jsonlite::flatten(response_message[[i]])
-      }
-    }
-    return(response_message)
-  }
-}
+
 
 
 
@@ -252,13 +221,11 @@ summary_PT <- function(data = df, summary_var, denominator = NULL, denominator_l
   }
 }
 
-
-
-flow_data_summary_function <- function(response_message){
-  if (!is.data.frame(response_message)){
-    response_message <- plyr::ldply(response_message) 
+flow_data_summary_function <- function(flow_interaction){
+  if (!is.data.frame(flow_interaction)){
+    flow_interaction <- plyr::ldply(flow_interaction) 
   }
-    return(response_message %>%
+    return(flow_interaction %>%
              group_by(response, .drop = FALSE) %>%
              summarise(count = n(), perc = round(n()/nrow(.)*100,2)) %>%
              mutate("Count (%)" := str_c(`count`, ' (', round(`perc`, 1), ")")) %>%
