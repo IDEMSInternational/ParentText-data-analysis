@@ -82,8 +82,6 @@ get_user_data <- function(call_type="contacts.json", rapidpro_site = get_rapidpr
   return(user_result)
 }
 
-
-
 # Get run (flow) data
 get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, result, call_type="runs.json?flow=", rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, checks = FALSE){
   # todo: checks/error handling messages.
@@ -125,17 +123,48 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, resu
 }
 
 
-# TODO: result1 is the name. Need to get the result names.
+survey_datetime_split_multiple <- function(parenting_variable, survey_max = 9){
+  survey_entry <- NULL
+  for (i in 1:survey_max){
+    # split the string by different surveys taken
+    split_parenting <- str_split(parenting_variable, pattern = fixed("|"))
+    
+    # for each individual, get each survey value (split by ,)
+    parenting_response <- NULL
+    for (j in 1:length(split_parenting)){
+      split_parenting_2 <- str_split(split_parenting[[j]], ",") 
+      
+      # if it is NA, keep as NA
+      if (is.na(split_parenting_2[[1]][3])){
+        parenting_response[j] <- NA
+      } else{
+        # which survey to consider? Baseline = 1, week1 = 2, etc.
+        # so get that correct week lot of surveys
+        for (k in 2:length(split_parenting_2) - 1){
+          if (as.numeric(as.character(split_parenting_2[[k]][2])) != i) {
+            split_parenting_2[[k]][3] ="1970-01-01T00:00:00.873007+08:00"
+          }
+        }
+        
+        # take the response value corresponding to the most recent date
+        response <- NA
+        date <- as.POSIXct("1970-01-01T00:00:00.873007+08:00", format="%Y-%m-%dT%H:%M:%OS", tz = "UTC")
+        
+        for (k in 2:length(split_parenting_2) - 1){
+          if (date < as.POSIXct(split_parenting_2[[k]][3], format="%Y-%m-%dT%H:%M:%OS", tz = "UTC")) {
+            response <- split_parenting_2[[k]][1]
+          }
+        }
+        parenting_response[j] <- as.numeric(as.character(response))
+      }
+    }
+    survey_entry[[i]] <- parenting_response
+  }
+  return(survey_entry)
+}
 
-#' 3. Information at user level -----------------------------------------------------
-#' * Contact field values with possibility to choose which variables to display?
-#' Not interested in internal variables for system functionalities, filter based on name (REGEX) or provide a list
-#' * Group membership
-#' 
-#' Contact field values - see Code Book.R - should we make this into a function?
-#' 
-#' Getting group data for an individual
-#' TODO: Is this what we want? Or do we want all the group data, together.
+
+#' 3. Summarising data - ParentText analysis -------------------------------------------------------------------------------------------------------------
 
 get_user_group_data <- function(user_data = get_user_data(), name = NULL, uuid = NULL){
   
@@ -181,13 +210,6 @@ str_wrap_factor <- function(x, ...) {
   x
 }
 
-
-
-
-
-#' 4. Information at flow level --------------------------------------------------------------
-
-# Table 7 Functions -----------------
 summary_PT <- function(data = df, summary_var, denominator = NULL, denominator_level = "Yes", together = FALSE, naming_convention = FALSE){
   
   if (!is.null(denominator)) {
@@ -225,83 +247,28 @@ flow_data_summary_function <- function(flow_interaction){
   if (!is.data.frame(flow_interaction)){
     flow_interaction <- plyr::ldply(flow_interaction) 
   }
-    return(flow_interaction %>%
-             group_by(response, .drop = FALSE) %>%
-             summarise(count = n(), perc = round(n()/nrow(.)*100,2)) %>%
-             mutate("Count (%)" := str_c(`count`, ' (', round(`perc`, 1), ")")) %>%
-             dplyr::select(-c(count, perc)) %>%
-             mutate(response = factor(ifelse(response == TRUE, "Yes", "No"))) %>% map_df(rev))
-    #mutate(response = forcats::fct_relevel(response, c("Yes", "No"))))
-  }
-
-# Information at survey level ----------------------------------------------------------------
-
-survey_datetime_split <- function(parenting_variable, survey_no = 1){
-  # split the string by different surveys taken
-  split_parenting <- str_split(parenting_variable, pattern = fixed("|"))
-  
-  # for each individual, get each survey value (split by ,)
-  parenting_response <- NULL
-  for (i in 1:length(split_parenting)){
-    split_parenting_2 <- str_split(split_parenting[[i]], ",") 
-    
-    # if it is NA, keep as NA
-    if (is.na(split_parenting_2[[1]][3])){
-      parenting_response[i] <- NA
-    } else{
-      # which survey to consider? Baseline = 1, week1 = 2, etc.
-      # so get that correct week lot of surveys
-      for (j in 2:length(split_parenting_2) - 1){
-        if (as.numeric(as.character(split_parenting_2[[j]][2])) != survey_no) {
-          split_parenting_2[[j]][3] ="1970-01-01T00:00:00.873007+08:00"
-        }
-      }
-      
-      # take the response value corresponding to the most recent date
-      response <- NA
-      date <- as.POSIXct("1970-01-01T00:00:00.873007+08:00", format="%Y-%m-%dT%H:%M:%OS", tz = "UTC")
-      
-      for (j in 2:length(split_parenting_2) - 1){
-        if (date < as.POSIXct(split_parenting_2[[j]][3], format="%Y-%m-%dT%H:%M:%OS", tz = "UTC")) {
-          response <- split_parenting_2[[j]][1]
-        }
-      }
-      parenting_response[i] <- as.numeric(as.character(response))
-    }
-  }
-  return(parenting_response)
+  return(flow_interaction %>%
+           group_by(response, .drop = FALSE) %>%
+           summarise(count = n(), perc = round(n()/nrow(.)*100,2)) %>%
+           mutate("Count (%)" := str_c(`count`, ' (', round(`perc`, 1), ")")) %>%
+           dplyr::select(-c(count, perc)) %>%
+           mutate(response = factor(ifelse(response == TRUE, "Yes", "No"))) %>% map_df(rev))
+  #mutate(response = forcats::fct_relevel(response, c("Yes", "No"))))
 }
 
-survey_datetime_split_multiple <- function(parenting_variable, survey_max = 9){
-  survey_entry <- NULL
-  for (i in 1:survey_max){
-    survey_entry[[i]] <- survey_datetime_split(parenting_variable, survey_no = i)
-  }
-  week <- c(rep("Base", length(parenting_variable)),
-            rep("2", length(parenting_variable)),
-            rep("3", length(parenting_variable)),
-            rep("4", length(parenting_variable)),
-            rep("5", length(parenting_variable)),
-            rep("6", length(parenting_variable)),
-            rep("7", length(parenting_variable)),
-            rep("8", length(parenting_variable)),
-            rep("9", length(parenting_variable)))
-  vals <- unlist(survey_entry)
-  return(data.frame(week, vals))
-}
 
 # Function based on http://www.cookbook-r.com/Graphs/Plotting_means_and_error_bars_(ggplot2)/
 # for plotting means and error bars
 summarySE <- function(data=NULL, var, groups=NULL, na.rm=FALSE,
                       conf.interval=.95, .drop=TRUE) {
-
+  
   # Summary - vector with N, mean, and sd for each group var
   datac <- data %>%
-      group_by(across({{ groups }})) %>%
-      summarise(N = sum(!is.na({{ var }})),
-                mean = mean({{ var }}, na.rm = na.rm),
-                sd = sd({{ var }}, na.rm = na.rm))  
-
+    group_by(across({{ groups }})) %>%
+    summarise(N = sum(!is.na({{ var }})),
+              mean = mean({{ var }}, na.rm = na.rm),
+              sd = sd({{ var }}, na.rm = na.rm))  
+  
   # Calculate standard error of the mean
   datac$se <- datac$sd / sqrt(datac$N)
   
