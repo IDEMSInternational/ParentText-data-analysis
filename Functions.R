@@ -198,6 +198,24 @@ str_wrap_factor <- function(x, ...) {
   x
 }
 
+flow_data_function1 <- function(flow_name){
+  response_message <- NULL
+  for (i in 1:length(flow_name)){
+    response_message[[i]] <- get_flow_data(flow_name = flow_name[i])
+  }
+  if (!is.null(response_message)){
+    names(response_message) <- flow_name[1:length(response_message)]
+    for (i in 1:length(response_message)){
+      if (!is.null(response_message[[i]])){
+        response_message[[i]] <- jsonlite::flatten(response_message[[i]])
+      }
+    }
+    return(response_message)
+  }
+}
+
+
+
 #' 4. Information at flow level --------------------------------------------------------------
 
 # Table 7 Functions -----------------
@@ -234,19 +252,12 @@ summary_PT <- function(data = df, summary_var, denominator = NULL, denominator_l
   }
 }
 
-flow_data_function <- function(flow_name){
-  response_message <- NULL
-  for (i in 1:length(flow_name)){
-    response_message[[i]] <- get_flow_data(flow_name = flow_name[i])
-  }
-  if (!is.null(response_message)){
-    names(response_message) <- flow_name[1:length(response_message)]
-    for (i in 1:length(response_message)){
-      if (!is.null(response_message[[i]])){
-        response_message[[i]] <- jsonlite::flatten(response_message[[i]])
-      }
-    }
+
+
+flow_data_summary_function <- function(response_message){
+  if (!is.data.frame(response_message)){
     response_message <- plyr::ldply(response_message) 
+  }
     return(response_message %>%
              group_by(response, .drop = FALSE) %>%
              summarise(count = n(), perc = round(n()/nrow(.)*100,2)) %>%
@@ -254,9 +265,7 @@ flow_data_function <- function(flow_name){
              dplyr::select(-c(count, perc)) %>%
              mutate(response = factor(ifelse(response == TRUE, "Yes", "No"))) %>% map_df(rev))
     #mutate(response = forcats::fct_relevel(response, c("Yes", "No"))))
-    
   }
-}
 
 # Information at survey level ----------------------------------------------------------------
 
@@ -359,6 +368,10 @@ response_rate_graphs<-function(flow_interaction, flow_name){
   #    geom_bar() +
   #    labs(x = "Response", y = "Frequency", title = paste(flow_name ," - Response"))
 }
+
+# TODO: Result level - what is WFR
+
+
 
 create_user_dataframe <- function(flow_interaction){
   temp<-flow_interaction %>% group_by(uuid,response) %>% summarise(n=n()) %>% mutate(freq=100*n/sum(n))
