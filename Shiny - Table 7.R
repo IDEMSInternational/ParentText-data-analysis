@@ -243,6 +243,7 @@ update_data <- function() {
   # get all survey values
   play <- survey_datetime_split_multiple(contacts_unflat$fields$surveytime_datetime) %>% mutate(Group = "Play")
   praise <- survey_datetime_split_multiple(contacts_unflat$fields$surveypraise_datetime) %>% mutate(Group = "Praise")
+  stress <- survey_datetime_split_multiple(contacts_unflat$fields$surveystress_datetime) %>% mutate(Group = "Stress")
   physical_abuse <- survey_datetime_split_multiple(contacts_unflat$fields$surveydiscipline_datetime) %>% mutate(Group = "Physical abuse")
   psychological_abuse <- survey_datetime_split_multiple(contacts_unflat$fields$surveyshout_datetime) %>% mutate(Group = "Psychological abuse")
   financial_stress <- survey_datetime_split_multiple(contacts_unflat$fields$surveymoneyweek_datetime) %>% mutate(Group = "Financial stress")
@@ -258,12 +259,12 @@ update_data <- function() {
   physical_abuse1 <- physical_abuse %>% replace(is.na(.), 0)
   psychological_abuse1 <- psychological_abuse %>% replace(is.na(.), 0)
   positive_parenting <- data.frame(vals = ifelse(is.na(play$vals) & is.na(praise$vals), NA, play1$vals + praise1$vals)) %>% mutate(week = play1$week, Group = "Positive parenting")
-  child_maltreatment <- data.frame(vals = ifelse(is.na(physical_abuse$vals) & is.na(psychological_abuse$vals), NA, physical_abuse1$vals + psychological_abuse1$vals)) %>% mutate(week = psychological_abuse1$week, Group = "Child maltreament")
+  child_maltreatment <- data.frame(vals = ifelse(is.na(physical_abuse$vals) & is.na(psychological_abuse$vals), NA, physical_abuse1$vals + psychological_abuse1$vals)) %>% mutate(week = psychological_abuse1$week, Group = "Child maltreatment")
   
-  parenting_survey <- rbind(positive_parenting, child_maltreatment, play, praise, physical_abuse, psychological_abuse, financial_stress, food_insecurity, parenting_efficacy, sex_prevention, child_behave)
+  parenting_survey <- rbind(positive_parenting, child_maltreatment, play, praise, stress, physical_abuse, psychological_abuse, financial_stress, food_insecurity, parenting_efficacy, sex_prevention, child_behave)
   parenting_survey <- parenting_survey %>% mutate(week = fct_relevel(week, c("Base", "2", "3", "4", "5", "6", "7", "8", "9")))
-  parenting_survey <- parenting_survey %>% mutate(Group = fct_expand(Group, c("Positive parenting", "Child maltreament", "Play", "Praise", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
-  parenting_survey <- parenting_survey %>% mutate(Group = fct_relevel(Group, c("Positive parenting", "Child maltreament", "Play", "Praise", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
+  parenting_survey <- parenting_survey %>% mutate(Group = fct_expand(Group, c("Positive parenting", "Child maltreatment", "Play", "Praise", "Stress", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
+  parenting_survey <- parenting_survey %>% mutate(Group = fct_relevel(Group, c("Positive parenting", "Child maltreatment", "Play", "Praise", "Stress", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
   
   # last online plot
   last_online <- as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT", tz = "UTC")
@@ -584,11 +585,13 @@ ui <- dashboardPage(
                                                        fluidRow(column(6, uiOutput("groups_survey"))),
                                                        fluidRow(
                                                          column(12, align = "center",
-                                                                splitLayout(
+                                                                #splitLayout(
                                                                   shiny::tableOutput("parenting_survey_summary"),
                                                                   plotlyOutput(outputId = "parenting_survey_plot"),#, height = "580px")
-                                                                  cellWidths = c("50%", "50%"),
-                                                                  cellArgs = list(style = "vertical-align: top")))),
+                                                                 # cellWidths = c("50%", "50%"),
+                                                                #  cellArgs = list(style = "vertical-align: top"))
+                                                                )
+                                                                ),
                                                        br(),
                                                        
                                                        
@@ -1008,7 +1011,7 @@ server <- function(input, output) {
   })
   
   output$parenting_survey_plot <- renderPlotly({
-    parenting_survey1 <- parenting_survey %>% mutate(week = as.numeric(week)) %>% filter(Group != "Sexual abuse prevention")
+    parenting_survey1 <- parenting_survey %>% mutate(week = as.numeric(week)) %>% filter(Group %in% c("Positive parenting", "Child maltreatment", "Stress", "Child Behaviour"))
     parenting_survey_plot <- summarySE(parenting_survey1, groups = c(week, Group), var = vals, na.rm = TRUE)
     ggplot(parenting_survey_plot, aes(x=week, y=mean, colour=Group, group = Group), width = 2) + 
       geom_line() +
