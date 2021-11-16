@@ -201,7 +201,7 @@ summary_PT <- function(data = df, summary_var, denominator = NULL, denominator_l
       colnames(summary_perc)[length(summary_perc)-1] <- "n"
       colnames(summary_perc)[length(summary_perc)] <- "perc"
       summary_perc <- summary_perc %>%
-        mutate("Count (%)" := str_c(`n`, ' (', round(`perc`, 1), ")")) %>%
+        mutate("Count (%)" := str_c(`n`, ' (', round(`perc`, 2), ")")) %>%
         dplyr::select(-c(n, perc))
     }
     
