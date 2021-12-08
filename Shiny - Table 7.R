@@ -20,7 +20,7 @@ set_rapidpro_uuid_names()
 
 update_data <- function() {
   contacts_unflat <- get_user_data(flatten = FALSE)
-  contacts_unflat <- contacts_unflat %>% filter(as.POSIXct("2021-10-14", format="%Y-%m-%d", tzone = "UTC") < as.POSIXct(contacts_unflat$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+  contacts_unflat <- contacts_unflat %>% filter(as.POSIXct("2021-12-07", format="%Y-%m-%d", tzone = "UTC") < as.POSIXct(contacts_unflat$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
   
   ID <- contacts_unflat$uuid
   
