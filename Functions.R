@@ -5,86 +5,93 @@
 #' Sorting set and get calls for: key, site, uuid flow names
 #' 
 #' Define package environment
-pkg.env <- new.env(parent = emptyenv())
+utils::globalVariables(c("pkg_env"))
+pkg_env <- new.env(parent = emptyenv())
+pkg_env$rapidpro_key <- NULL
+pkg_env$rapidpro_site <- NULL
+pkg_env$rapidpro_uuid_names <- NULL 
 
-# Set defaults values in the environment: key and site
-assign("rapidpro_key", NULL, envir = pkg.env)
-assign("rapidpro_site", NULL, envir = pkg.env)
-
-# Functions to reset the values in the environment: key and site
 set_rapidpro_key = function(key) {
-  assign("rapidpro_key", key, envir = pkg.env)
+  if (!is.character(key)){
+    stop("`key` provided should be a character variable")
+  }
+  pkg_env$rapidpro_key <- key 
 }
 
 set_rapidpro_site = function(site) {
-  assign("rapidpro_site", site, envir = pkg.env)
+  if (!is.character(site)){
+    stop("`site` provided should be a character variable")
+  }
+  pkg_env$rapidpro_site <- site 
 }
 
-# Functions to call the values in the environment: key and site
+set_rapidpro_uuid_names = function(uuid_names = get_flow_names()){
+  pkg_env$rapidpro_uuid_names <- uuid_names 
+}
+
 get_rapidpro_key = function() {
-  get("rapidpro_key", envir = pkg.env)
+  get("rapidpro_key", envir = pkg_env)
 }
 
 get_rapidpro_site = function() {
-  get("rapidpro_site", envir = pkg.env)
+  get("rapidpro_site", envir = pkg_env)
 }
 
-# Calling data
+get_rapidpro_uuid_names = function(){
+  get("rapidpro_uuid_names", envir = pkg_env)
+}
+
+get_user_data <- function(rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, date_from = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
+  get_data_from_rapidpro_api(call_type = "contacts.json", rapidpro_site = rapidpro_site, token = token, flatten = flatten, date_from = date_from, format_date = format_date, tzone_date = tzone_date)
+}
+
+get_flow_names <- function(rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, date_from = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
+  get_data_from_rapidpro_api(call_type = "flows.json", rapidpro_site = rapidpro_site, token = token, flatten = flatten, date_from = date_from, format_date = format_date, tzone_date = tzone_date)
+}
+
 httr_get_call <- function(get_command, token = get_rapidpro_key()){
+  if (is.null(token)){
+    stop("token is NULL. Set token with `set_rapidpro_key`.")
+    # could there be a case where the key isn't needed?
+  }
+  if (is.null(get_command)){
+    stop("get_command is NULL. Expecting a website.")
+  }
   response <- httr::GET(get_command, config = httr::add_headers(Authorization = paste("Token", token)))
   raw <- httr::content(response, as = "text")
   results <- jsonlite::fromJSON(raw)
   if(!is.null(results$'next')){
-    bind_rows(results$results, httr_get_call(results$'next',token))
+    dplyr::bind_rows(results$results, httr_get_call(results$'next', token))
   } else {
     return(results$results)
   }
 }
 
-# Function to get a list of the UUID of flows
-get_flow_names <- function(call_type = "flows.json", rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE){
-  # TODO put in checks - check site is correct, then token, then call_type
-  get_command <- paste(rapidpro_site, call_type, sep = "")
-  flow_names <- httr_get_call(get_command = get_command, token = token)
-  if (flatten){
-    flow_names <- jsonlite::flatten(flow_names)
+get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call_type = "runs.json?flow=", rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, checks = FALSE, date_from = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
+  if (is.null(rapidpro_site)){
+    stop("rapidpro_site is NULL. Set a website with `set_rapidpro_site`.")
   }
-  return(flow_names)
-}
-
-set_rapidpro_uuid_names = function(uuid_names = get_flow_names()){#[c("uuid", "name")]) {
-  assign("rapidpro_uuid_names", uuid_names, envir = pkg.env)
-}
-
-get_rapidpro_uuid_names = function(){
-  get("rapidpro_uuid_names", envir = pkg.env)
-}
-
-#' 2. Retreiving Information -------------------------------------------
-#' Get general data
-get_data_from_rapidpro_api <- function(call_type, rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE){
-  get_command <- paste(rapidpro_site, call_type, sep = "")
-  user_result <- httr_get_call(get_command = get_command, token = token)
-  if (flatten){
-    user_result <- jsonlite::flatten(user_result)
+  if (is.null(token)){
+    stop("token is NULL. Set a token with `set_rapidpro_key`.")
   }
-  return(user_result)
-}
-
-# Get user (contacts) data
-get_user_data <- function(call_type="contacts.json", rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE){
-  # todo: checks/error handling messages.
-  get_command <- paste(rapidpro_site, call_type, sep = "")
-  user_result <- httr_get_call(get_command = get_command, token = token)
-  if (flatten){
-    user_result <- jsonlite::flatten(user_result)
+  if (is.null(call_type)){
+    stop("call_type is NULL. Expecting a valid call_type.")
   }
-  return(user_result)
-}
-
-# Get run (flow) data
-get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, result, call_type="runs.json?flow=", rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, checks = FALSE){
-  # todo: checks/error handling messages.
+  if (!is.character(call_type)){
+    stop("call_type should be a character variable.")
+  }
+  if (is.null(flow_name)){
+    stop("flow_name is NULL. Expecting a valid flow_name")
+  }
+  if (!is.character(flow_name)){
+    stop("flow_name should be a character variable.")
+  }
+  if (!is.logical(flatten)){
+    stop("flatten should be TRUE or FALSE")
+  }
+  if (!is.logical(checks)){
+    stop("checks should be TRUE or FALSE")
+  }
   
   if (checks){
     i = 1
@@ -108,11 +115,20 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, resu
     if (length(result_flow) == 0){
       flow_interaction[[i]] <- NULL
     } else {
+      if (!is.null(date_from)){
+        result_flow <- result_flow %>% dplyr::filter(as.POSIXct(date_from, format=format_date, tzone = tzone_date) < as.POSIXct(result_flow$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+      }
       uuid <- result_flow$contact$uuid
       response <- result_flow$responded
-      category <- result_flow$values$result$category            
-      flow_interaction[[i]] <- tibble::tibble(uuid, response) #, category)
-      flow_interaction[[i]] <- flow_interaction[[i]] %>% mutate(flow_type = uuid_flow[1])
+      #result <- na.omit(unique(flatten(result_flow$values)$name))[1]
+      #if (length(result) == 1){
+      #  category <- flatten(result_flow$values %>% dplyr::select({{ result }}))$category
+      #} else {
+      #  warning("category result not found")
+      #  category <- NA
+      #}
+      flow_interaction[[i]] <- tibble::tibble(uuid, response)#, category)
+      flow_interaction[[i]] <- flow_interaction[[i]] %>% dplyr::mutate(flow_type = uuid_flow[1])
       #if (flatten){
       flow_interaction[[i]] <- jsonlite::flatten(flow_interaction[[i]])
       #}
@@ -122,17 +138,41 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, resu
   return(flow_interaction)
 }
 
+get_data_from_rapidpro_api <- function(call_type, rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE,
+                                       date_from, format_date = "%Y-%m-%d", tzone_date = "UTC"){
+  if (is.null(rapidpro_site)){
+    stop("rapidpro_site is NULL. Set a website with `set_rapidpro_site`.")
+  }
+  if (is.null(token)){
+    stop("token is NULL. Set a token with `set_rapidpro_key`.")
+  }
+  if (is.null(call_type)){
+    stop("call_type is NULL. Expecting a valid call_type.")
+  }
+  if (!is.logical(flatten)){
+    stop("flatten should be TRUE or FALSE")
+  }
+  get_command <- paste(rapidpro_site, call_type, sep = "")
+  user_result <- httr_get_call(get_command = get_command, token = token)
+  if (flatten){
+    user_result <- jsonlite::flatten(user_result)
+  }
+  if (!is.null(date_from)){
+    user_result <- user_result %>% dplyr::filter(as.POSIXct(date_from, format=format_date, tzone = tzone_date) < as.POSIXct(user_result$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+  }
+  return(user_result)
+}
 
-survey_datetime_split_multiple <- function(parenting_variable, survey_max = 9){
+get_survey_data <- function(parenting_variable, survey_max = 9){
   survey_entry <- NULL
   for (i in 1:survey_max){
     # split the string by different surveys taken
-    split_parenting <- str_split(parenting_variable, pattern = fixed("|"))
+    split_parenting <- stringr::str_split(parenting_variable, pattern = stringr::fixed("|"))
     
     # for each individual, get each survey value (split by ,)
     parenting_response <- NULL
     for (j in 1:length(split_parenting)){
-      split_parenting_2 <- str_split(split_parenting[[j]], ",") 
+      split_parenting_2 <- stringr::str_split(split_parenting[[j]], ",") 
       
       # if it is NA, keep as NA
       if (is.na(split_parenting_2[[1]][3])){
@@ -164,37 +204,6 @@ survey_datetime_split_multiple <- function(parenting_variable, survey_max = 9){
 }
 
 
-#' 3. Summarising data - ParentText analysis -------------------------------------------------------------------------------------------------------------
-
-get_user_group_data <- function(user_data = get_user_data(), name = NULL, uuid = NULL){
-  
-  # check name/uuid for typo
-  if (length(which(get_user_data()$name == name)) == 0){
-    if (length(which(get_user_data()$uuid == uuid)) == 0){
-      stop("Neither name nor uuid supplied recognised")
-    } else{
-      message("name supplied is not recognised. Using the uuid instead.")
-    }
-  } else {
-    if (length(which(get_user_data()$uuid == uuid)) == 0){
-      message("uuid supplied is not recognised. Using the name instead.")
-    } else{
-      if(which(get_user_data()$name == name) != which(get_user_data()$uuid == uuid)){
-        warning("name and uuid supplied do not match. Using the name supplied.")
-      }
-    }
-  }
-  
-  if (is.null(name)){
-    if (is.null(uuid)){
-      stop("Either `name` or `uuid` must be supplied.")
-    } else {
-      get_user_data()$groups[[which(uuid == uuid)]]
-    }
-  } else {
-    get_user_data()$groups[[which(name == name)]]
-  }
-}
 
 # aesthetcs - remving _ and making first letter capital
 
