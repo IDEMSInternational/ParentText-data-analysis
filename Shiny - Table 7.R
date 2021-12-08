@@ -7,20 +7,20 @@ library(shinydashboard)
 library(httr)
 library(jsonlite)
 library(tidyverse)
-
-source("Functions.R")
+#source("Functions.R")
 # source("Code Book.R")
+#install_github("lilyclements/rapidpror")
+#library(rapidpror)
 
 # RapidPro set up --------------------------------------------------------------
-# for this to work you need to change the directory to where the token key is stored.
+
 key <- read.table("./tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
 set_rapidpro_key(key = key)
 set_rapidpro_site(site = "https://app.rapidpro.io/api/v2/")
 set_rapidpro_uuid_names()
 
 update_data <- function() {
-  contacts_unflat <- get_user_data(flatten = FALSE)
-  contacts_unflat <- contacts_unflat %>% filter(as.POSIXct("2021-12-07", format="%Y-%m-%d", tzone = "UTC") < as.POSIXct(contacts_unflat$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+  contacts_unflat <- get_user_data(flatten = FALSE, date_from = "2021-12-07")
   
   ID <- contacts_unflat$uuid
   
@@ -229,11 +229,11 @@ update_data <- function() {
                               "PLH - Content - Positive - Safe or unsafe touch - Timed intro", "PLH - Content - Relax - Take a pause - Timed intro", "PLH - Content - Relax - Exercise", "PLH - Content - Time - One on one time baby - Timed intro",
                               "PLH - Content - Time - One on one time child - Timed intro", "PLH - Content - Time - One on one time teen - Timed intro", "PLH - Content - Positive - introduction", "PLH - Content - Positive - Positive instructions", "PLH - Content - Relax - Quick Pause", "PLH - Content - Relax - Anger management", "PLH - Content - Relax - Anger management 2", "PLH - Content - Positive - IPV", "PLH - Content - Positive - Community safety")
   
-  supportive_calm_flow <- get_flow_data(flow_name = supportive_calm)
-  supportive_praise_flow <- get_flow_data(flow_name = supportive_praise)
-  supportive_flow_names_flow <- get_flow_data(flow_name = supportive_flow_names)
-  check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names)
-  content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names)
+  supportive_calm_flow <- get_flow_data(flow_name = supportive_calm, date_from = "2021-12-07")
+  supportive_praise_flow <- get_flow_data(flow_name = supportive_praise, date_from = "2021-12-07")
+  supportive_flow_names_flow <- get_flow_data(flow_name = supportive_flow_names, date_from = "2021-12-07")
+  check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names, date_from = "2021-12-07")
+  content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names, date_from = "2021-12-07")
   
   # Survey Level Data ---------------------------------------------------------------------------------------------------------------------------
   # get all survey values
@@ -248,18 +248,18 @@ update_data <- function() {
             rep("9", nrow(contacts_unflat)))
   
   
-  play <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveytime_datetime))) %>% mutate(Group = "Play")
-  praise <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveypraise_datetime))) %>% mutate(Group = "Praise")
-  stress <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveystress_datetime))) %>% mutate(Group = "Stress")
-  physical_abuse <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveydiscipline_datetime))) %>% mutate(Group = "Physical abuse")
-  food_insecurity <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveymoneymonth_datetime))) %>% mutate(Group = "Food insecurity")
-  psychological_abuse <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveyshout_datetime))) %>% mutate(Group = "Psychological abuse")
-  financial_stress <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveymoneyweek_datetime))) %>% mutate(Group = "Financial stress")
-  parenting_efficacy <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveypositive_datetime))) %>% mutate(Group = "Parenting efficacy")
-  sex_prevention <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveysexualabuse_datetime))) %>% mutate(Group = "Sexual abuse prevention")
+  play <- data.frame(week, vals = unlist(get_survey_data(contacts_unflat$fields$surveytime_datetime))) %>% mutate(Group = "Play")
+  praise <- data.frame(week, vals = unlist(get_survey_data(contacts_unflat$fields$surveypraise_datetime))) %>% mutate(Group = "Praise")
+  stress <- data.frame(week, vals = unlist(get_survey_data(contacts_unflat$fields$surveystress_datetime))) %>% mutate(Group = "Stress")
+  physical_abuse <- data.frame(week, vals = unlist(get_survey_data(contacts_unflat$fields$surveydiscipline_datetime))) %>% mutate(Group = "Physical abuse")
+  food_insecurity <- data.frame(week, vals = unlist(get_survey_data(contacts_unflat$fields$surveymoneymonth_datetime))) %>% mutate(Group = "Food insecurity")
+  psychological_abuse <- data.frame(week, vals = unlist(get_survey_data(contacts_unflat$fields$surveyshout_datetime))) %>% mutate(Group = "Psychological abuse")
+  financial_stress <- data.frame(week, vals = unlist(get_survey_data(contacts_unflat$fields$surveymoneyweek_datetime))) %>% mutate(Group = "Financial stress")
+  parenting_efficacy <- data.frame(week, vals = unlist(get_survey_data(contacts_unflat$fields$surveypositive_datetime))) %>% mutate(Group = "Parenting efficacy")
+  sex_prevention <- data.frame(week, vals = unlist(get_survey_data(contacts_unflat$fields$surveysexualabuse_datetime))) %>% mutate(Group = "Sexual abuse prevention")
   # using datetime not just _rate because in _rate it doesn't state which survey the score is corresponding to
   # e.g. see contacts_unflat$fields$surveybehave_rate_datetime[[1]]
-  child_behave <- data.frame(week, vals = unlist(survey_datetime_split_multiple(contacts_unflat$fields$surveybehave_rate_datetime))) %>% mutate(Group = "Child Behaviour")
+  child_behave <- data.frame(week, vals = unlist(get_survey_data(contacts_unflat$fields$surveybehave_rate_datetime))) %>% mutate(Group = "Child Behaviour")
   
   positive_parenting <- data.frame(week, vals = pmax(play$vals, praise$vals, na.rm = TRUE)) %>% mutate(Group = "Positive parenting")
   child_maltreatment <- data.frame(week, vals = pmax(physical_abuse$vals, psychological_abuse$vals, na.rm = TRUE)) %>% mutate(Group = "Child maltreatment")
