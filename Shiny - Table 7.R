@@ -7,7 +7,7 @@ library(shinydashboard)
 library(httr)
 library(jsonlite)
 library(tidyverse)
-#source("Functions.R")
+source("Functions.R")
 # source("Code Book.R")
 #install_github("lilyclements/rapidpror")
 #library(rapidpror)
@@ -15,7 +15,7 @@ library(tidyverse)
 # RapidPro set up --------------------------------------------------------------
 
 key <- read.table("./tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
-set_rapidpro_key(key = key)
+set_rapidpro_key(key = key[[1]])
 set_rapidpro_site(site = "https://app.rapidpro.io/api/v2/")
 set_rapidpro_uuid_names()
 
