@@ -169,8 +169,9 @@ update_data <- function() {
   survey_completed_wk1 <- str_count(contacts_unflat$fields$surveyparenting_completion, fixed("|"))
   if (length(survey_completed_wk1) == 0){survey_completed_wk1 <- rep(NA, length(enrolled))}
   
-  survey_completed_wk2 <- str_count(contacts_unflat$fields$surveyparentingbehave_completion, fixed("|"))
-  if (length(survey_completed_wk2) == 0){survey_completed_wk2 <- rep(NA, length(enrolled))}
+  survey_completed_wk2_plus <- str_count(contacts_unflat$fields$surveyparentingbehave_completion, fixed("|"))
+  if (length(survey_completed_wk2_plus) == 0){survey_completed_wk2_plus <- rep(NA, length(enrolled))}
+  
   
   
   challenging_type <- contacts_unflat$fields$survey_behave_most_challenging
@@ -202,9 +203,9 @@ update_data <- function() {
   challenging_type <- forcats::fct_relevel(challenging_type, c("Crying", "Problems sleeping", "Acting clingy", "Whining", "Bad tempered", "Problems eating", "Stubborn/fussy", "Naughty behaviour", "Temper Tantrums", "Refuses to obey", "Gets angry", "Rude behaviour", "Mood swings", "Does not follow rules", "Stubbornness", "Breaks things", "Gets into fights", "Teases others", "Hyperactivity", "Hits others"))
   challenging_type_wrap <- str_wrap_factor(challenging_type, width = 10)
   
-  df <- data.frame(ID, enrolled, consent, program,  enrolled,  consent,  program, parent_gender, child_gender, child_age_group, parent_child_relationship, 
+  df <- data.frame(ID, enrolled, consent, program, parent_gender, child_gender, child_age_group, parent_child_relationship, 
                    parent_relationship_status, child_living_with_disabilities, parenting_goals, parenting_goals_wrap,
-                   active_users_24hr, active_users_7d, n_skills, parent_age, survey_completed_wk1, survey_completed_wk2,
+                   active_users_24hr, active_users_7d, n_skills, parent_age, survey_completed_wk1, survey_completed_wk2_plus,
                    challenging_type, challenging_type_wrap)
   
   # flow level data --------------------------------
@@ -518,8 +519,8 @@ ui <- dashboardPage(
                                                          column(10, align = "center",
                                                                 shiny::tableOutput("comp_prog_summary"),
                                                                 shiny::tableOutput("completed_survey_summary"),
-                                                                shiny::tableOutput("all_flows_response"))),
-                                                       
+                                                                shiny::tableOutput("all_flows_response"))
+                                                         ),
                                                        fluidRow(
                                                          column(12,
                                                                 box( height="300px",  width=12,
@@ -813,11 +814,12 @@ server <- function(input, output) {
   })
   
   output$parenting_goals_plot <- renderPlotly({
-    ggplot(df, aes(x = parenting_goals_wrap)) +
-      geom_histogram(stat = "count") +
-      viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
-      labs(x = "Parenting goals", y = "Count") +
-      theme_classic()
+    df_goals <- df %>% group_by(parenting_goals_wrap) %>% summarise(n = n())
+    
+    fig <- plot_ly(df_goals, labels = ~parenting_goals_wrap, values = ~n, type = 'pie')
+    fig %>% layout(xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                          yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+    
   })
   
   output$parenting_goals_group_plot <- renderPlotly({
@@ -936,35 +938,47 @@ server <- function(input, output) {
   })
   # Note: These are the *number* of people that have completed the survey
   completed_survey_summary <- reactive({
+    df_consent <- df %>%
+      filter(consent == "Yes")
+    survey_completed <- NULL
+    survey_completed[[1]] <- df_consent %>% summarise(n = sum(survey_completed_wk1 == 1, na.rm = TRUE))
+    survey_completed[[1]]$perc <- survey_completed[[1]]$n/nrow(df_consent) * 100
+    survey_completed[[1]]$Week <- "Week 1"
+    for (i in 2:9){
+      survey_completed[[i]] <- df_consent %>% summarise(n = sum(survey_completed_wk2_plus == i, na.rm = TRUE))
+      survey_completed[[i]]$perc <- survey_completed[[i]]$n/nrow(df_consent) * 100
+      survey_completed[[i]]$Week <- paste("Week ", i, sep = "")
+    }
+    survey_completed <- plyr::ldply(survey_completed)
     
-    completed_survey <- df %>%
-      filter(consent == "Yes") %>%
-      summarise(completed_survey_wk1 = sum(!is.na(survey_completed_wk1)),
-                completed_survey_wk2 = sum(!is.na(survey_completed_wk2)),
-                completed_survey_perc_wk1 = sum(!is.na(survey_completed_wk1))/nrow(.)*100,
-                completed_survey_perc_wk2 = sum(!is.na(survey_completed_wk2))/nrow(.)*100)
-    completed_survey <- completed_survey %>%
-      mutate("Completed survey week 1 (%)" := str_c(`completed_survey_wk1`, ' (', round(`completed_survey_perc_wk1`, 2), ")")) %>%
-      mutate("Completed survey week 2 (%)" := str_c(`completed_survey_wk2`, ' (', round(`completed_survey_perc_wk2`, 2), ")")) %>%
-      dplyr::select(-c(completed_survey_wk1, completed_survey_wk2, completed_survey_perc_wk1, completed_survey_perc_wk2))
-    colnames(completed_survey) <- naming_conventions(colnames(completed_survey))
-    completed_survey
+    survey_completed <- survey_completed %>%
+      mutate("Completed survey (%)" := str_c(`n`, ' (', round(`perc`, 2), ")")) %>%
+      dplyr::select(-c(n, perc))
+    
+    pivot_wider(survey_completed, names_from = Week, values_from = `Completed survey (%)`)
+    
   })
   
   completed_survey_group_summary <- reactive({
     req(input$grouper)
-    completed_survey <- df %>% group_by(!!!rlang::syms(input$grouper)) %>%
-      filter(consent == "Yes") %>%
-      summarise(completed_survey_wk1 = sum(!is.na(survey_completed_wk1)),
-                completed_survey_wk2 = sum(!is.na(survey_completed_wk2)),
-                completed_survey_perc_wk1 = sum(!is.na(survey_completed_wk1))/nrow(.)*100,
-                completed_survey_perc_wk2 = sum(!is.na(survey_completed_wk2))/nrow(.)*100)
-    completed_survey <- completed_survey %>%
-      mutate("Completed survey week 1 (%)" := str_c(`completed_survey_wk1`, ' (', round(`completed_survey_perc_wk1`, 2), ")")) %>%
-      mutate("Completed survey week 2 (%)" := str_c(`completed_survey_wk2`, ' (', round(`completed_survey_perc_wk2`, 2), ")")) %>%
-      dplyr::select(-c(completed_survey_wk1, completed_survey_wk2, completed_survey_perc_wk1, completed_survey_perc_wk2))
-    colnames(completed_survey) <- naming_conventions(colnames(completed_survey))
-    completed_survey
+    df_consent <- df %>%
+      filter(consent == "Yes")
+    survey_completed <- NULL
+    survey_completed[[1]] <- df_consent %>% group_by(!!!rlang::syms(input$grouper)) %>% summarise(n = sum(survey_completed_wk1 == 1, na.rm = TRUE))
+    survey_completed[[1]]$perc <- survey_completed[[1]]$n/nrow(df_consent) * 100
+    survey_completed[[1]]$Week <- "Week 1"
+    for (i in 2:9){
+      survey_completed[[i]] <- df_consent %>% group_by(!!!rlang::syms(input$grouper)) %>% summarise(n = sum(survey_completed_wk2_plus == i, na.rm = TRUE))
+      survey_completed[[i]]$perc <- survey_completed[[i]]$n/nrow(df_consent) * 100
+      survey_completed[[i]]$Week <- paste("Week ", i, sep = "")
+    }
+    survey_completed <- plyr::ldply(survey_completed)
+
+    survey_completed <- survey_completed %>%
+      mutate("Completed survey (%)" := str_c(`n`, ' (', round(`perc`, 2), ")")) %>%
+      dplyr::select(-c(n, perc))
+    
+    pivot_wider(survey_completed, names_from = Week, values_from = `Completed survey (%)`)
   })
   
   supportive_calm_flow_df <- flow_data_summary_function(supportive_calm_flow)
@@ -1208,8 +1222,8 @@ server <- function(input, output) {
   output$active_users_7d_group_summary <- shiny::renderTable({(active_users_7d_group_summary())}, striped = TRUE)
   output$comp_prog_summary <- shiny::renderTable({(comp_prog_summary())}, caption = "Number of skills in toolkit", striped = TRUE)
   output$comp_prog_group_summary <- shiny::renderTable({(comp_prog_group_summary())}, caption = "Number of skills in toolkit", striped = TRUE)
-  output$completed_survey_summary <- shiny::renderTable({{completed_survey_summary()}}, striped = TRUE)
-  output$completed_survey_group_summary <- shiny::renderTable({{completed_survey_group_summary()}}, striped = TRUE)
+  output$completed_survey_summary <- shiny::renderTable({{completed_survey_summary()}}, striped = TRUE, caption = "Number (and percentage) of individuals who have completed different surveys")
+  output$completed_survey_group_summary <- shiny::renderTable({{completed_survey_group_summary()}}, striped = TRUE, caption = "Number (and percentage) of individuals who have completed different surveys")
   output$all_flows_response <- shiny::renderTable({(all_flows_response())}, caption = "Count (%) for each flow", striped = TRUE)
   output$parenting_survey_summary <- shiny::renderTable({(parenting_survey_summary())}, caption = "How many times in the past week ... \n For Sexual abuse prevention, the timeframe is how many days in the past month.", striped = TRUE)
 }
