@@ -262,13 +262,15 @@ flow_data_summary_function <- function(flow_interaction){
   if (!is.data.frame(flow_interaction)){
     flow_interaction <- plyr::ldply(flow_interaction) 
   }
-  return(flow_interaction %>%
-           group_by(response, .drop = FALSE) %>%
-           summarise(count = n(), perc = round(n()/nrow(.)*100,2)) %>%
-           mutate("Count (%)" := str_c(`count`, ' (', round(`perc`, 1), ")")) %>%
-           dplyr::select(-c(count, perc)) %>%
-           mutate(response = factor(ifelse(response == TRUE, "Yes", "No"))) %>% map_df(rev))
-  #mutate(response = forcats::fct_relevel(response, c("Yes", "No"))))
+  flow_interaction$response <- ifelse(flow_interaction$response == TRUE, "Yes", "No")
+  flow_interaction$response <- forcats::fct_expand(flow_interaction$response, c("Yes", "No"))
+  flow_interaction_output <- flow_interaction %>%
+    group_by(response, .drop = FALSE) %>%
+    summarise(count = n(), perc = round(n()/nrow(.)*100,2)) %>%
+    mutate("Count (%)" := str_c(`count`, ' (', round(`perc`, 1), ")")) %>%
+    dplyr::select(-c(count, perc)) %>% map_df(rev)
+  
+  return(flow_interaction_output)
 }
 
 
