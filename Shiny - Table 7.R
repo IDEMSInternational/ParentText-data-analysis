@@ -13,14 +13,14 @@ source("Functions.R")
 #library(rapidpror)
 
 # RapidPro set up --------------------------------------------------------------
-
-key <- read.table("./tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
+#key <- read.table("C:/Users/lzc1n17/OneDrive - University of Southampton/PhD/IDEMS/ParentText/PT_malaysia_key.txt", quote="\"", comment.char="")
+#key <- read.table("./tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
 set_rapidpro_key(key = key[[1]])
 set_rapidpro_site(site = "https://app.rapidpro.io/api/v2/")
 set_rapidpro_uuid_names()
 
-update_data <- function() {
-  contacts_unflat <- get_user_data(flatten = FALSE, date_from = "2021-12-07")
+update_data <- function(date_from = "2021-12-07", date_to = NULL) {
+  contacts_unflat <- get_user_data(flatten = FALSE, date_from = date_from, date_to = date_to)
   
   ID <- contacts_unflat$uuid
   
@@ -198,7 +198,7 @@ update_data <- function() {
     child_age_group %in% c("Teen") & challenging_type == "4" ~ "Whining",
     child_age_group %in% c("Teen") & challenging_type == "5" ~ "Hyperactivity",
     child_age_group %in% c("Teen") & challenging_type == "6" ~ "Hits others")
-    
+  
   challenging_type <- forcats::fct_expand(challenging_type, c("Crying", "Problems sleeping", "Acting clingy", "Whining", "Bad tempered", "Problems eating", "Stubborn/fussy", "Naughty behaviour", "Temper Tantrums", "Refuses to obey", "Gets angry", "Rude behaviour", "Mood swings", "Does not follow rules", "Stubbornness", "Breaks things", "Gets into fights", "Teases others", "Hyperactivity", "Hits others"))
   challenging_type <- forcats::fct_relevel(challenging_type, c("Crying", "Problems sleeping", "Acting clingy", "Whining", "Bad tempered", "Problems eating", "Stubborn/fussy", "Naughty behaviour", "Temper Tantrums", "Refuses to obey", "Gets angry", "Rude behaviour", "Mood swings", "Does not follow rules", "Stubbornness", "Breaks things", "Gets into fights", "Teases others", "Hyperactivity", "Hits others"))
   challenging_type_wrap <- str_wrap_factor(challenging_type, width = 10)
@@ -230,11 +230,11 @@ update_data <- function() {
                               "PLH - Content - Positive - Safe or unsafe touch - Timed intro", "PLH - Content - Relax - Take a pause - Timed intro", "PLH - Content - Relax - Exercise", "PLH - Content - Time - One on one time baby - Timed intro",
                               "PLH - Content - Time - One on one time child - Timed intro", "PLH - Content - Time - One on one time teen - Timed intro", "PLH - Content - Positive - introduction", "PLH - Content - Positive - Positive instructions", "PLH - Content - Relax - Quick Pause", "PLH - Content - Relax - Anger management", "PLH - Content - Relax - Anger management 2", "PLH - Content - Positive - IPV", "PLH - Content - Positive - Community safety")
   
-  supportive_calm_flow <- get_flow_data(flow_name = supportive_calm, date_from = "2021-12-07")
-  supportive_praise_flow <- get_flow_data(flow_name = supportive_praise, date_from = "2021-12-07")
-  supportive_flow_names_flow <- get_flow_data(flow_name = supportive_flow_names, date_from = "2021-12-07")
-  check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names, date_from = "2021-12-07")
-  content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names, date_from = "2021-12-07")
+  supportive_calm_flow <- get_flow_data(flow_name = supportive_calm, date_from = date_from, date_to = date_to)
+  supportive_praise_flow <- get_flow_data(flow_name = supportive_praise, date_from = date_from, date_to = date_to)
+  supportive_flow_names_flow <- get_flow_data(flow_name = supportive_flow_names, date_from = date_from, date_to = date_to)
+  check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names, date_from = date_from, date_to = date_to)
+  content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names, date_from = date_from, date_to = date_to)
   
   # Survey Level Data ---------------------------------------------------------------------------------------------------------------------------
   # get all survey values
@@ -288,17 +288,17 @@ update_data <- function() {
   return(objects_to_return)
 }
 
-updated_data <- update_data()
-df <- updated_data[[1]]
-supportive_calm_flow <- updated_data[[2]]
-supportive_praise_flow <- updated_data[[3]]
-check_in_flow_names_flow <- updated_data[[4]]
-content_tip_flow_names_flow <- updated_data[[5]]
-supportive_flow_names_flow <- updated_data[[6]]
-enrolled <- updated_data[[7]]
-consent <- updated_data[[8]]
-program <- updated_data[[9]]
-parenting_survey <- updated_data[[10]]
+#updated_data <- update_data()
+#df <- updated_data[[1]]
+#supportive_calm_flow <- updated_data[[2]]
+#supportive_praise_flow <- updated_data[[3]]
+#check_in_flow_names_flow <- updated_data[[4]]
+#content_tip_flow_names_flow <- updated_data[[5]]
+#supportive_flow_names_flow <- updated_data[[6]]
+#enrolled <- updated_data[[7]]
+#consent <- updated_data[[8]]
+#program <- updated_data[[9]]
+#parenting_survey <- updated_data[[10]]
 
 # retention_exit ---------------------------------------------------------------
 # number of contacts for which the contact field "exit_message" is not empty &
@@ -323,6 +323,19 @@ ui <- dashboardPage(
       shinydashboard::valueBoxOutput("myvaluebox3", width=2),
       shinydashboard::valueBoxOutput("myvaluebox4", width=2),
       shinydashboard::valueBoxOutput("myvaluebox5", width=2)),
+    
+    #column(6, align = "centre",
+    #       box( width=NULL,
+    #            collapsible = FALSE,
+    #            solidHeader = TRUE,
+    #            splitLayout(textInput(inputId = "datefrom_text", label = "Date from:", value = "2021-12-07"),
+    #                        cellArgs = list(style = "vertical-align: top"),
+    #                        cellWidths = c("80%", "20%")),
+    #            splitLayout(textInput(inputId = "dateto_text", label = "Date to:", value = ""),
+    #                        actionButton("btn_dates", "Change Dates", class="btn-success"),
+    #                        cellArgs = list(style = "vertical-align: top"),
+    #                        cellWidths = c("80%", "20%")))),
+    
     tabItems(
       # First tab content
       
@@ -458,10 +471,10 @@ ui <- dashboardPage(
                                                                       title = "Child Demographics",
                                                                       status = "primary", # primary, success, info, warning, danger
                                                                       solidHeader = TRUE,
-                                                                                  shiny::tableOutput("child_gender_group_summary"),
-                                                                                  shiny::tableOutput("child_age_group_summary"),
-                                                                                  shiny::tableOutput("child_living_with_disabilities_group_summary"),
-
+                                                                      shiny::tableOutput("child_gender_group_summary"),
+                                                                      shiny::tableOutput("child_age_group_summary"),
+                                                                      shiny::tableOutput("child_living_with_disabilities_group_summary"),
+                                                                      
                                                                   ), # close child box
                                                                   cellWidths = c("50%", "50%"),
                                                                   cellArgs = list(style = "vertical-align: top")), # split layout for parent to child demographics close
@@ -520,7 +533,7 @@ ui <- dashboardPage(
                                                                 shiny::tableOutput("comp_prog_summary"),
                                                                 shiny::tableOutput("completed_survey_summary"),
                                                                 shiny::tableOutput("all_flows_response"))
-                                                         ),
+                                                       ),
                                                        fluidRow(
                                                          column(12,
                                                                 box( height="300px",  width=12,
@@ -590,12 +603,12 @@ ui <- dashboardPage(
                                                        fluidRow(
                                                          column(12, align = "center",
                                                                 #splitLayout(
-                                                                  shiny::tableOutput("parenting_survey_summary"),
-                                                                  plotlyOutput(outputId = "parenting_survey_plot"),#, height = "580px")
-                                                                 # cellWidths = c("50%", "50%"),
+                                                                shiny::tableOutput("parenting_survey_summary"),
+                                                                plotlyOutput(outputId = "parenting_survey_plot"),#, height = "580px")
+                                                                # cellWidths = c("50%", "50%"),
                                                                 #  cellArgs = list(style = "vertical-align: top"))
-                                                                )
-                                                                ),
+                                                         )
+                                                       ),
                                                        br(),
                                                        
                                                        
@@ -653,6 +666,7 @@ ui <- dashboardPage(
 server <- function(input, output) {
   
   autoRefresh <- reactiveTimer(6 * 60 * 60 * 1000)
+  
   
   observe({
     autoRefresh()
@@ -818,7 +832,7 @@ server <- function(input, output) {
     
     fig <- plot_ly(df_goals, labels = ~parenting_goals_wrap, values = ~n, type = 'pie')
     fig %>% layout(xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
-                          yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+                   yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
     
   })
   
@@ -898,7 +912,7 @@ server <- function(input, output) {
     req(input$grouper_engagement)
     summary_PT(df, c(active_users_7d, !!!rlang::syms(input$grouper_engagement)), program, together = TRUE, naming_convention = TRUE)
   })
-
+  
   comp_prog_summary <- reactive({
     comp_prog_df <- df %>% 
       filter(consent == "Yes") %>%
@@ -973,7 +987,7 @@ server <- function(input, output) {
       survey_completed[[i]]$Week <- paste("Week ", i, sep = "")
     }
     survey_completed <- plyr::ldply(survey_completed)
-
+    
     survey_completed <- survey_completed %>%
       mutate("Completed survey (%)" := str_c(`n`, ' (', round(`perc`, 2), ")")) %>%
       dplyr::select(-c(n, perc))
