@@ -27,29 +27,29 @@ update_data <- function(date_from = "2021-12-07", date_to = NULL) {
   # Variables Manipulation -------------------------------------------------------
   # get enrolled and consented data
   enrolled <- NULL
-  consent <- NULL
+  true_consent <- NULL
   program <- NULL
   for (i in 1:length(contacts_unflat$groups)){
     contact_name <- contacts_unflat$groups[[i]]
     if (length(contact_name)==0) {
       enrolled[i] <- NA
-      consent[i] <- NA
+      true_consent[i] <- NA
       program[i] <- NA
     } else{
       enrolled[i] <- ifelse(any(contact_name$name %in% "joined"), "Yes", "No")
-      consent[i] <- ifelse(any(contact_name$name %in% "consent"), "Yes", "No")
+      true_consent[i] <- ifelse(any(contact_name$name %in% "consent"), "Yes", "No")
       program[i] <- ifelse(any(contact_name$name %in% "in program"), "Yes", "No")
     }
   }
   
   enrolled <- factor(enrolled)
-  consent <- factor(consent)
+  true_consent <- factor(true_consent)
   program <- factor(program)
   enrolled <- forcats::fct_expand(enrolled, c("Yes", "No"))
-  consent <- forcats::fct_expand(consent, c("Yes", "No"))
+  true_consent <- forcats::fct_expand(true_consent, c("Yes", "No"))
   program <- forcats::fct_expand(program, c("Yes", "No"))
   enrolled <- forcats::fct_relevel(enrolled, c("Yes", "No"))
-  consent <- forcats::fct_relevel(consent, c("Yes", "No"))
+  true_consent <- forcats::fct_relevel(true_consent, c("Yes", "No"))
   program <- forcats::fct_relevel(program, c("Yes", "No"))
   
   parent_gender <- contacts_unflat$fields$gender
@@ -105,6 +105,26 @@ update_data <- function(date_from = "2021-12-07", date_to = NULL) {
   child_living_with_disabilities <- forcats::fct_relevel(child_living_with_disabilities,
                                                          c("Yes", "No", "supp_disab"))
   
+  language <- factor(contacts_unflat$language)
+  language <- fct_expand(language, "Did not respond", "MSA", "ENG")
+  language <- forcats::fct_recode(language,
+                                  MSA = "msa",
+                                  ENG = "eng")
+  language[is.na(language)] <- "Did not respond"
+  language <- forcats::fct_relevel(language, c("ENG", "MSA", "Did not respond"))
+  
+  
+  recruitment_channel <- factor(contacts_unflat$fields$enrollment)
+  recruitment_channel <- forcats::fct_expand(recruitment_channel, c("LPPKN", "NGO", "Friends/Family", "U-Report", "Social media", "Other"))
+  recruitment_channel <- forcats::fct_recode(recruitment_channel,
+                                         `LPPKN` = "LPPKN",
+                                         `NGO` = "Ngo",
+                                         `Friends/Family` = "Someone",
+                                         `U-Report` = "U-report",
+                                         `Social media` = "Social",
+                                         `Other` = "Other channel")
+  recruitment_channel <- forcats::fct_relevel(recruitment_channel, c("LPPKN", "NGO", "Friends/Family", "U-Report", "Social media", "Other"))
+
   parenting_goals <- factor(as.numeric(contacts_unflat$fields$parenting_goal))
   parenting_goals <- forcats::fct_expand(parenting_goals, c("Relationship","Behaviour", "School", "COVID-19", "Stress", "Finances", "Family conflict", "Safety", "Disabilities", "Other"))
   parenting_goals <- forcats::fct_recode(parenting_goals,
@@ -166,6 +186,15 @@ update_data <- function(date_from = "2021-12-07", date_to = NULL) {
   # TODO: only should be lookign at this for those who consented
   parent_age <- as.numeric(as.character(contacts_unflat$fields$age))
   
+  # completed surveys
+  survey_completed_welcome <- factor(contacts_unflat$fields$completed_welcome)
+  survey_completed_welcome <- forcats::fct_expand(survey_completed_welcome, c("Yes", "No"))
+  survey_completed_welcome <- forcats::fct_recode(survey_completed_welcome,
+                                         "No" = "no",
+                                         "Yes" = "yes")
+  survey_completed_welcome[is.na(survey_completed_welcome)] <- "No"
+  survey_completed_welcome <- forcats::fct_relevel(survey_completed_welcome, c("Yes", "No"))
+  
   survey_completed_wk1 <- str_count(contacts_unflat$fields$surveyparenting_completion, fixed("|"))
   if (length(survey_completed_wk1) == 0){survey_completed_wk1 <- rep(NA, length(enrolled))}
   
@@ -203,10 +232,16 @@ update_data <- function(date_from = "2021-12-07", date_to = NULL) {
   challenging_type <- forcats::fct_relevel(challenging_type, c("Crying", "Problems sleeping", "Acting clingy", "Whining", "Bad tempered", "Problems eating", "Stubborn/fussy", "Naughty behaviour", "Temper Tantrums", "Refuses to obey", "Gets angry", "Rude behaviour", "Mood swings", "Does not follow rules", "Stubbornness", "Breaks things", "Gets into fights", "Teases others", "Hyperactivity", "Hits others"))
   challenging_type_wrap <- str_wrap_factor(challenging_type, width = 10)
   
-  df <- data.frame(ID, enrolled, consent, program, parent_gender, child_gender, child_age_group, parent_child_relationship, 
-                   parent_relationship_status, child_living_with_disabilities, parenting_goals, parenting_goals_wrap,
-                   active_users_24hr, active_users_7d, n_skills, parent_age, survey_completed_wk1, survey_completed_wk2_plus,
+  df <- data.frame(ID, enrolled, true_consent, program, language, parent_gender, child_gender, child_age_group, parent_child_relationship, 
+                   parent_relationship_status, child_living_with_disabilities, recruitment_channel, parenting_goals, parenting_goals_wrap,
+                   active_users_24hr, active_users_7d, n_skills, parent_age, survey_completed_welcome, survey_completed_wk1, survey_completed_wk2_plus,
                    challenging_type, challenging_type_wrap)
+  
+  df <- df %>%
+    mutate(consent = ifelse(language == "Did not respond", "Did not respond",
+                             ifelse(true_consent == "Yes", "Yes", "No")))
+  df <- df %>%
+    mutate(consent = forcats::fct_relevel(consent, c("Yes", "No", "Did not respond")))
   
   # flow level data --------------------------------
   # sum of response to content, calm, check in, supportive, praise messages
@@ -282,7 +317,7 @@ update_data <- function(date_from = "2021-12-07", date_to = NULL) {
   objects_to_return[[5]] <- content_tip_flow_names_flow
   objects_to_return[[6]] <- supportive_flow_names_flow
   objects_to_return[[7]] <- enrolled
-  objects_to_return[[8]] <- consent
+  objects_to_return[[8]] <- true_consent
   objects_to_return[[9]] <- program
   objects_to_return[[10]] <- parenting_survey
   return(objects_to_return)
@@ -296,7 +331,7 @@ update_data <- function(date_from = "2021-12-07", date_to = NULL) {
 #content_tip_flow_names_flow <- updated_data[[5]]
 #supportive_flow_names_flow <- updated_data[[6]]
 #enrolled <- updated_data[[7]]
-#consent <- updated_data[[8]]
+#true_consent <- updated_data[[8]]
 #program <- updated_data[[9]]
 #parenting_survey <- updated_data[[10]]
 
@@ -381,6 +416,7 @@ ui <- dashboardPage(
                                                        
                                                        fluidRow(
                                                          column(10, align = "center",
+                                                                #shiny::tableOutput("language_summary"),
                                                                 splitLayout(
                                                                   box(width=NULL,
                                                                       collapsible = FALSE,
@@ -413,6 +449,15 @@ ui <- dashboardPage(
                                                                      status = "primary", # primary, success, info, warning, danger
                                                                      solidHeader = TRUE,
                                                                      plotlyOutput(outputId = "parenting_goals_plot", height = "240", width = "100%")
+                                                                ),
+                                                                column(12,
+                                                                       box( height="300px",  width=12,
+                                                                            collapsible = FALSE,
+                                                                            title = "Recruitment Channel",
+                                                                            status = "primary", # primary, success, info, warning, danger
+                                                                            solidHeader = TRUE,
+                                                                            plotlyOutput(outputId = "recruitment_channel_plot", height = "240", width = "100%")
+                                                                       )
                                                                 )
                                                          )
                                                        ) # close fluid row
@@ -487,6 +532,15 @@ ui <- dashboardPage(
                                                                               solidHeader = TRUE,
                                                                               plotlyOutput(outputId = "parenting_goals_group_plot", height = "240", width = "100%")
                                                                          )
+                                                                  ),
+                                                                  column(12,
+                                                                         box( height="300px",  width=12,
+                                                                              collapsible = FALSE,
+                                                                              title = "Recruitment Channel",
+                                                                              status = "primary", # primary, success, info, warning, danger
+                                                                              solidHeader = TRUE,
+                                                                              plotlyOutput(outputId = "recruitment_channel_group_plot", height = "240", width = "100%")
+                                                                         )
                                                                   )
                                                                 ) # close fluid row
                                                          )
@@ -531,6 +585,7 @@ ui <- dashboardPage(
                                                        fluidRow(
                                                          column(10, align = "center",
                                                                 shiny::tableOutput("comp_prog_summary"),
+                                                                shiny::tableOutput("completed_welcome_summary"),
                                                                 shiny::tableOutput("completed_survey_summary"),
                                                                 shiny::tableOutput("all_flows_response"))
                                                        ),
@@ -690,7 +745,7 @@ server <- function(input, output) {
   content_tip_flow_names_flow <- updated_data[[5]]
   supportive_flow_names_flow <- updated_data[[6]]
   enrolled <- updated_data[[7]]
-  consent <- updated_data[[8]]
+  true_consent <- updated_data[[8]]
   program <- updated_data[[9]]
   parenting_survey <- updated_data[[10]]
   
@@ -836,6 +891,15 @@ server <- function(input, output) {
     
   })
   
+  output$recruitment_channel_plot <- renderPlotly({
+    df_recruitment <- df %>% group_by(recruitment_channel) %>% summarise(n = n())
+    
+    fig <- plot_ly(df_recruitment, labels = ~recruitment_channel, values = ~n, type = 'pie')
+    fig %>% layout(xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                   yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+    
+  })
+  
   output$parenting_goals_group_plot <- renderPlotly({
     req(input$grouper)
     ggplot(df, aes(x = parenting_goals_wrap, fill = (!!!rlang::syms(input$grouper)))) +
@@ -845,6 +909,14 @@ server <- function(input, output) {
       theme_classic()
   })
   
+  output$recruitment_channel_group_plot <- renderPlotly({
+    req(input$grouper)
+    ggplot(df, aes(x = recruitment_channel, fill = (!!!rlang::syms(input$grouper)))) +
+      geom_histogram(stat = "count") +
+      viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
+      labs(x = "Recruitment channel", y = "Count") +
+      theme_classic()
+  })
   
   consent_summary <- reactive({
     summary_PT(df, "consent", enrolled, "Yes", TRUE, naming_convention = TRUE)
@@ -855,12 +927,17 @@ server <- function(input, output) {
     summary_PT(df, c(consent, !!!rlang::syms(input$grouper)), enrolled, "Yes", TRUE, naming_convention = TRUE)
   })
   
+  #language_summary <-  reactive({
+  #  summary_PT(df, language, ???, "Yes", TRUE, naming_convention = TRUE)
+  #})
+  # ??? was true_consent but if it's true_consent then obvs no "Did not respond".
+    
   parent_gender_summary <- reactive({
-    summary_PT(df, parent_gender, consent, "Yes", TRUE, naming_convention = TRUE)
+    summary_PT(df, parent_gender, true_consent, "Yes", TRUE, naming_convention = TRUE)
   })
   
   parent_gender_group_summary <- reactive({
-    summary_PT(df, c(parent_gender, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
+    summary_PT(df, c(parent_gender, !!!rlang::syms(input$grouper)), true_consent, "Yes", TRUE, naming_convention = TRUE)
   })
   
   child_gender_summary <- reactive({
@@ -869,34 +946,34 @@ server <- function(input, output) {
   
   child_gender_group_summary <- reactive({
     req(input$grouper)
-    summary_PT(df, c(child_gender, (!!!rlang::syms(input$grouper))), consent, "Yes", TRUE, naming_convention = TRUE)
+    summary_PT(df, c(child_gender, (!!!rlang::syms(input$grouper))), true_consent, "Yes", TRUE, naming_convention = TRUE)
   })
   child_age_summary <- reactive({
-    summary_PT(df, child_age_group, consent, "Yes", TRUE, naming_convention = TRUE)
+    summary_PT(df, child_age_group, true_consent, "Yes", TRUE, naming_convention = TRUE)
   })
   child_age_group_summary <- reactive({
     req(input$grouper)
     summary_PT(df, c(child_age_group, (!!!rlang::syms(input$grouper))), enrolled, "Yes", TRUE, naming_convention = TRUE)
   })
   parent_child_relationship_summary <- reactive({
-    summary_PT(df, parent_child_relationship, consent, "Yes", TRUE, naming_convention = TRUE)
+    summary_PT(df, parent_child_relationship, true_consent, "Yes", TRUE, naming_convention = TRUE)
   })
   parent_child_relationship_group_summary <- reactive({
     req(input$grouper)
-    summary_PT(df, c(parent_child_relationship, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
+    summary_PT(df, c(parent_child_relationship, !!!rlang::syms(input$grouper)), true_consent, "Yes", TRUE, naming_convention = TRUE)
   })
   child_living_with_disabilities_summary <- reactive({
-    summary_PT(df, child_living_with_disabilities, consent, "Yes", TRUE, naming_convention = TRUE)
+    summary_PT(df, child_living_with_disabilities, true_consent, "Yes", TRUE, naming_convention = TRUE)
   })
   child_living_with_disabilities_group_summary <- reactive({
     req(input$grouper)
-    summary_PT(df, c(child_living_with_disabilities, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
+    summary_PT(df, c(child_living_with_disabilities, !!!rlang::syms(input$grouper)), true_consent, "Yes", TRUE, naming_convention = TRUE)
   })
   parent_relationship_status_summary <-  reactive({
-    summary_PT(df, parent_relationship_status, consent, "Yes", TRUE, naming_convention = TRUE)
+    summary_PT(df, parent_relationship_status, true_consent, "Yes", TRUE, naming_convention = TRUE)
   })
   parent_relationship_status_group_summary <-  reactive({
-    summary_PT(df, c(parent_relationship_status, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
+    summary_PT(df, c(parent_relationship_status, !!!rlang::syms(input$grouper)), true_consent, "Yes", TRUE, naming_convention = TRUE)
   })
   active_users_24hr_group_summary <- reactive({
     req(input$grouper_engagement)
@@ -915,7 +992,7 @@ server <- function(input, output) {
   
   comp_prog_summary <- reactive({
     comp_prog_df <- df %>% 
-      filter(consent == "Yes") %>%
+      filter(true_consent == "Yes") %>%
       summarise(program_completion_mean = round(mean(n_skills, na.rm = TRUE), 2),
                 program_completion_sd = round(sd(n_skills, na.rm = TRUE), 2))
     colnames(comp_prog_df) <- naming_conventions(colnames(comp_prog_df))
@@ -925,7 +1002,7 @@ server <- function(input, output) {
   comp_prog_group_summary <- reactive({
     req(input$grouper_engagement)
     comp_prog_df <- df %>% group_by(!!!rlang::syms(input$grouper_engagement)) %>%
-      filter(consent == "Yes") %>%
+      filter(true_consent == "Yes") %>%
       summarise(program_completion_mean = round(mean(n_skills, na.rm = TRUE), 2),
                 program_completion_sd = round(sd(n_skills, na.rm = TRUE), 2))
     colnames(comp_prog_df) <- naming_conventions(colnames(comp_prog_df))
@@ -935,7 +1012,7 @@ server <- function(input, output) {
   parent_age_summary <- reactive({
     req(input$grouper)
     parent_age_df <- df %>% 
-      filter(consent == "Yes") %>%
+      filter(true_consent == "Yes") %>%
       summarise(parent_age_mean = round(mean(parent_age, na.rm = TRUE), 2),
                 parent_age_sd = round(sd(parent_age, na.rm = TRUE), 2))
     colnames(parent_age_df) <- naming_conventions(colnames(parent_age_df))
@@ -944,16 +1021,21 @@ server <- function(input, output) {
   parent_age_group_summary <- reactive({
     req(input$grouper)
     parent_age_df <- df %>% group_by(!!!rlang::syms(input$grouper)) %>%
-      filter(consent == "Yes") %>%
+      filter(true_consent == "Yes") %>%
       summarise(parent_age_mean = round(mean(parent_age, na.rm = TRUE), 2),
                 parent_age_sd = round(sd(parent_age, na.rm = TRUE), 2))
     colnames(parent_age_df) <- naming_conventions(colnames(parent_age_df))
     parent_age_df
   })
+  
+  completed_welcome_summary <- reactive({
+    summary_PT(df, survey_completed_welcome, enrolled, "Yes", TRUE, naming_convention = TRUE)
+  })
+  
   # Note: These are the *number* of people that have completed the survey
   completed_survey_summary <- reactive({
     df_consent <- df %>%
-      filter(consent == "Yes")
+      filter(true_consent == "Yes")
     survey_completed <- NULL
     survey_completed[[1]] <- df_consent %>% summarise(n = sum(survey_completed_wk1 == 1, na.rm = TRUE))
     survey_completed[[1]]$perc <- survey_completed[[1]]$n/nrow(df_consent) * 100
@@ -976,7 +1058,7 @@ server <- function(input, output) {
   completed_survey_group_summary <- reactive({
     req(input$grouper)
     df_consent <- df %>%
-      filter(consent == "Yes")
+      filter(true_consent == "Yes")
     survey_completed <- NULL
     survey_completed[[1]] <- df_consent %>% group_by(!!!rlang::syms(input$grouper)) %>% summarise(n = sum(survey_completed_wk1 == 1, na.rm = TRUE))
     survey_completed[[1]]$perc <- survey_completed[[1]]$n/nrow(df_consent) * 100
@@ -1178,8 +1260,8 @@ server <- function(input, output) {
   df_enrolled <- summary_PT(df,  enrolled,  enrolled, "Yes")
   df_enrolled <- df_enrolled %>% mutate(group =  enrolled, count = enrolled_n) %>% dplyr::select(c(group, count))
   
-  df_consented <- summary_PT(df,  consent,  consent, "Yes")
-  df_consented <- df_consented %>% mutate(group =  consent, count = consent_n) %>% dplyr::select(c(group, count))
+  df_consented <- summary_PT(df,  true_consent,  true_consent, "Yes")
+  df_consented <- df_consented %>% mutate(group =  true_consent, count = true_consent_n) %>% dplyr::select(c(group, count))
   
   df_program <- summary_PT(df,  program,  program, "Yes")
   df_program <- df_program %>% mutate(group =  program, count = program_n) %>% dplyr::select(c(group, count))
@@ -1216,6 +1298,7 @@ server <- function(input, output) {
   output$enrolled_summary_group <- shiny::renderTable({(enrolled_summary_group())}, striped = TRUE)
   output$consent_summary <- shiny::renderTable({(consent_summary())}, striped = TRUE)
   output$consent_summary_group <- shiny::renderTable({(consent_summary_group())}, striped = TRUE)
+  #output$language_summary <- shiny::renderTable({(language_summary())}, striped = TRUE)
   output$parent_gender_summary <- shiny::renderTable({(parent_gender_summary())}, striped = TRUE)
   output$parent_gender_group_summary <- shiny::renderTable({(parent_gender_group_summary())}, striped = TRUE)
   output$parent_age_summary <- shiny::renderTable({(parent_age_summary())}, striped = TRUE)
@@ -1236,6 +1319,7 @@ server <- function(input, output) {
   output$active_users_7d_group_summary <- shiny::renderTable({(active_users_7d_group_summary())}, striped = TRUE)
   output$comp_prog_summary <- shiny::renderTable({(comp_prog_summary())}, caption = "Number of skills in toolkit", striped = TRUE)
   output$comp_prog_group_summary <- shiny::renderTable({(comp_prog_group_summary())}, caption = "Number of skills in toolkit", striped = TRUE)
+  output$completed_welcome_summary <- shiny::renderTable({completed_welcome_summary()}, striped = TRUE, caption = "Number (and percentage) of individuals who have completed the welcome survey")
   output$completed_survey_summary <- shiny::renderTable({{completed_survey_summary()}}, striped = TRUE, caption = "Number (and percentage) of individuals who have completed different surveys")
   output$completed_survey_group_summary <- shiny::renderTable({{completed_survey_group_summary()}}, striped = TRUE, caption = "Number (and percentage) of individuals who have completed different surveys")
   output$all_flows_response <- shiny::renderTable({(all_flows_response())}, caption = "Count (%) for each flow", striped = TRUE)
