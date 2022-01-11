@@ -41,12 +41,12 @@ get_rapidpro_uuid_names = function(){
   get("rapidpro_uuid_names", envir = pkg_env)
 }
 
-get_user_data <- function(rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, date_from = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
-  get_data_from_rapidpro_api(call_type = "contacts.json", rapidpro_site = rapidpro_site, token = token, flatten = flatten, date_from = date_from, format_date = format_date, tzone_date = tzone_date)
+get_user_data <- function(rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, date_from = NULL, date_to = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
+  get_data_from_rapidpro_api(call_type = "contacts.json", rapidpro_site = rapidpro_site, token = token, flatten = flatten, date_from = date_from, date_to = date_to, format_date = format_date, tzone_date = tzone_date)
 }
 
-get_flow_names <- function(rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, date_from = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
-  get_data_from_rapidpro_api(call_type = "flows.json", rapidpro_site = rapidpro_site, token = token, flatten = flatten, date_from = date_from, format_date = format_date, tzone_date = tzone_date)
+get_flow_names <- function(rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, date_from = NULL, date_to = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
+  get_data_from_rapidpro_api(call_type = "flows.json", rapidpro_site = rapidpro_site, token = token, flatten = flatten, date_from = date_from, date_to = date_to, format_date = format_date, tzone_date = tzone_date)
 }
 
 httr_get_call <- function(get_command, token = get_rapidpro_key()){
@@ -67,7 +67,7 @@ httr_get_call <- function(get_command, token = get_rapidpro_key()){
   }
 }
 
-get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call_type = "runs.json?flow=", rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, checks = FALSE, date_from = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
+get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call_type = "runs.json?flow=", rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, checks = FALSE, date_from = NULL, date_to = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
   if (is.null(rapidpro_site)){
     stop("rapidpro_site is NULL. Set a website with `set_rapidpro_site`.")
   }
@@ -118,6 +118,9 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call
       if (!is.null(date_from)){
         result_flow <- result_flow %>% dplyr::filter(as.POSIXct(date_from, format=format_date, tzone = tzone_date) < as.POSIXct(result_flow$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
       }
+      if (!is.null(date_to)){
+        result_flow <- result_flow %>% dplyr::filter(as.POSIXct(date_to, format=format_date, tzone = tzone_date) > as.POSIXct(result_flow$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+      }
       uuid <- result_flow$contact$uuid
       response <- result_flow$responded
       #result <- na.omit(unique(flatten(result_flow$values)$name))[1]
@@ -139,7 +142,7 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call
 }
 
 get_data_from_rapidpro_api <- function(call_type, rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE,
-                                       date_from, format_date = "%Y-%m-%d", tzone_date = "UTC"){
+                                       date_from, date_to, format_date = "%Y-%m-%d", tzone_date = "UTC"){
   if (is.null(rapidpro_site)){
     stop("rapidpro_site is NULL. Set a website with `set_rapidpro_site`.")
   }
@@ -159,6 +162,9 @@ get_data_from_rapidpro_api <- function(call_type, rapidpro_site = get_rapidpro_s
   }
   if (!is.null(date_from)){
     user_result <- user_result %>% dplyr::filter(as.POSIXct(date_from, format=format_date, tzone = tzone_date) < as.POSIXct(user_result$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+  }
+  if (!is.null(date_to)){
+    user_result <- user_result %>% dplyr::filter(as.POSIXct(date_to, format=format_date, tzone = tzone_date) > as.POSIXct(user_result$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
   }
   return(user_result)
 }
