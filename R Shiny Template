@@ -1,6 +1,8 @@
-
-
-
+library(shiny)
+library(shinythemes)
+library(shinyjs)
+library(plotly)
+library(shinydashboard)
 
 parenttext_shiny <- function(data){
   # Define UI
