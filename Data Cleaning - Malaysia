@@ -1,9 +1,3 @@
-library(shiny)
-library(shinythemes)
-library(shinyjs)
-#library(rpivotTable)
-library(plotly)
-library(shinydashboard)
 library(httr)
 library(jsonlite)
 library(tidyverse)
@@ -243,6 +237,25 @@ update_data <- function(date_from = "2021-12-07", date_to = NULL) {
   df <- df %>%
     mutate(consent = forcats::fct_relevel(consent, c("Yes", "No", "Did not respond")))
   
+  # for Jamaica Only: Parent Pals data cleaning --------------------
+  pp_n_recruited <- df %>% group_by(child_age_group) %>% # group_by will be "recruited by" in time
+    mutate(survey_completed_welcome = ifelse(survey_completed_welcome == "Yes", 1, 0)) %>% # reorder welcome survey
+    summarise(`Number recruited` = n(),
+              `Toolkit skills` = sum(n_skills, na.rm = TRUE),
+              `Welcome survey completed` = sum(survey_completed_welcome, na.rm = TRUE),
+              `Week1 survey completed` = sum(survey_completed_wk1, na.rm = TRUE),
+              `Week 2 survey completed` = sum(survey_completed_wk2_plus, na.rm = TRUE))
+  pp_n_consent <- df %>% group_by(child_age_group, .drop = FALSE) %>% # group_by will be "recruited by" in time
+    filter(consent == "Yes") %>%
+    summarise(`Number consented` = n())
+  pp_data_frame <- merge(pp_n_recruited, pp_n_consent)
+  pp_data_frame <- pp_data_frame %>%
+    mutate(`Recruited by` = 1:nrow(.)) %>%
+    dplyr::select(`Recruited by`, `Number recruited`, `Number consented`, `Welcome survey completed`, `Week1 survey completed`,
+                  `Week 2 survey completed`, `Toolkit skills`) %>%
+    mutate(Total = `Number recruited` + `Number consented` + `Welcome survey completed` + `Week1 survey completed` + `Week 2 survey completed` + `Toolkit skills`) %>%
+    arrange(desc(Total))
+  
   # flow level data --------------------------------
   # sum of response to content, calm, check in, supportive, praise messages
   # supportive
@@ -320,6 +333,7 @@ update_data <- function(date_from = "2021-12-07", date_to = NULL) {
   objects_to_return[[8]] <- true_consent
   objects_to_return[[9]] <- program
   objects_to_return[[10]] <- parenting_survey
+  objects_to_return[[11]] <- pp_data_frame # for Jamaica only (otherwise NULL?)
   return(objects_to_return)
 }
 
@@ -344,5 +358,5 @@ update_data <- function(date_from = "2021-12-07", date_to = NULL) {
 
 
 
-parenttext_shiny(data = "Malaysia")
-#parenttext_shiny(data = "Jamaica")
+#parenttext_shiny(data = "Hi")
+parenttext_shiny(data = "Jamaica")
