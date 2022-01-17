@@ -210,8 +210,7 @@ get_survey_data <- function(parenting_variable, survey_max = 9){
 }
 
 
-
-# aesthetcs - remving _ and making first letter capital
+# aesthetics - removing _, and making first letter capital
 
 naming_conventions <- function(x) {
   substr(x, 1, 1) <- toupper(substr(x, 1, 1))
@@ -319,10 +318,6 @@ response_rate_graphs<-function(flow_interaction, flow_name){
   #    geom_bar() +
   #    labs(x = "Response", y = "Frequency", title = paste(flow_name ," - Response"))
 }
-
-# TODO: Result level - what is WFR
-
-
 
 create_user_dataframe <- function(flow_interaction){
   temp<-flow_interaction %>% group_by(uuid,response) %>% summarise(n=n()) %>% mutate(freq=100*n/sum(n))
