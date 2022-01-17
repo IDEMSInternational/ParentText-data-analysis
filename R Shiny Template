@@ -1,6 +1,7 @@
 library(shiny)
 library(shinythemes)
 library(shinyjs)
+#library(rpivotTable)
 library(plotly)
 library(shinydashboard)
 
@@ -336,7 +337,15 @@ parenttext_shiny <- function(data){
                                collapsible = FALSE,
                                solidHeader = TRUE,
                                background = "light-blue",
-                               height = "95px")))
+                               height = "95px"))),
+                  fluidRow(
+                    box(dataTableOutput('pp_table'),
+                        width = 10,
+                        title = NULL,
+                        collapsible = FALSE,
+                        solidHeader = TRUE
+                    )
+                  )
                   ),
           
           tabItem(tabName = "behaviours",
@@ -438,6 +447,7 @@ parenttext_shiny <- function(data){
       supportive_flow_names_flow <- updated_data[[6]]
       enrolled <- updated_data[[7]]
       parenting_survey <- updated_data[[10]]
+      pp_data_frame <- updated_data[[11]]
     })
     
     updated_data <- update_data()
@@ -451,6 +461,7 @@ parenttext_shiny <- function(data){
     true_consent <- updated_data[[8]]
     program <- updated_data[[9]]
     parenting_survey <- updated_data[[10]]
+    pp_data_frame <- updated_data[[11]]
     
     # Subset data
     selected_data <- reactive({
@@ -997,6 +1008,10 @@ parenttext_shiny <- function(data){
                                color = "fuchsia"
       )
     })
+    output$pp_table <- renderDataTable(pp_data_frame,
+                                       options = list(
+                                         pageLength = 5)
+                                       )
     output$enrolled_summary <- shiny::renderTable({(enrolled_summary())}, striped = TRUE)
     output$enrolled_summary_group <- shiny::renderTable({(enrolled_summary_group())}, striped = TRUE)
     output$consent_summary <- shiny::renderTable({(consent_summary())}, striped = TRUE)
