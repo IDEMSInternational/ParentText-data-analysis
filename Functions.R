@@ -226,7 +226,7 @@ str_wrap_factor <- function(x, ...) {
 
 summary_PT <- function(data = df, summary_var, denominator = NULL, denominator_level = "Yes", together = FALSE, naming_convention = FALSE){
   
-  if (!is.null(denominator)) {
+  if (!missing(denominator)) {
     summary_perc <- data %>%
       filter({{ denominator }} == denominator_level) %>%
       group_by(across({{ summary_var }}), .drop = FALSE) %>%
