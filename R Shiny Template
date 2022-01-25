@@ -79,12 +79,12 @@ parenttext_shiny <- function(data){
                                                                            plotlyOutput(outputId = "plot_consent", height = "240"),
                                                                            shiny::tableOutput("consent_summary")),
                                                                       box( width=NULL,
-                                                                           title = "Enrollment Frequency",
+                                                                           title = "Language",
                                                                            status = "primary",
                                                                            solidHeader = TRUE,
                                                                            collapsible = FALSE,
-                                                                           plotlyOutput(outputId = "plot_category", height = "240", width = "100%"),
-                                                                           shiny::tableOutput("enrolled_summary")
+                                                                           plotlyOutput(outputId = "plot_language", height = "240", width = "100%"),
+                                                                           shiny::tableOutput("language_summary")
                                                                       ),
                                                                       cellWidths = c("50%", "50%"),
                                                                       cellArgs = list(style = "vertical-align: top"))),
@@ -163,12 +163,12 @@ parenttext_shiny <- function(data){
                                                                           plotlyOutput(outputId = "plot_consent_group", height = "240"),
                                                                           shiny::tableOutput("consent_summary_group")),
                                                                       box(width=NULL,
-                                                                          title = "Enrollment Frequency",
+                                                                          title = "Language",
                                                                           status = "primary",
                                                                           solidHeader = TRUE,
                                                                           collapsible = FALSE,
-                                                                          plotlyOutput(outputId = "plot_category_group", height = "240", width = "100%"),
-                                                                          shiny::tableOutput("enrolled_summary_group")
+                                                                          plotlyOutput(outputId = "plot_language_group", height = "240", width = "100%"),
+                                                                          shiny::tableOutput("language_summary_group")
                                                                       ),
                                                                       cellWidths = c("50%", "50%"),
                                                                       cellArgs = list(style = "vertical-align: top"))),
@@ -440,28 +440,30 @@ parenttext_shiny <- function(data){
       
       updated_data <- update_data()
       df <- updated_data[[1]]
-      supportive_calm_flow <- updated_data[[2]]
-      supportive_praise_flow <- updated_data[[3]]
-      check_in_flow_names_flow <- updated_data[[4]]
-      content_tip_flow_names_flow <- updated_data[[5]]
-      supportive_flow_names_flow <- updated_data[[6]]
-      enrolled <- updated_data[[7]]
-      parenting_survey <- updated_data[[10]]
-      pp_data_frame <- updated_data[[11]]
+      df1 <- updated_data[[2]]
+      supportive_calm_flow <- updated_data[[3]]
+      supportive_praise_flow <- updated_data[[4]]
+      check_in_flow_names_flow <- updated_data[[5]]
+      content_tip_flow_names_flow <- updated_data[[6]]
+      supportive_flow_names_flow <- updated_data[[7]]
+      enrolled <- updated_data[[8]]
+      parenting_survey <- updated_data[[11]]
+      pp_data_frame <- updated_data[[12]]
     })
     
     updated_data <- update_data()
     df <- updated_data[[1]]
-    supportive_calm_flow <- updated_data[[2]]
-    supportive_praise_flow <- updated_data[[3]]
-    check_in_flow_names_flow <- updated_data[[4]]
-    content_tip_flow_names_flow <- updated_data[[5]]
-    supportive_flow_names_flow <- updated_data[[6]]
-    enrolled <- updated_data[[7]]
-    true_consent <- updated_data[[8]]
-    program <- updated_data[[9]]
-    parenting_survey <- updated_data[[10]]
-    pp_data_frame <- updated_data[[11]]
+    df1 <- updated_data[[2]]
+    supportive_calm_flow <- updated_data[[3]]
+    supportive_praise_flow <- updated_data[[4]]
+    check_in_flow_names_flow <- updated_data[[5]]
+    content_tip_flow_names_flow <- updated_data[[6]]
+    supportive_flow_names_flow <- updated_data[[7]]
+    enrolled <- updated_data[[8]]
+    true_consent <- updated_data[[9]]
+    program <- updated_data[[10]]
+    parenting_survey <- updated_data[[11]]
+    pp_data_frame <- updated_data[[12]]
     
     # Subset data
     selected_data <- reactive({
@@ -530,33 +532,29 @@ parenttext_shiny <- function(data){
       }
     })
     
-    enrolled_summary_group <- reactive({
+    language_summary <- reactive({
+      summary_PT(df, language, true_consent, "Yes", TRUE, naming_convention = TRUE)
+    })
+    
+    language_summary_group <- reactive({
       req(input$grouper)
-      enrolled_table <- summary_PT(df, c(enrolled, (!!!rlang::syms(input$grouper))), naming_convention = TRUE)
-      names(enrolled_table)[length(enrolled_table)] <- "Count"
-      enrolled_table
+      summary_PT(df, c(language, (!!!rlang::syms(input$grouper))), true_consent, "Yes", TRUE, naming_convention = TRUE)
     })
     
-    enrolled_summary <- reactive({
-      enrolled_table <- summary_PT(df, enrolled, naming_convention = TRUE)
-      names(enrolled_table)[2] <- "Count"
-      enrolled_table
-    })
-    
-    output$plot_category <- renderPlotly({
-      ggplot(df, aes(x = enrolled)) +
+    output$plot_language <- renderPlotly({
+      ggplot(df, aes(x = language)) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
-        labs(x = "Enrolled", y = "Count") +
+        labs(x = "language", y = "Count") +
         theme_classic()
     })
     
-    output$plot_category_group <- renderPlotly({
+    output$plot_language_group <- renderPlotly({
       req(input$grouper)
-      ggplot(df, aes(x = enrolled, fill = (!!!rlang::syms(input$grouper)))) +
+      ggplot(df, aes(x = language, fill = (!!!rlang::syms(input$grouper)))) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
-        labs(x = "Enrolled", y = "Count") +
+        labs(x = "language", y = "Count") +
         theme_classic()
     })
     
@@ -580,7 +578,7 @@ parenttext_shiny <- function(data){
     })
     
     output$plot_consent <- renderPlotly({
-      ggplot(df, aes(x = consent)) +
+      ggplot(df1, aes(x = consent)) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = "Consent", y = "Count") +
@@ -589,7 +587,7 @@ parenttext_shiny <- function(data){
     
     output$plot_consent_group <- renderPlotly({
       req(input$grouper)
-      ggplot(df, aes(x = consent, fill = (!!!rlang::syms(input$grouper)))) +
+      ggplot(df1, aes(x = consent, fill = (!!!rlang::syms(input$grouper)))) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = "Consented", y = "Count") +
@@ -633,12 +631,12 @@ parenttext_shiny <- function(data){
     })
     
     consent_summary <- reactive({
-      summary_PT(df, "consent", enrolled, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df1, "consent", enrolled, "Yes", TRUE, naming_convention = TRUE)
     })
     
     consent_summary_group <- reactive({
       req(input$grouper)
-      summary_PT(df, c(consent, !!!rlang::syms(input$grouper)), enrolled, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df1, c(consent, !!!rlang::syms(input$grouper)), enrolled, "Yes", TRUE, naming_convention = TRUE)
     })
     
     #language_summary <-  reactive({
@@ -655,7 +653,7 @@ parenttext_shiny <- function(data){
     })
     
     child_gender_summary <- reactive({
-      summary_PT(df, child_gender, enrolled, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, child_gender, true_consent, "Yes", TRUE, naming_convention = TRUE)
     })
     
     child_gender_group_summary <- reactive({
@@ -667,7 +665,7 @@ parenttext_shiny <- function(data){
     })
     child_age_group_summary <- reactive({
       req(input$grouper)
-      summary_PT(df, c(child_age_group, (!!!rlang::syms(input$grouper))), enrolled, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, c(child_age_group, (!!!rlang::syms(input$grouper))), true_consent, "Yes", TRUE, naming_convention = TRUE)
     })
     parent_child_relationship_summary <- reactive({
       summary_PT(df, parent_child_relationship, true_consent, "Yes", TRUE, naming_convention = TRUE)
@@ -743,7 +741,7 @@ parenttext_shiny <- function(data){
     })
     
     completed_welcome_summary <- reactive({
-      summary_PT(df, survey_completed_welcome, enrolled, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, completed_welcome, true_consent, "Yes", TRUE, naming_convention = TRUE)
     })
     
     # Note: These are the *number* of people that have completed the survey
@@ -830,11 +828,11 @@ parenttext_shiny <- function(data){
       parenting_survey %>%
         dplyr::filter(week == input$grouper_survey) %>%
         group_by(week, Group) %>%
-        summarise(Mean = mean(vals, na.rm = TRUE), SD = sd(vals, na.rm = TRUE), Sum = sum(vals, na.rm = TRUE)) %>%
+        summarise(Mean = mean(vals, na.rm = TRUE), SD = sd(vals, na.rm = TRUE), Count = n()) %>%
         mutate(Scale = ifelse(Group %in% c("Food insecurity", "Sexual abuse prevention"), "0-30", "0-7")) %>%
         mutate(Mean = round(Mean, 2),
                SD = round(SD, 2),
-               Sum = round(Sum, 0))
+               Count = round(Count, 0))
     })
     
     output$parenting_survey_plot <- renderPlotly({
@@ -971,7 +969,7 @@ parenttext_shiny <- function(data){
     
     # Output render ------------------------------------------------------------
     
-    df_enrolled <- summary_PT(df,  enrolled,  enrolled, "Yes")
+    df_enrolled <- summary_PT(df1,  enrolled,  enrolled, "Yes")
     df_enrolled <- df_enrolled %>% mutate(group =  enrolled, count = enrolled_n) %>% dplyr::select(c(group, count))
     
     df_consented <- summary_PT(df,  true_consent,  true_consent, "Yes")
@@ -1012,8 +1010,8 @@ parenttext_shiny <- function(data){
                                        options = list(
                                          pageLength = 5)
                                        )
-    output$enrolled_summary <- shiny::renderTable({(enrolled_summary())}, striped = TRUE)
-    output$enrolled_summary_group <- shiny::renderTable({(enrolled_summary_group())}, striped = TRUE)
+    output$language_summary <- shiny::renderTable({(language_summary())}, striped = TRUE)
+    output$language_summary_group <- shiny::renderTable({(language_summary_group())}, striped = TRUE)
     output$consent_summary <- shiny::renderTable({(consent_summary())}, striped = TRUE)
     output$consent_summary_group <- shiny::renderTable({(consent_summary_group())}, striped = TRUE)
     #output$language_summary <- shiny::renderTable({(language_summary())}, striped = TRUE)
