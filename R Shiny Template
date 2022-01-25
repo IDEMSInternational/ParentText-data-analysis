@@ -828,7 +828,7 @@ parenttext_shiny <- function(data){
       parenting_survey %>%
         dplyr::filter(week == input$grouper_survey) %>%
         group_by(week, Group) %>%
-        summarise(Mean = mean(vals, na.rm = TRUE), SD = sd(vals, na.rm = TRUE), Count = sum(!is.na(vals))) %>%
+        summarise(Mean = mean(vals, na.rm = TRUE), SD = sd(vals, na.rm = TRUE), `Number of responses` = sum(!is.na(vals))) %>%
         mutate(Scale = ifelse(Group %in% c("Food insecurity", "Sexual abuse prevention"), "0-30", "0-7")) %>%
         mutate(Mean = round(Mean, 2),
                SD = round(SD, 2),
