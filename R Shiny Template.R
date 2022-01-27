@@ -832,7 +832,7 @@ parenttext_shiny <- function(data){
         mutate(Scale = ifelse(Group %in% c("Food insecurity", "Sexual abuse prevention"), "0-30", "0-7")) %>%
         mutate(Mean = round(Mean, 2),
                SD = round(SD, 2),
-               Count = round(Count, 0))
+               `Number of responses` = round(`Number of responses`, 0))
     })
     
     output$parenting_survey_plot <- renderPlotly({
