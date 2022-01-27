@@ -2,6 +2,7 @@ library(httr)
 library(jsonlite)
 library(tidyverse)
 source("Functions.R")
+source("R Shiny Template.R")
 # source("Code Book.R")
 #install_github("lilyclements/rapidpror")
 #library(rapidpror)
@@ -13,9 +14,9 @@ set_rapidpro_key(key = key[[1]])
 set_rapidpro_site(site = "https://app.rapidpro.io/api/v2/")
 set_rapidpro_uuid_names()
 
-update_data <- function(date_from = "2021-12-07", date_to = NULL) {
+update_data <- function(date_from = "2021-10-14", date_to = NULL) {
   contacts_unflat <- get_user_data(flatten = FALSE, date_from = date_from, date_to = date_to)
-  
+  created_on <- contacts_unflat$created_on
   ID <- contacts_unflat$uuid
   
   # Variables Manipulation -------------------------------------------------------
@@ -181,21 +182,19 @@ update_data <- function(date_from = "2021-12-07", date_to = NULL) {
   parent_age <- as.numeric(as.character(contacts_unflat$fields$age))
   
   # completed surveys
-  survey_completed_welcome <- factor(contacts_unflat$fields$completed_welcome)
-  survey_completed_welcome <- forcats::fct_expand(survey_completed_welcome, c("Yes", "No"))
-  survey_completed_welcome <- forcats::fct_recode(survey_completed_welcome,
-                                                  "No" = "no",
-                                                  "Yes" = "yes")
-  survey_completed_welcome[is.na(survey_completed_welcome)] <- "No"
-  survey_completed_welcome <- forcats::fct_relevel(survey_completed_welcome, c("Yes", "No"))
+  completed_welcome <- factor(contacts_unflat$fields$completed_welcome)
+  completed_welcome <- forcats::fct_expand(completed_welcome, c("Yes", "No"))
+  completed_welcome <- forcats::fct_recode(completed_welcome,
+                                           "No" = "no",
+                                           "Yes" = "yes")
+  completed_welcome[is.na(completed_welcome)] <- "No"
+  completed_welcome <- forcats::fct_relevel(completed_welcome, c("Yes", "No"))
   
   survey_completed_wk1 <- str_count(contacts_unflat$fields$surveyparenting_completion, fixed("|"))
   if (length(survey_completed_wk1) == 0){survey_completed_wk1 <- rep(NA, length(enrolled))}
   
   survey_completed_wk2_plus <- str_count(contacts_unflat$fields$surveyparentingbehave_completion, fixed("|"))
   if (length(survey_completed_wk2_plus) == 0){survey_completed_wk2_plus <- rep(NA, length(enrolled))}
-  
-  
   
   challenging_type <- contacts_unflat$fields$survey_behave_most_challenging
   challenging_type <- dplyr::case_when(
@@ -228,21 +227,31 @@ update_data <- function(date_from = "2021-12-07", date_to = NULL) {
   
   df <- data.frame(ID, enrolled, true_consent, program, language, parent_gender, child_gender, child_age_group, parent_child_relationship, 
                    parent_relationship_status, child_living_with_disabilities, recruitment_channel, parenting_goals, parenting_goals_wrap,
-                   active_users_24hr, active_users_7d, n_skills, parent_age, survey_completed_welcome, survey_completed_wk1, survey_completed_wk2_plus,
+                   active_users_24hr, active_users_7d, n_skills, parent_age, completed_welcome, survey_completed_wk1, survey_completed_wk2_plus,
                    challenging_type, challenging_type_wrap)
   
   df <- df %>%
-    mutate(consent = ifelse(language == "Did not respond", "Did not respond",
-                            ifelse(true_consent == "Yes", "Yes", "No")))
+    mutate(consent = ifelse(is.na(true_consent) &  is.na(language), "Did not interact",
+                            ifelse(is.na(true_consent) & !is.na(language), "Did not respond",
+                                   ifelse(true_consent == "Yes", "Yes", "No"))))
   df <- df %>%
-    mutate(consent = forcats::fct_relevel(consent, c("Yes", "No", "Did not respond")))
+    mutate(consent = forcats::fct_relevel(consent, c("Yes", "No", "Did not interact", "Did not respond")))
+  
+  # last online plot -------------------------------------------------------------------------------------------------------------
+  last_online <- as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT", tz = "UTC")
+  df$last_online <- last_online
+  
+  consent <- df$consent 
+  
+  df1 <- df %>% dplyr::select(c(true_consent, consent, enrolled, parent_gender, child_gender, child_age_group))
+  df <- df %>% filter(true_consent == "Yes")
   
   # for Jamaica Only: Parent Pals data cleaning --------------------
   pp_n_recruited <- df %>% group_by(child_age_group) %>% # group_by will be "recruited by" in time
-    mutate(survey_completed_welcome = ifelse(survey_completed_welcome == "Yes", 1, 0)) %>% # reorder welcome survey
+    mutate(completed_welcome = ifelse(completed_welcome == "Yes", 1, 0)) %>% # reorder welcome survey
     summarise(`Number recruited` = n(),
               `Toolkit skills` = sum(n_skills, na.rm = TRUE),
-              `Welcome survey completed` = sum(survey_completed_welcome, na.rm = TRUE),
+              `Welcome survey completed` = sum(completed_welcome, na.rm = TRUE),
               `Week1 survey completed` = sum(survey_completed_wk1, na.rm = TRUE),
               `Week 2 survey completed` = sum(survey_completed_wk2_plus, na.rm = TRUE))
   pp_n_consent <- df %>% group_by(child_age_group, .drop = FALSE) %>% # group_by will be "recruited by" in time
@@ -255,10 +264,11 @@ update_data <- function(date_from = "2021-12-07", date_to = NULL) {
                   `Week 2 survey completed`, `Toolkit skills`) %>%
     mutate(Total = `Number recruited` + `Number consented` + `Welcome survey completed` + `Week1 survey completed` + `Week 2 survey completed` + `Toolkit skills`) %>%
     arrange(desc(Total))
-  
+  ""
   # flow level data --------------------------------
   # sum of response to content, calm, check in, supportive, praise messages
   # supportive
+  consented_ids <- df$ID
   supportive_flow_names <- c("PLH - Content - Extra - CheckIn - COVID",
                              "PLH - Supportive - Family", "PLH - Supportive - Help reminder", "PLH - Supportive - Share", "PLH - Supportive - Share - Enrollment", "GG - PLH - Supportive - Share - Enrollment", "PLH - Supportive - Budget", "PLH - Supportive - Activities for babies", "PLH - Supportive - Activities",
                              "PLH - Supportive - Behave reminder", "PLH - Supportive - Children reminder", "PLH - Supportive - Covid", "PLH - Supportive - Development", "PLH - Supportive - Disabilities")
@@ -284,6 +294,31 @@ update_data <- function(date_from = "2021-12-07", date_to = NULL) {
   check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names, date_from = date_from, date_to = date_to)
   content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names, date_from = date_from, date_to = date_to)
   
+  for (i in 1:length(supportive_calm_flow)){
+    if(!is.null(supportive_calm_flow[[i]])){
+      supportive_calm_flow[[i]] <- supportive_calm_flow[[i]] %>% mutate(consent = ifelse(`uuid` %in% consented_ids, "Yes", "No")) %>% filter(consent == "Yes")
+    }
+  }
+  for (i in 1:length(supportive_praise_flow)){
+    if(!is.null(supportive_praise_flow[[i]])){
+      supportive_praise_flow[[i]] <- supportive_praise_flow[[i]] %>% mutate(consent = ifelse(`uuid` %in% consented_ids, "Yes", "No")) %>% filter(consent == "Yes")
+    }
+  }
+  for (i in 1:length(supportive_flow_names_flow)){
+    if(!is.null(supportive_flow_names_flow[[i]])){
+      supportive_flow_names_flow[[i]] <- supportive_flow_names_flow[[i]] %>% mutate(consent = ifelse(`uuid` %in% consented_ids, "Yes", "No")) %>% filter(consent == "Yes")
+    }
+  }
+  for (i in 1:length(check_in_flow_names_flow)){
+    if(!is.null(check_in_flow_names_flow[[i]])){
+      check_in_flow_names_flow[[i]] <- check_in_flow_names_flow[[i]] %>% mutate(consent = ifelse(`uuid` %in% consented_ids, "Yes", "No")) %>% filter(consent == "Yes")
+    }
+  }
+  for (i in 1:length(content_tip_flow_names_flow)){
+    if(!is.null(content_tip_flow_names_flow[[i]])){
+      content_tip_flow_names_flow[[i]] <- content_tip_flow_names_flow[[i]] %>% mutate(consent = ifelse(`uuid` %in% consented_ids, "Yes", "No")) %>% filter(consent == "Yes")
+    }
+  }
   # Survey Level Data ---------------------------------------------------------------------------------------------------------------------------
   # get all survey values
   week <- c(rep("Base", nrow(contacts_unflat)),
@@ -317,45 +352,47 @@ update_data <- function(date_from = "2021-12-07", date_to = NULL) {
   parenting_survey <- parenting_survey %>% mutate(Group = fct_expand(Group, c("Positive parenting", "Child maltreatment", "Play", "Praise", "Stress", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
   parenting_survey <- parenting_survey %>% mutate(Group = fct_relevel(Group, c("Positive parenting", "Child maltreatment", "Play", "Praise", "Stress", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
   parenting_survey$ID <- contacts_unflat$uuid
-  
-  # last online plot -------------------------------------------------------------------------------------------------------------
-  last_online <- as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT", tz = "UTC")
-  df$last_online <- last_online
+  parenting_survey <- parenting_survey %>% mutate(consent = ifelse(ID %in% consented_ids, "Yes", "No")) %>% filter(consent == "Yes")
+  #parenting_survey <- parenting_survey %>%
+  #  dplyr::filter(as.POSIXct(date_from, format=format_date, tzone = tzone_date) < as.POSIXct(result_flow$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+  #parenting_survey <- parenting_survey %>%
+  #  dplyr::filter(as.POSIXct(date_to, format=format_date, tzone = tzone_date) > as.POSIXct(result_flow$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
   
   objects_to_return <- NULL
   objects_to_return[[1]] <- df
-  objects_to_return[[2]] <- supportive_calm_flow
-  objects_to_return[[3]] <- supportive_praise_flow
-  objects_to_return[[4]] <- check_in_flow_names_flow
-  objects_to_return[[5]] <- content_tip_flow_names_flow
-  objects_to_return[[6]] <- supportive_flow_names_flow
-  objects_to_return[[7]] <- enrolled
-  objects_to_return[[8]] <- true_consent
-  objects_to_return[[9]] <- program
-  objects_to_return[[10]] <- parenting_survey
-  objects_to_return[[11]] <- pp_data_frame # for Jamaica only (otherwise NULL?)
+  objects_to_return[[2]] <- df1
+  objects_to_return[[3]] <- supportive_calm_flow
+  objects_to_return[[4]] <- supportive_praise_flow
+  objects_to_return[[5]] <- check_in_flow_names_flow
+  objects_to_return[[6]] <- content_tip_flow_names_flow
+  objects_to_return[[7]] <- supportive_flow_names_flow
+  objects_to_return[[8]] <- enrolled
+  objects_to_return[[9]] <- true_consent
+  objects_to_return[[10]] <- program
+  objects_to_return[[11]] <- parenting_survey
+  objects_to_return[[12]] <- pp_data_frame # for Jamaica only (otherwise NULL?)
   return(objects_to_return)
 }
 
 #updated_data <- update_data()
 #df <- updated_data[[1]]
-#supportive_calm_flow <- updated_data[[2]]
-#supportive_praise_flow <- updated_data[[3]]
-#check_in_flow_names_flow <- updated_data[[4]]
-#content_tip_flow_names_flow <- updated_data[[5]]
-#supportive_flow_names_flow <- updated_data[[6]]
-#enrolled <- updated_data[[7]]
-#true_consent <- updated_data[[8]]
-#program <- updated_data[[9]]
-#parenting_survey <- updated_data[[10]]
+#df1 <- updated_data[[2]]
+#supportive_calm_flow <- updated_data[[3]]
+#supportive_praise_flow <- updated_data[[4]]
+#check_in_flow_names_flow <- updated_data[[5]]
+#content_tip_flow_names_flow <- updated_data[[6]]
+#supportive_flow_names_flow <- updated_data[[7]]
+#enrolled <- updated_data[[8]]
+#true_consent <- updated_data[[9]]
+#program <- updated_data[[10]]
+#parenting_survey <- updated_data[[11]]
+#pp_data_frame <- updated_data[[12]]
 
 # retention_exit ---------------------------------------------------------------
 # number of contacts for which the contact field "exit_message" is not empty &
 # they are NOT in the group "in program"
 #df %>% filter(program == "No") %>% nrow(.)
 #contacts_unflat$fields$exit_message
-
-
 
 
 #parenttext_shiny(data = "Hi")
