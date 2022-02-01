@@ -67,7 +67,9 @@ httr_get_call <- function(get_command, token = get_rapidpro_key()){
   }
 }
 
-get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call_type = "runs.json?flow=", rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, checks = FALSE, date_from = NULL, date_to = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
+get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call_type = "runs.json?flow=", rapidpro_site = get_rapidpro_site(),
+                          token = get_rapidpro_key(), flatten = FALSE, checks = FALSE, flow_type = "none", date_from = NULL, date_to = NULL,
+                          format_date = "%Y-%m-%d", tzone_date = "UTC"){
   if (is.null(rapidpro_site)){
     stop("rapidpro_site is NULL. Set a website with `set_rapidpro_site`.")
   }
@@ -107,6 +109,7 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call
       }
     }
   }
+  
   flow_interaction <- NULL
   for (i in 1:length(flow_name)){
     uuid_flow <- uuid_data[which(uuid_data$name == flow_name[i]),]
@@ -122,7 +125,25 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call
         result_flow <- result_flow %>% dplyr::filter(as.POSIXct(date_to, format=format_date, tzone = tzone_date) > as.POSIXct(result_flow$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
       }
       uuid <- result_flow$contact$uuid
-      response <- result_flow$responded
+      interacted <- result_flow$responded
+      
+      # for check in:
+      if (flow_type == "praise"){
+        response <- result_flow$values$praise_interaction$category
+        flow_interaction[[i]] <- tibble::tibble(uuid, interacted, response)
+      } else if (flow_type == "calm"){
+        response <- result_flow$values$calm_interaction$category
+        flow_interaction[[i]] <- tibble::tibble(uuid, interacted, response)
+      } else if (flow_type == "check_in"){
+        managed_to_do_something <- result_flow$values$checkin_managed$category
+        response <- result_flow$values$checkin_how$category
+        flow_interaction[[i]] <- tibble::tibble(uuid, interacted, managed_to_do_something, response)
+      } else if (flow_type == "tips"){
+        category <- result_flow$values$know_more$category
+        flow_interaction[[i]] <- tibble::tibble(uuid, interacted, category)
+      } else {
+        flow_interaction[[i]] <- tibble::tibble(uuid, interacted)
+      }
       #result <- na.omit(unique(flatten(result_flow$values)$name))[1]
       #if (length(result) == 1){
       #  category <- flatten(result_flow$values %>% dplyr::select({{ result }}))$category
@@ -130,7 +151,6 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call
       #  warning("category result not found")
       #  category <- NA
       #}
-      flow_interaction[[i]] <- tibble::tibble(uuid, response)#, category)
       flow_interaction[[i]] <- flow_interaction[[i]] %>% dplyr::mutate(flow_type = uuid_flow[1])
       #if (flatten){
       flow_interaction[[i]] <- jsonlite::flatten(flow_interaction[[i]])
@@ -140,6 +160,7 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call
   names(flow_interaction) <- flow_name[1:length(flow_interaction)]
   return(flow_interaction)
 }
+
 
 get_data_from_rapidpro_api <- function(call_type, rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE,
                                        date_from, date_to, format_date = "%Y-%m-%d", tzone_date = "UTC"){
@@ -169,44 +190,27 @@ get_data_from_rapidpro_api <- function(call_type, rapidpro_site = get_rapidpro_s
   return(user_result)
 }
 
-get_survey_data <- function(parenting_variable, survey_max = 9){
-  survey_entry <- NULL
-  for (i in 1:survey_max){
-    # split the string by different surveys taken
-    split_parenting <- stringr::str_split(parenting_variable, pattern = stringr::fixed("|"))
-    
-    # for each individual, get each survey value (split by ,)
-    parenting_response <- NULL
-    for (j in 1:length(split_parenting)){
-      split_parenting_2 <- stringr::str_split(split_parenting[[j]], ",") 
-      
-      # if it is NA, keep as NA
-      if (is.na(split_parenting_2[[1]][3])){
-        parenting_response[j] <- NA
-      } else{
-        # which survey to consider? Baseline = 1, week1 = 2, etc.
-        # so get that correct week lot of surveys
-        for (k in 2:length(split_parenting_2) - 1){
-          if (as.numeric(as.character(split_parenting_2[[k]][2])) != i) {
-            split_parenting_2[[k]][3] ="1970-01-01T00:00:00.873007+08:00"
-          }
-        }
-        
-        # take the response value corresponding to the most recent date
-        response <- NA
-        date <- as.POSIXct("1970-01-01T00:00:00.873007+08:00", format="%Y-%m-%dT%H:%M:%OS", tz = "UTC")
-        
-        for (k in 2:length(split_parenting_2) - 1){
-          if (date < as.POSIXct(split_parenting_2[[k]][3], format="%Y-%m-%dT%H:%M:%OS", tz = "UTC")) {
-            response <- split_parenting_2[[k]][1]
-          }
-        }
-        parenting_response[j] <- as.numeric(as.character(response))
-      }
+get_survey_data <- function(parenting_variable){
+  all_split_data <- NULL
+  parenting_variable <- parenting_variable
+  split_parenting <- stringr::str_split(parenting_variable, pattern = stringr::fixed("|"))
+  for (j in 1:length(split_parenting)){
+    if (is.na(split_parenting[[j]])){
+      split_data <- data.frame(V1 = NA, row = j, V2 = NA, V3 = NA)
+    } else {
+      split_parenting_2 <- stringr::str_split(split_parenting[[j]], ",")
+      split_data <- plyr::ldply(split_parenting_2[1:(length(split_parenting_2)-1)])
+      split_data <- split_data %>% mutate(row = j)
     }
-    survey_entry[[i]] <- parenting_response
+    all_split_data[[j]] <- split_data
   }
-  return(survey_entry)
+  all_split_data <- plyr::ldply(all_split_data)
+  names(all_split_data) <- c("vals", "row", "week", "dt")
+  all_split_data$week <- as.numeric(as.character(all_split_data$week))
+  all_split_data$vals <- as.numeric(as.character(all_split_data$vals))
+  all_split_data$week <- ifelse(all_split_data$week == "1", "Baseline", all_split_data$week)
+
+  return(all_split_data)
 }
 
 
@@ -232,8 +236,14 @@ summary_PT <- function(data = df, summary_var, denominator = NULL, denominator_l
       group_by(across({{ summary_var }}), .drop = FALSE) %>%
       summarise("{{summary_var}}_n" := n(),
                 "{{summary_var}}_perc" := n()/nrow(.) * 100)
-    
-    if (together == TRUE){
+  } else {
+    summary_perc <- data %>%
+      group_by(across({{ summary_var }}), .drop = FALSE) %>%
+      summarise("{{summary_var}}_n" := n(),
+                "{{summary_var}}_perc" := n()/nrow(.) * 100)
+  }
+  
+  if (together == TRUE){
       colnames(summary_perc)[length(summary_perc)-1] <- "n"
       colnames(summary_perc)[length(summary_perc)] <- "perc"
       summary_perc <- summary_perc %>%
@@ -244,27 +254,17 @@ summary_PT <- function(data = df, summary_var, denominator = NULL, denominator_l
     if (naming_convention == TRUE){
       colnames(summary_perc) <- naming_conventions(colnames(summary_perc))
     }
-    
     return(summary_perc)
-  } else {
-    summary_n <- data %>%
-      group_by(across({{ summary_var }}), .drop = FALSE) %>%
-      summarise("{{summary_var}}_n" := n())
-    if (naming_convention == TRUE){
-      colnames(summary_n) <- naming_conventions(colnames(summary_n))
-    }
-    return(summary_n)
-  }
 }
 
 flow_data_summary_function <- function(flow_interaction){
   if (!is.data.frame(flow_interaction)){
     flow_interaction <- plyr::ldply(flow_interaction) 
   }
-  flow_interaction$response <- ifelse(flow_interaction$response == TRUE, "Yes", "No")
-  flow_interaction$response <- forcats::fct_expand(flow_interaction$response, c("Yes", "No"))
+  flow_interaction$interacted <- ifelse(flow_interaction$interacted == TRUE, "Yes", "No")
+  flow_interaction$interacted <- forcats::fct_expand(flow_interaction$interacted, c("Yes", "No"))
   flow_interaction_output <- flow_interaction %>%
-    group_by(response, .drop = FALSE) %>%
+    group_by(interacted, .drop = FALSE) %>%
     summarise(count = n(), perc = round(n()/nrow(.)*100,2)) %>%
     mutate("Count (%)" := str_c(`count`, ' (', round(`perc`, 1), ")")) %>%
     dplyr::select(-c(count, perc)) %>% map_df(rev)
