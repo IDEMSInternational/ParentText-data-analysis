@@ -95,5 +95,4 @@ dist
 # Emacs
 .#*
 .Rproj.user
-test.Rdata
 archived_data_monthly.RDS
