@@ -403,7 +403,6 @@ summarySE <- function(data=NULL, var, groups=NULL, na.rm=FALSE,
 response_rate_graphs<-function(flow_interaction, flow_name){
   print(flow_interaction %>% group_by(response) %>% summarise(n())) 
   print(flow_interaction %>% group_by(category) %>% summarise(n())) 
-  
   #  ggplot(flow_interaction, aes(x = response)) +
   #    geom_bar() +
   #    labs(x = "Response", y = "Frequency", title = paste(flow_name ," - Response"))
