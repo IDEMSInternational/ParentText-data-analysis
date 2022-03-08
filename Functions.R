@@ -214,8 +214,13 @@ flow_data_calculation <- function(result_flow, flatten = FALSE, flow_type = "non
     
     # for check in:
     if (flow_type == "praise" && nrow(result_flow$values) > 0){
-        response <- result_flow$values$praise_interaction$category
-        flow_interaction <- tibble::tibble(uuid, interacted, response) 
+      response <- result_flow$values$praise_interaction$category
+        if (!is.null(response)){
+          flow_interaction <- tibble::tibble(uuid, interacted, response) 
+          response <- replace_na(response, "No response")
+        } else {
+          flow_interaction <- tibble::tibble(uuid, interacted, response = "No response") 
+        }
     } else if (flow_type == "calm" && !is.null(result_flow$values$calm_interaction)){
       response <- result_flow$values$calm_interaction$category
       response <- replace_na(response, "No response")
