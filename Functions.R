@@ -92,13 +92,20 @@ httr_get_call <- function(get_command, token = get_rapidpro_key()){
 }
 
 days_active_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call_type = "runs.json", rapidpro_site = get_rapidpro_site(),
-                          token = get_rapidpro_key(), flatten = FALSE, include_archived_data = FALSE,
-                          get_by = "gotit", data_from_archived = archived_data,
-                          download_archived_data = FALSE, read_archived_data_from = "archived_data_monthly.RDS", archive_call_type = "archives.json",
-                          archive_period = "monthly"){
-  get_command <- paste(rapidpro_site, call_type, sep = "")
-  result_flow <- httr_get_call(get_command = get_command, token = token)
-  result_flow_runs <- result_flow
+                             token = get_rapidpro_key(), flatten = FALSE, include_archived_data = FALSE, runs_data = "result_flow_runs.RDS", read_runs = FALSE,
+                             get_by = "gotit", data_from_archived = archived_data,
+                             download_archived_data = FALSE, read_archived_data_from = "archived_data_monthly.RDS", archive_call_type = "archives.json",
+                             archive_period = "monthly"){
+  
+  
+  if(read_runs){
+    result_flow_runs <- readRDS(runs_data)
+  } else {
+    get_command <- paste(rapidpro_site, call_type, sep = "")
+    result_flow <- httr_get_call(get_command = get_command, token = token)
+    result_flow_runs <- result_flow
+  }
+  
   #saveRDS(result_flow_runs, "result_flow_runs.RDS")
   
   data_flow <- result_flow_runs %>% 
@@ -126,19 +133,19 @@ days_active_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, c
     }
     active_days <- NULL
     result_flow <- archived_data
-  for (k in 1:length(archived_data)){
-    data_flow <- result_flow[[k]]
-    if (nrow(data_flow) > 0){
-      data_flow <- data_flow %>% 
-        filter(responded == TRUE) %>%
-        mutate(day_created = as.Date(created_on))
-      day_active <- data_flow$day_created
-      ID <- data_flow$contact$uuid
-      day_created <- data.frame(day_active, ID)
-      day_created <- unique(day_created)
-      active_days[[k]] <- day_created
+    for (k in 1:length(archived_data)){
+      data_flow <- result_flow[[k]]
+      if (nrow(data_flow) > 0){
+        data_flow <- data_flow %>% 
+          filter(responded == TRUE) %>%
+          mutate(day_created = as.Date(created_on))
+        day_active <- data_flow$day_created
+        ID <- data_flow$contact$uuid
+        day_created <- data.frame(day_active, ID)
+        day_created <- unique(day_created)
+        active_days[[k]] <- day_created
+      }
     }
-  }
     active_days_archived <- plyr::ldply(active_days)
     active_days_archived <- unique(active_days_archived)
     active_days_data <- bind_rows(active_days_nonarch, active_days_archived)
@@ -275,12 +282,12 @@ flow_data_calculation <- function(result_flow, flatten = FALSE, flow_type = "non
     exit_type <- result_flow$exit_type
     modified_on <- result_flow$modified_on
     exited_on <- result_flow$exited_on
-
+    
     # for check in:
     if (flow_type == "praise" && nrow(result_flow$values) > 0){
-      response <- result_flow$values$praise_interaction$category
+      response <- result_flow$values$praise_interaction$category 
       if (!is.null(response)){
-        flow_interaction <- tibble::tibble(uuid, interacted, response) 
+        flow_interaction <- tibble::tibble(uuid, interacted, response)
         response <- replace_na(response, "No response")
       } else {
         flow_interaction <- tibble::tibble(uuid, interacted, response = "No response") 
