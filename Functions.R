@@ -91,6 +91,66 @@ httr_get_call <- function(get_command, token = get_rapidpro_key()){
   }
 }
 
+days_active_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call_type = "runs.json", rapidpro_site = get_rapidpro_site(),
+                          token = get_rapidpro_key(), flatten = FALSE, include_archived_data = FALSE,
+                          get_by = "gotit", data_from_archived = archived_data,
+                          download_archived_data = FALSE, read_archived_data_from = "archived_data_monthly.RDS", archive_call_type = "archives.json",
+                          archive_period = "monthly"){
+  get_command <- paste(rapidpro_site, call_type, sep = "")
+  result_flow <- httr_get_call(get_command = get_command, token = token)
+  result_flow_runs <- result_flow
+  #saveRDS(result_flow_runs, "result_flow_runs.RDS")
+  
+  data_flow <- result_flow_runs %>% 
+    filter(responded == TRUE) %>%
+    mutate(day_created = as.Date(created_on))
+  day_active <- data_flow$day_created
+  ID <- data_flow$contact$uuid
+  day_created <- data.frame(day_active, ID)
+  day_created <- unique(day_created)
+  active_days_nonarch <- day_created
+  
+  # # for archives data
+  if (!include_archived_data){
+    active_days_data <- active_days_nonarch
+  } else {
+    flow_data_bank[[1]] <- flow_data
+    if (get_by == "download"){
+      archived_data <- get_archived_data(rapidpro_site = rapidpro_site, call_type = archive_call_type, token = token,
+                                         period = archive_period, flatten = flatten, date_from = date_from, date_to = date_to,
+                                         format_date = format_date, tzone_date = tzone_date)
+    } else if (get_by == "read"){
+      archived_data <- readRDS(read_archived_data_from)
+    } else {
+      archived_data <- data_from_archived
+    }
+    active_days <- NULL
+    result_flow <- archived_data
+  for (k in 1:length(archived_data)){
+    data_flow <- result_flow[[k]]
+    if (nrow(data_flow) > 0){
+      data_flow <- data_flow %>% 
+        filter(responded == TRUE) %>%
+        mutate(day_created = as.Date(created_on))
+      day_active <- data_flow$day_created
+      ID <- data_flow$contact$uuid
+      day_created <- data.frame(day_active, ID)
+      day_created <- unique(day_created)
+      active_days[[k]] <- day_created
+    }
+  }
+    active_days_archived <- plyr::ldply(active_days)
+    active_days_archived <- unique(active_days_archived)
+    active_days_data <- bind_rows(active_days_nonarch, active_days_archived)
+    
+  }
+  active_days_data <- unique(active_days_data) 
+  active_days_data <- active_days_data %>%
+    group_by(ID) %>%
+    summarise(number_days_active = n())
+  return(active_days_data)
+}
+
 get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call_type = "runs.json?flow=", rapidpro_site = get_rapidpro_site(),
                           token = get_rapidpro_key(), flatten = FALSE, checks = FALSE, flow_type = "none", include_archived_data = FALSE,
                           get_by = "gotit", data_from_archived = archived_data,
@@ -179,8 +239,8 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call
         arch_data[[k]] <- flow_data_calculation(result_flow = arch_flow_data_K, flow_type = flow_type)
       }
       names(arch_data) <- names(archived_data)[1:length(arch_data)]
-        arch_data_bank[[j]] <- plyr::ldply(arch_data)
-        arch_data_bank[[j]]$`.id` <- NULL
+      arch_data_bank[[j]] <- plyr::ldply(arch_data)
+      arch_data_bank[[j]]$`.id` <- NULL
       arch_data_bank[[j]] <- arch_data_bank[[j]] %>% dplyr::mutate(flow_type = uuid_flow[1,1])
     }
     names(arch_data_bank) <- flow_name
@@ -211,11 +271,20 @@ flow_data_calculation <- function(result_flow, flatten = FALSE, flow_type = "non
     }
     uuid <- result_flow$contact$uuid
     interacted <- result_flow$responded
-    
+    created_run_on <- result_flow$created_on
+    exit_type <- result_flow$exit_type
+    modified_on <- result_flow$modified_on
+    exited_on <- result_flow$exited_on
+
     # for check in:
     if (flow_type == "praise" && nrow(result_flow$values) > 0){
-        response <- result_flow$values$praise_interaction$category
+      response <- result_flow$values$praise_interaction$category
+      if (!is.null(response)){
         flow_interaction <- tibble::tibble(uuid, interacted, response) 
+        response <- replace_na(response, "No response")
+      } else {
+        flow_interaction <- tibble::tibble(uuid, interacted, response = "No response") 
+      }
     } else if (flow_type == "calm" && !is.null(result_flow$values$calm_interaction)){
       response <- result_flow$values$calm_interaction$category
       response <- replace_na(response, "No response")
@@ -241,6 +310,7 @@ flow_data_calculation <- function(result_flow, flatten = FALSE, flow_type = "non
       flow_interaction <- tibble::tibble(uuid, interacted, category)
     } else {
       flow_interaction <- tibble::tibble(uuid, interacted)
+      ##flow_interaction <- tibble::tibble(uuid, interacted, exit_type, created_on, modified_on, exited_on)
     }
     #result <- na.omit(unique(flatten(result_flow$values)$name))[1]
     #if (length(result) == 1){
