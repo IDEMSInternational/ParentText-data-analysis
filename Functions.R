@@ -45,6 +45,30 @@ get_user_data <- function(rapidpro_site = get_rapidpro_site(), token = get_rapid
   get_data_from_rapidpro_api(call_type = "contacts.json", rapidpro_site = rapidpro_site, token = token, flatten = flatten, date_from = date_from, date_to = date_to, format_date = format_date, tzone_date = tzone_date)
 }
 
+get_archived_data <- function(rapidpro_site = get_rapidpro_site(), call_type = "archives.json", token = get_rapidpro_key(), period = "monthly", flatten = FALSE, date_from = NULL, date_to = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
+  get_command <- paste(rapidpro_site, call_type, sep = "")
+  result_flow <- httr_get_call(get_command = get_command, token = token)
+  if (period == "daily"){
+    result_flow <- result_flow %>% dplyr::filter(period == "daily")
+  } else if (period == "monthly"){
+    result_flow <- result_flow %>% dplyr::filter(period == "monthly")
+  } else {
+    result_flow <- result_flow
+  }
+  result_flow <- result_flow %>% filter(archive_type == "run")
+  archived_data_bank <- NULL
+  for (i in 1:nrow(result_flow)){
+    archived_data_bank[[i]] <- jsonlite::stream_in(
+      gzcon(url(result_flow$download_url[i])), flatten = FALSE
+    )
+  }
+  names(archived_data_bank) <- (result_flow$start_date)
+  return(archived_data_bank)
+}
+#archived_data <- get_archived_data()
+#saveRDS(archived_data, file = "archived_data_monthly.RDS")
+#saveRDS(archived_data, file = "archived_data.RDS")
+
 get_flow_names <- function(rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, date_from = NULL, date_to = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
   get_data_from_rapidpro_api(call_type = "flows.json", rapidpro_site = rapidpro_site, token = token, flatten = flatten, date_from = date_from, date_to = date_to, format_date = format_date, tzone_date = tzone_date)
 }
@@ -67,7 +91,80 @@ httr_get_call <- function(get_command, token = get_rapidpro_key()){
   }
 }
 
-get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call_type = "runs.json?flow=", rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, checks = FALSE, date_from = NULL, date_to = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
+days_active_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call_type = "runs.json", rapidpro_site = get_rapidpro_site(),
+                             token = get_rapidpro_key(), flatten = FALSE, include_archived_data = FALSE, runs_data = "result_flow_runs.RDS", read_runs = FALSE,
+                             get_by = "gotit", data_from_archived = archived_data,
+                             download_archived_data = FALSE, read_archived_data_from = "archived_data_monthly.RDS", archive_call_type = "archives.json",
+                             archive_period = "monthly"){
+  
+  
+  if(read_runs){
+    result_flow_runs <- readRDS(runs_data)
+  } else {
+    get_command <- paste(rapidpro_site, call_type, sep = "")
+    result_flow <- httr_get_call(get_command = get_command, token = token)
+    result_flow_runs <- result_flow
+  }
+  
+  #saveRDS(result_flow_runs, "result_flow_runs.RDS")
+  
+  data_flow <- result_flow_runs %>% 
+    filter(responded == TRUE) %>%
+    mutate(day_created = as.Date(created_on))
+  day_active <- data_flow$day_created
+  ID <- data_flow$contact$uuid
+  day_created <- data.frame(day_active, ID)
+  day_created <- unique(day_created)
+  active_days_nonarch <- day_created
+  
+  # # for archives data
+  if (!include_archived_data){
+    active_days_data <- active_days_nonarch
+  } else {
+    flow_data_bank[[1]] <- flow_data
+    if (get_by == "download"){
+      archived_data <- get_archived_data(rapidpro_site = rapidpro_site, call_type = archive_call_type, token = token,
+                                         period = archive_period, flatten = flatten, date_from = date_from, date_to = date_to,
+                                         format_date = format_date, tzone_date = tzone_date)
+    } else if (get_by == "read"){
+      archived_data <- readRDS(read_archived_data_from)
+    } else {
+      archived_data <- data_from_archived
+    }
+    active_days <- NULL
+    result_flow <- archived_data
+    for (k in 1:length(archived_data)){
+      data_flow <- result_flow[[k]]
+      if (nrow(data_flow) > 0){
+        data_flow <- data_flow %>% 
+          filter(responded == TRUE) %>%
+          mutate(day_created = as.Date(created_on))
+        day_active <- data_flow$day_created
+        ID <- data_flow$contact$uuid
+        day_created <- data.frame(day_active, ID)
+        day_created <- unique(day_created)
+        active_days[[k]] <- day_created
+      }
+    }
+    active_days_archived <- plyr::ldply(active_days)
+    active_days_archived <- unique(active_days_archived)
+    active_days_data <- bind_rows(active_days_nonarch, active_days_archived)
+    
+  }
+  active_days_data <- unique(active_days_data) 
+  active_days_data <- active_days_data %>%
+    group_by(ID) %>%
+    summarise(number_days_active = n())
+  return(active_days_data)
+}
+
+get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call_type = "runs.json?flow=", rapidpro_site = get_rapidpro_site(),
+                          token = get_rapidpro_key(), flatten = FALSE, checks = FALSE, flow_type = "none", include_archived_data = FALSE,
+                          get_by = "gotit", data_from_archived = archived_data,
+                          download_archived_data = FALSE, read_archived_data_from = "archived_data_monthly.RDS", archive_call_type = "archives.json",
+                          archive_period = "monthly", date_from = NULL, date_to = NULL,
+                          format_date = "%Y-%m-%d", tzone_date = "UTC"){
+  
   if (is.null(rapidpro_site)){
     stop("rapidpro_site is NULL. Set a website with `set_rapidpro_site`.")
   }
@@ -107,39 +204,135 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call
       }
     }
   }
-  flow_interaction <- NULL
-  for (i in 1:length(flow_name)){
-    uuid_flow <- uuid_data[which(uuid_data$name == flow_name[i]),]
+  flow_data_bank <- NULL
+  flow_data <- NULL
+  for (i in flow_name){
+    j <- which(flow_name == i)
+    uuid_flow <- uuid_data[which(uuid_data$name == i),]
     get_command <- paste(rapidpro_site, call_type, uuid_flow[1], sep = "")
     result_flow <- httr_get_call(get_command = get_command, token = token)
+    
     if (length(result_flow) == 0){
-      flow_interaction[[i]] <- NULL
+      flow_data[[j]] <- NULL
     } else {
-      if (!is.null(date_from)){
-        result_flow <- result_flow %>% dplyr::filter(as.POSIXct(date_from, format=format_date, tzone = tzone_date) < as.POSIXct(result_flow$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
-      }
-      if (!is.null(date_to)){
-        result_flow <- result_flow %>% dplyr::filter(as.POSIXct(date_to, format=format_date, tzone = tzone_date) > as.POSIXct(result_flow$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
-      }
-      uuid <- result_flow$contact$uuid
-      response <- result_flow$responded
-      #result <- na.omit(unique(flatten(result_flow$values)$name))[1]
-      #if (length(result) == 1){
-      #  category <- flatten(result_flow$values %>% dplyr::select({{ result }}))$category
-      #} else {
-      #  warning("category result not found")
-      #  category <- NA
-      #}
-      flow_interaction[[i]] <- tibble::tibble(uuid, response)#, category)
-      flow_interaction[[i]] <- flow_interaction[[i]] %>% dplyr::mutate(flow_type = uuid_flow[1])
-      #if (flatten){
-      flow_interaction[[i]] <- jsonlite::flatten(flow_interaction[[i]])
-      #}
+      flow_data[[j]] <- flow_data_calculation(result_flow = result_flow, flatten = flatten, flow_type = flow_type, date_from = date_from, date_to = date_to,
+                                              format_date = format_date, tzone_date = tzone_date) %>%
+        dplyr::mutate(flow_type = uuid_flow[1,1]) 
     }
   }
-  names(flow_interaction) <- flow_name[1:length(flow_interaction)]
+  names(flow_data) <- flow_name[1:length(flow_data)]
+  flow_data <- plyr::ldply(flow_data)
+  
+  if (!include_archived_data){
+    flow_data_bank <- flow_data
+  } else {
+    flow_data_bank[[1]] <- flow_data
+    if (get_by == "download"){
+      archived_data <- get_archived_data(rapidpro_site = rapidpro_site, call_type = archive_call_type, token = token,
+                                         period = archive_period, flatten = flatten, date_from = date_from, date_to = date_to,
+                                         format_date = format_date, tzone_date = tzone_date)
+    } else if (get_by == "read"){
+      archived_data <- readRDS(read_archived_data_from)
+    } else {
+      archived_data <- data_from_archived
+    }
+    arch_data_bank <- NULL
+    for (i in flow_name){
+      j <- which(flow_name == i)
+      uuid_flow <- uuid_data[which(uuid_data$name == i),]
+      arch_data <- NULL
+      for (k in 1:length(archived_data)){
+        arch_flow_data_K <- archived_data[[k]] %>% filter(archived_data[[k]]$flow$name == i)
+        arch_data[[k]] <- flow_data_calculation(result_flow = arch_flow_data_K, flow_type = flow_type)
+      }
+      names(arch_data) <- names(archived_data)[1:length(arch_data)]
+      arch_data_bank[[j]] <- plyr::ldply(arch_data)
+      arch_data_bank[[j]]$`.id` <- NULL
+      arch_data_bank[[j]] <- arch_data_bank[[j]] %>% dplyr::mutate(flow_type = uuid_flow[1,1])
+    }
+    names(arch_data_bank) <- flow_name
+    arch_data_bank <- plyr::ldply(arch_data_bank)
+    
+    flow_data_bank[[2]] <- arch_data_bank
+    names(flow_data_bank) <- c("Current", "Archived")
+    flow_data_bank <- plyr::ldply(flow_data_bank)
+  }
+  
+  
+  return(flow_data_bank)
+  
+}
+
+# flow_type.uuid - todo.
+
+flow_data_calculation <- function(result_flow, flatten = FALSE, flow_type = "none", date_from = NULL, date_to = NULL,
+                                  format_date = "%Y-%m-%d", tzone_date = "UTC"){
+  if (length(result_flow) == 0){
+    flow_interaction <- NULL
+  } else {
+    if (!is.null(date_from)){
+      result_flow <- result_flow %>% dplyr::filter(as.POSIXct(date_from, format=format_date, tzone = tzone_date) < as.POSIXct(result_flow$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+    }
+    if (!is.null(date_to)){
+      result_flow <- result_flow %>% dplyr::filter(as.POSIXct(date_to, format=format_date, tzone = tzone_date) > as.POSIXct(result_flow$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+    }
+    uuid <- result_flow$contact$uuid
+    interacted <- result_flow$responded
+    created_run_on <- result_flow$created_on
+    exit_type <- result_flow$exit_type
+    modified_on <- result_flow$modified_on
+    exited_on <- result_flow$exited_on
+    
+    # for check in:
+    if (flow_type == "praise" && nrow(result_flow$values) > 0){
+      response <- result_flow$values$praise_interaction$category 
+      if (!is.null(response)){
+        flow_interaction <- tibble::tibble(uuid, interacted, response)
+        response <- replace_na(response, "No response")
+      } else {
+        flow_interaction <- tibble::tibble(uuid, interacted, response = "No response") 
+      }
+    } else if (flow_type == "calm" && !is.null(result_flow$values$calm_interaction)){
+      response <- result_flow$values$calm_interaction$category
+      response <- replace_na(response, "No response")
+      flow_interaction <- tibble::tibble(uuid, interacted, response)
+    } else if (flow_type == "check_in" && nrow(result_flow$values) > 0){
+      if (is.null(result_flow$values$checkin_managed$category)){
+        managed_to_do_something <- "No response"
+      } else {
+        managed_to_do_something <- result_flow$values$checkin_managed$category
+      }
+      if (is.null(result_flow$values$checkin_how$category)){
+        response <- "No response"
+      } else {
+        response <- result_flow$values$checkin_how$category
+      }
+      flow_interaction <- tibble::tibble(uuid, interacted, managed_to_do_something, response)
+    } else if (flow_type == "tips" && nrow(result_flow$values) > 0){
+      if (is.null(result_flow$values$know_more$category)){
+        category <- "No response"
+      } else {
+        category <- result_flow$values$know_more$category
+      }
+      flow_interaction <- tibble::tibble(uuid, interacted, category)
+    } else {
+      flow_interaction <- tibble::tibble(uuid, interacted)
+      ##flow_interaction <- tibble::tibble(uuid, interacted, exit_type, created_on, modified_on, exited_on)
+    }
+    #result <- na.omit(unique(flatten(result_flow$values)$name))[1]
+    #if (length(result) == 1){
+    #  category <- flatten(result_flow$values %>% dplyr::select({{ result }}))$category
+    #} else {
+    #  warning("category result not found")
+    #  category <- NA
+    #}
+    #if (flatten){
+    flow_interaction <- jsonlite::flatten(flow_interaction)
+    #}
+  }
   return(flow_interaction)
 }
+
 
 get_data_from_rapidpro_api <- function(call_type, rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE,
                                        date_from, date_to, format_date = "%Y-%m-%d", tzone_date = "UTC"){
@@ -169,44 +362,27 @@ get_data_from_rapidpro_api <- function(call_type, rapidpro_site = get_rapidpro_s
   return(user_result)
 }
 
-get_survey_data <- function(parenting_variable, survey_max = 9){
-  survey_entry <- NULL
-  for (i in 1:survey_max){
-    # split the string by different surveys taken
-    split_parenting <- stringr::str_split(parenting_variable, pattern = stringr::fixed("|"))
-    
-    # for each individual, get each survey value (split by ,)
-    parenting_response <- NULL
-    for (j in 1:length(split_parenting)){
-      split_parenting_2 <- stringr::str_split(split_parenting[[j]], ",") 
-      
-      # if it is NA, keep as NA
-      if (is.na(split_parenting_2[[1]][3])){
-        parenting_response[j] <- NA
-      } else{
-        # which survey to consider? Baseline = 1, week1 = 2, etc.
-        # so get that correct week lot of surveys
-        for (k in 2:length(split_parenting_2) - 1){
-          if (as.numeric(as.character(split_parenting_2[[k]][2])) != i) {
-            split_parenting_2[[k]][3] ="1970-01-01T00:00:00.873007+08:00"
-          }
-        }
-        
-        # take the response value corresponding to the most recent date
-        response <- NA
-        date <- as.POSIXct("1970-01-01T00:00:00.873007+08:00", format="%Y-%m-%dT%H:%M:%OS", tz = "UTC")
-        
-        for (k in 2:length(split_parenting_2) - 1){
-          if (date < as.POSIXct(split_parenting_2[[k]][3], format="%Y-%m-%dT%H:%M:%OS", tz = "UTC")) {
-            response <- split_parenting_2[[k]][1]
-          }
-        }
-        parenting_response[j] <- as.numeric(as.character(response))
-      }
+get_survey_data <- function(parenting_variable){
+  all_split_data <- NULL
+  parenting_variable <- parenting_variable
+  split_parenting <- stringr::str_split(parenting_variable, pattern = stringr::fixed("|"))
+  for (j in 1:length(split_parenting)){
+    if (is.na(split_parenting[[j]])){
+      split_data <- data.frame(V1 = NA, row = j, V2 = NA, V3 = NA)
+    } else {
+      split_parenting_2 <- stringr::str_split(split_parenting[[j]], ",")
+      split_data <- plyr::ldply(split_parenting_2[1:(length(split_parenting_2)-1)])
+      split_data <- split_data %>% mutate(row = j)
     }
-    survey_entry[[i]] <- parenting_response
+    all_split_data[[j]] <- split_data
   }
-  return(survey_entry)
+  all_split_data <- plyr::ldply(all_split_data)
+  names(all_split_data) <- c("vals", "row", "week", "dt")
+  all_split_data$week <- as.numeric(as.character(all_split_data$week))
+  all_split_data$vals <- as.numeric(as.character(all_split_data$vals))
+  all_split_data$week <- ifelse(all_split_data$week == "1", "Baseline", all_split_data$week)
+  
+  return(all_split_data)
 }
 
 
@@ -232,39 +408,35 @@ summary_PT <- function(data = df, summary_var, denominator = NULL, denominator_l
       group_by(across({{ summary_var }}), .drop = FALSE) %>%
       summarise("{{summary_var}}_n" := n(),
                 "{{summary_var}}_perc" := n()/nrow(.) * 100)
-    
-    if (together == TRUE){
-      colnames(summary_perc)[length(summary_perc)-1] <- "n"
-      colnames(summary_perc)[length(summary_perc)] <- "perc"
-      summary_perc <- summary_perc %>%
-        mutate("Count (%)" := str_c(`n`, ' (', round(`perc`, 2), ")")) %>%
-        dplyr::select(-c(n, perc))
-    }
-    
-    if (naming_convention == TRUE){
-      colnames(summary_perc) <- naming_conventions(colnames(summary_perc))
-    }
-    
-    return(summary_perc)
   } else {
-    summary_n <- data %>%
+    summary_perc <- data %>%
       group_by(across({{ summary_var }}), .drop = FALSE) %>%
-      summarise("{{summary_var}}_n" := n())
-    if (naming_convention == TRUE){
-      colnames(summary_n) <- naming_conventions(colnames(summary_n))
-    }
-    return(summary_n)
+      summarise("{{summary_var}}_n" := n(),
+                "{{summary_var}}_perc" := n()/nrow(.) * 100)
   }
+  
+  if (together == TRUE){
+    colnames(summary_perc)[length(summary_perc)-1] <- "n"
+    colnames(summary_perc)[length(summary_perc)] <- "perc"
+    summary_perc <- summary_perc %>%
+      mutate("Count (%)" := str_c(`n`, ' (', round(`perc`, 2), ")")) %>%
+      dplyr::select(-c(n, perc))
+  }
+  
+  if (naming_convention == TRUE){
+    colnames(summary_perc) <- naming_conventions(colnames(summary_perc))
+  }
+  return(summary_perc)
 }
 
 flow_data_summary_function <- function(flow_interaction){
   if (!is.data.frame(flow_interaction)){
     flow_interaction <- plyr::ldply(flow_interaction) 
   }
-  flow_interaction$response <- ifelse(flow_interaction$response == TRUE, "Yes", "No")
-  flow_interaction$response <- forcats::fct_expand(flow_interaction$response, c("Yes", "No"))
+  flow_interaction$interacted <- ifelse(flow_interaction$interacted == TRUE, "Yes", "No")
+  flow_interaction$interacted <- forcats::fct_expand(flow_interaction$interacted, c("Yes", "No"))
   flow_interaction_output <- flow_interaction %>%
-    group_by(response, .drop = FALSE) %>%
+    group_by(interacted, .drop = FALSE) %>%
     summarise(count = n(), perc = round(n()/nrow(.)*100,2)) %>%
     mutate("Count (%)" := str_c(`count`, ' (', round(`perc`, 1), ")")) %>%
     dplyr::select(-c(count, perc)) %>% map_df(rev)
@@ -308,7 +480,6 @@ summarySE <- function(data=NULL, var, groups=NULL, na.rm=FALSE,
 response_rate_graphs<-function(flow_interaction, flow_name){
   print(flow_interaction %>% group_by(response) %>% summarise(n())) 
   print(flow_interaction %>% group_by(category) %>% summarise(n())) 
-  
   #  ggplot(flow_interaction, aes(x = response)) +
   #    geom_bar() +
   #    labs(x = "Response", y = "Frequency", title = paste(flow_name ," - Response"))
