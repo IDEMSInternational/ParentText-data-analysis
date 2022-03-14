@@ -1,9 +1,9 @@
 #tokens
-.\tokens
+tokens
 #output files
 
 #other files
-./other_files
+other_files
 
 # Logs
 logs
