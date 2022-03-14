@@ -9,7 +9,7 @@ source("R Shiny Template.R")
 
 # RapidPro set up --------------------------------------------------------------
 #key <- read.table("C:/Users/lzc1n17/OneDrive - University of Southampton/PhD/IDEMS/ParentText/PT_malaysia_key.txt", quote="\"", comment.char="")
-#key <- read.table("./tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
+key <- read.table("./tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
 set_rapidpro_key(key = key[[1]])
 set_rapidpro_site(site = "https://app.rapidpro.io/api/v2/")
 set_rapidpro_uuid_names()
