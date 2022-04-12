@@ -55,7 +55,6 @@ update_data <- function(date_from = "2021-10-14", date_to = NULL) {
                                   ENG = "eng")
   language[is.na(language)] <- "Did not respond"
   language <- forcats::fct_relevel(language, c("ENG", "MSA", "Did not respond"))
-  
   df_consent <- data.frame(ID, program, enrolled, true_consent, language)
   df_consent <- df_consent %>%
     mutate(consent = ifelse(is.na(true_consent) &  is.na(language), "Did not interact",
@@ -370,25 +369,25 @@ update_data <- function(date_from = "2021-10-14", date_to = NULL) {
   supportive_praise_flow$uuid <- NULL
   supportive_praise_flow <- supportive_praise_flow %>% mutate(Flow = "Supportive Praise")
   supportive_praise_flow$response <- replace_na(supportive_praise_flow$response, "No Response")
-  supportive_praise_flow <- merge(supportive_praise_flow, df_created_on)
+  supportive_praise_flow <- supportive_praise_flow %>% mutate(ID %in% list_of_ids)
   
   supportive_calm_flow <- get_flow_data(flow_name = supportive_calm, flow_type = "calm", include_archived_data = TRUE)
   supportive_calm_flow$ID <- supportive_calm_flow$uuid
   supportive_calm_flow$uuid <- NULL
   supportive_calm_flow <- supportive_calm_flow %>% mutate(Flow = "Supportive Calm")
-  supportive_calm_flow <- merge(supportive_calm_flow, df_created_on)
+  supportive_calm_flow <- supportive_calm_flow %>% mutate(ID %in% list_of_ids)
   
   supportive_activities_flow <- get_flow_data(flow_name = supportive_activities, include_archived_data = TRUE)
   supportive_activities_flow$ID <- supportive_activities_flow$uuid
   supportive_activities_flow$uuid <- NULL
   supportive_activities_flow <- supportive_activities_flow %>% mutate(Flow = "Supportive Activities")
-  supportive_activities_flow <- merge(supportive_activities_flow, df_created_on)
+  supportive_activities_flow <- supportive_activities_flow %>% mutate(ID %in% list_of_ids)
   
   supportive_flow_names_flow <- get_flow_data(flow_name = supportive_flow_names, include_archived_data = TRUE)
   supportive_flow_names_flow$ID <- supportive_flow_names_flow$uuid
   supportive_flow_names_flow$uuid <- NULL
   supportive_flow_names_flow <- supportive_flow_names_flow %>% mutate(Flow = "Supportive Flow Names")
-  supportive_flow_names_flow <- merge(supportive_flow_names_flow, df_created_on)
+  supportive_flow_names_flow <- supportive_flow_names_flow %>% mutate(ID %in% list_of_ids)
   
   check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names, flow_type = "check_in", include_archived_data = TRUE)
   check_in_flow_names_flow$ID <- check_in_flow_names_flow$uuid
@@ -402,14 +401,14 @@ update_data <- function(date_from = "2021-10-14", date_to = NULL) {
   check_in_flow_names_flow <- check_in_flow_names_flow %>% mutate(Flow = "Check in")
   check_in_flow_names_flow$response <- replace_na(check_in_flow_names_flow$response, "No Response")
   check_in_flow_names_flow$managed_to_do_something <- replace_na(check_in_flow_names_flow$managed_to_do_something, "No Response")
-  check_in_flow_names_flow <- merge(check_in_flow_names_flow, df_created_on)
+  check_in_flow_names_flow <- check_in_flow_names_flow %>% mutate(ID %in% list_of_ids)
   
   content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names, flow_type = "tips", include_archived_data = TRUE)
   content_tip_flow_names_flow$ID <- content_tip_flow_names_flow$uuid
   content_tip_flow_names_flow$uuid <- NULL
   content_tip_flow_names_flow <- content_tip_flow_names_flow %>% mutate(Flow = "Content Tip")
   content_tip_flow_names_flow$category <- replace_na(content_tip_flow_names_flow$category, "No Response")
-  content_tip_flow_names_flow <- merge(content_tip_flow_names_flow, df_created_on)
+  content_tip_flow_names_flow <- content_tip_flow_names_flow %>% mutate(ID %in% list_of_ids)
   
   
   # Survey Level Data ---------------------------------------------------------------------------------------------------------------------------
@@ -448,10 +447,8 @@ update_data <- function(date_from = "2021-10-14", date_to = NULL) {
   parenting_survey <- parenting_survey %>% mutate(Group = fct_expand(Group, c("Positive parenting", "Child maltreatment", "Play", "Praise", "Stress", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
   parenting_survey <- parenting_survey %>% mutate(Group = fct_relevel(Group, c("Positive parenting", "Child maltreatment", "Play", "Praise", "Stress", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
   
-  df_consented_ids <- (df1 %>% filter(consent == "Yes"))$ID
-  contacts_unflat_ID_merge <- df %>% dplyr::select(ID, created_on) %>% mutate(row = 1:nrow(.))
+  contacts_unflat_ID_merge <- df_created_on %>% mutate(row = 1:nrow(.))
   parenting_survey <- merge(parenting_survey, contacts_unflat_ID_merge)
-  parenting_survey <- parenting_survey %>% mutate(consent = ifelse(ID %in% df_consented_ids, "Yes", "No"))
   parenting_survey <- parenting_survey %>% filter(consent == "Yes")
   if (!is.null(date_from)){
     parenting_survey <- parenting_survey %>%
@@ -463,7 +460,7 @@ update_data <- function(date_from = "2021-10-14", date_to = NULL) {
   }
   objects_to_return <- NULL
   objects_to_return[[1]] <- df
-  objects_to_return[[2]] <- df1
+  objects_to_return[[2]] <- df_consent
   objects_to_return[[3]] <- supportive_calm_flow
   objects_to_return[[4]] <- supportive_praise_flow
   objects_to_return[[5]] <- check_in_flow_names_flow
