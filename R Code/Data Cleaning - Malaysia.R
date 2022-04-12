@@ -13,288 +13,303 @@ key <- read.table("./tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
 set_rapidpro_key(key = key[[1]])
 set_rapidpro_site(site = "https://app.rapidpro.io/api/v2/")
 set_rapidpro_uuid_names()
-
 update_data <- function(date_from = "2021-10-14", date_to = NULL) {
   
-  # Base data
-  contacts_unflat <- get_user_data(flatten = FALSE, date_from = date_from, date_to = date_to)
-  created_on <- contacts_unflat$created_on
-  ID <- contacts_unflat$uuid
-  
-  # Variables Manipulation -------------------------------------------------------
-  # get enrolled and consented data
-  enrolled <- NULL
-  true_consent <- NULL
-  program <- NULL
-  for (i in 1:length(contacts_unflat$groups)){
-    contact_name <- contacts_unflat$groups[[i]]
-    if (length(contact_name)==0) {
-      enrolled[i] <- NA
-      true_consent[i] <- NA
-      program[i] <- NA
-    } else{
-      enrolled[i] <- ifelse(any(contact_name$name %in% "joined"), "Yes", "No")
-      true_consent[i] <- ifelse(any(contact_name$name %in% "consent"), "Yes", "No")
-      program[i] <- ifelse(any(contact_name$name %in% "in program"), "Yes", "No")
-    }
+# base data -----------------------------------------------------
+contacts_unflat <- get_user_data(flatten = FALSE, date_from = date_from, date_to = date_to)
+created_on <- contacts_unflat$created_on
+did_not_consent <- contacts_unflat$fields$did_not_consent
+ID <- contacts_unflat$uuid
+last_online <- as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%d", tz = "UTC")
+
+enrolled <- NULL
+true_consent <- NULL
+program <- NULL
+for (i in 1:length(contacts_unflat$groups)){
+  contact_name <- contacts_unflat$groups[[i]]
+  if (length(contact_name)==0) {
+    enrolled[i] <- NA
+    true_consent[i] <- NA
+    program[i] <- NA
+  } else{
+    enrolled[i] <- ifelse(any(contact_name$name %in% "joined"), "Yes", "No")
+    true_consent[i] <- ifelse(any(contact_name$name %in% "consent"), "Yes", "No")
+    program[i] <- ifelse(any(contact_name$name %in% "in program"), "Yes", "No")
   }
-  
-  enrolled <- factor(enrolled)
-  true_consent <- factor(true_consent)
-  program <- factor(program)
-  enrolled <- forcats::fct_expand(enrolled, c("Yes", "No"))
-  true_consent <- forcats::fct_expand(true_consent, c("Yes", "No"))
-  program <- forcats::fct_expand(program, c("Yes", "No"))
-  enrolled <- forcats::fct_relevel(enrolled, c("Yes", "No"))
-  true_consent <- forcats::fct_relevel(true_consent, c("Yes", "No"))
-  program <- forcats::fct_relevel(program, c("Yes", "No"))
-  
-  df_ID_row <- data.frame(ID, row = 1:length(ID), created_on, true_consent)
-  
-  # Demographics Data
-  parent_gender <- contacts_unflat$fields$gender
-  parent_gender <- factor(ifelse(parent_gender %in% c("female", "f", "woman", "Woman"), "Woman",
-                                 ifelse(parent_gender %in% c("male", "m", "man", "Man"), "Man",
-                                        ifelse(parent_gender %in% "no", NA, parent_gender))))
-  parent_gender <- fct_expand(parent_gender, "Woman", "Man")
-  parent_gender <- forcats::fct_relevel(parent_gender, c("Woman", "Man"))
-  
-  child_age_group <- contacts_unflat$fields$age_group_for_tips
-  know_age_group <- contacts_unflat$fields$know_age_group_for_tips
-  child_age_group <- ifelse(child_age_group == "child" & know_age_group == "no", "Default", child_age_group)
-  child_age_group <- factor(child_age_group)
-  child_age_group <- fct_expand(child_age_group, "Baby", "Child", "Teen", "Default")
-  child_age_group <- forcats::fct_recode(child_age_group,
-                                         Baby = "baby",
-                                         Child = "child",
-                                         Teen = "teen")
-  child_age_group <- forcats::fct_relevel(child_age_group, c("Baby", "Child", "Teen", "Default"))
-  
-  child_gender <- factor(contacts_unflat$fields$survey_behave_sex)
-  child_gender <- fct_expand(child_gender, "Girl", "Boy", "Prefer not to say")
-  child_gender <-  forcats::fct_recode(child_gender,
-                                       Boy = "male",
-                                       Girl = "female", 
-                                       `Prefer not to say` = "no")
-  child_gender <- forcats::fct_relevel(child_gender, c("Girl", "Boy", "Prefer not to say"))
-  
-  parent_child_relationship <- factor(contacts_unflat$fields$survey_behave_relationship)
-  parent_child_relationship <- fct_expand(parent_child_relationship, "Parent", "Grandparent", "Aunt/Uncle", "Foster Parent", "Other", "Prefer not to say")
-  parent_child_relationship <- forcats::fct_recode(parent_child_relationship,
-                                                   Parent = "parent",
-                                                   Grandparent = "grandparent",
-                                                   `Aunt/Uncle`= "uncle",
-                                                   `Foster Parent` = "foster",
-                                                   Other = "other",
-                                                   `Prefer not to say`  = "no")
-  parent_child_relationship <- forcats::fct_relevel(parent_child_relationship,
-                                                    c("Parent", "Grandparent", "Aunt/Uncle", "Foster Parent", "Other", "Prefer not to say"))
-  
-  parent_relationship_status <- factor(contacts_unflat$fields$marital_status)
-  parent_relationship_status <- forcats::fct_recode(parent_relationship_status,
-                                                    `Prefer not to say`  = "no")
-  parent_relationship_status <- fct_expand(parent_relationship_status, "Single", "Married", "Partnered", "Divorced", "Widowed", "Prefer not to say")
-  parent_relationship_status <- forcats::fct_relevel(parent_relationship_status, c("Single", "Married", "Partnered", "Divorced", "Widowed", "Prefer not to say"))
-  
-  child_living_with_disabilities <- factor(contacts_unflat$fields$has_disability)
-  child_living_with_disabilities <- fct_expand(child_living_with_disabilities, "Yes", "No")
-  child_living_with_disabilities <- forcats::fct_recode(child_living_with_disabilities,
-                                                        Yes = "yes",
-                                                        No = "no",
-                                                        `supp_disab`= "supp_disab")
-  child_living_with_disabilities <- forcats::fct_relevel(child_living_with_disabilities,
-                                                         c("Yes", "No", "supp_disab"))
-  
-  language <- factor(contacts_unflat$language)
-  language <- fct_expand(language, "Did not respond", "MSA", "ENG")
-  language <- forcats::fct_recode(language,
-                                  MSA = "msa",
-                                  ENG = "eng")
-  language[is.na(language)] <- "Did not respond"
-  language <- forcats::fct_relevel(language, c("ENG", "MSA", "Did not respond"))
-  
-  
-  recruitment_channel <- factor(contacts_unflat$fields$enrollment)
-  recruitment_channel <- forcats::fct_expand(recruitment_channel, c("LPPKN", "NGO", "Friends/Family", "U-Report", "Social media", "Other"))
-  recruitment_channel <- forcats::fct_recode(recruitment_channel,
-                                             `LPPKN` = "LPPKN",
-                                             `NGO` = "Ngo",
-                                             `Friends/Family` = "Someone",
-                                             `U-Report` = "U-report",
-                                             `Social media` = "Social",
-                                             `Other` = "Other channel")
-  recruitment_channel <- forcats::fct_relevel(recruitment_channel, c("LPPKN", "NGO", "Friends/Family", "U-Report", "Social media", "Other"))
-  
-  parenting_goals <- factor(as.numeric(contacts_unflat$fields$parenting_goal))
-  parenting_goals <- forcats::fct_expand(parenting_goals, c("Relationship","Behaviour", "School", "COVID-19", "Stress", "Finances", "Family conflict", "Safety", "Disabilities", "Other"))
-  parenting_goals <- forcats::fct_recode(parenting_goals,
-                                         `Relationship` = "1",
-                                         `Behaviour` = "2",
-                                         `School` = "3",
-                                         `COVID-19` = "4",
-                                         `Stress` = "5",
-                                         `Finances` = "6",
-                                         `Family conflict` = "7",
-                                         `Safety`= "8",
-                                         `Disabilities` = "9",
-                                         `Other` = "0")
-  parenting_goals <- forcats::fct_relevel(parenting_goals,
-                                          c("Relationship","Behaviour",
-                                            "School", "COVID-19",
-                                            "Stress", "Finances",
-                                            "Family conflict", "Safety",
-                                            "Disabilities", "Other"))
-  parenting_goals_wrap <- str_wrap_factor(parenting_goals, width = 15)
-  
-  # Calculations -----------------------------------------------------------------
-  # active users # N = contacts for which the time difference between the current time and the datetime variable "last_seen_on" is less than 24 h 
-  active_users_24hr <- difftime(lubridate::now(tzone = "UTC"), as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"), units = "hours") <= 24
-  active_users_24hr <- factor(active_users_24hr)
-  if (length(levels(active_users_24hr)) == 1){
-    if (levels(active_users_24hr) == "FALSE"){
-      levels(active_users_24hr) <- c(levels(active_users_24hr),"TRUE")
-    } else if (levels(active_users_24hr) == "TRUE"){
-      levels(active_users_24hr) <- c(levels(active_users_24hr),"FALSE")
-    }
+}
+
+enrolled <- factor(enrolled)
+true_consent <- factor(true_consent)
+program <- factor(program)
+enrolled <- forcats::fct_expand(enrolled, c("Yes", "No"))
+true_consent <- forcats::fct_expand(true_consent, c("Yes", "No"))
+program <- forcats::fct_expand(program, c("Yes", "No"))
+enrolled <- forcats::fct_relevel(enrolled, c("Yes", "No"))
+true_consent <- forcats::fct_relevel(true_consent, c("Yes", "No"))
+program <- forcats::fct_relevel(program, c("Yes", "No"))
+
+language <- factor(contacts_unflat$language)
+language <- fct_expand(language, "Did not respond", "MSA", "ENG")
+language <- forcats::fct_recode(language,
+                                MSA = "msa",
+                                ENG = "eng")
+language[is.na(language)] <- "Did not respond"
+language <- forcats::fct_relevel(language, c("ENG", "MSA", "Did not respond"))
+
+df_consent <- data.frame(ID, program, enrolled, true_consent, language)
+df_consent <- df_consent %>%
+  mutate(consent = ifelse(is.na(true_consent) &  is.na(language), "Did not interact",
+                          ifelse(is.na(true_consent) & !is.na(language), "Did not respond",
+                                 ifelse(true_consent == "Yes", "Yes", "No"))))
+df_consent$true_consent <- NULL
+true_consent <- NULL
+
+df_consent <- df_consent %>%
+  mutate(consent = forcats::fct_relevel(consent, c("Yes", "No", "Did not interact", "Did not respond")))
+
+consent <- df_consent$consent
+df_created_on <- data.frame(ID, created_on, consent, row = 1:length(ID))
+
+# demographics -----------------------------------------------------------------------------
+state_of_origin <- contacts_unflat$fields$state_of_origin
+next_tip_main <- as.numeric(as.character(contacts_unflat$fields$next_tip_main))
+next_tip_morning <- as.numeric(as.character(contacts_unflat$fields$next_tip_morning))
+next_tip_evening <- as.numeric(as.character(contacts_unflat$fields$next_tip_evening))
+parent_gender <- contacts_unflat$fields$gender
+parent_gender <- factor(ifelse(parent_gender %in% c("female", "f", "woman", "Woman"), "Woman",
+                               ifelse(parent_gender %in% c("male", "m", "man", "Man"), "Man",
+                                      ifelse(parent_gender %in% "no", NA, parent_gender))))
+parent_gender <- fct_expand(parent_gender, "Woman", "Man")
+parent_gender <- forcats::fct_relevel(parent_gender, c("Woman", "Man"))
+
+child_age_group <- contacts_unflat$fields$age_group_for_tips
+know_age_group <- contacts_unflat$fields$know_age_group_for_tips
+child_age_group <- ifelse(child_age_group == "child" & know_age_group == "no", "Default", child_age_group)
+child_age_group <- factor(child_age_group)
+child_age_group <- fct_expand(child_age_group, "Baby", "Child", "Teen", "Default")
+child_age_group <- forcats::fct_recode(child_age_group,
+                                       Baby = "baby",
+                                       Child = "child",
+                                       Teen = "teen")
+child_age_group <- forcats::fct_relevel(child_age_group, c("Baby", "Child", "Teen", "Default"))
+
+child_gender <- factor(contacts_unflat$fields$survey_behave_sex)
+child_gender <- fct_expand(child_gender, "Girl", "Boy", "Prefer not to say")
+child_gender <-  forcats::fct_recode(child_gender,
+                                     Boy = "male",
+                                     Girl = "female", 
+                                     `Prefer not to say` = "no")
+child_gender <- forcats::fct_relevel(child_gender, c("Girl", "Boy", "Prefer not to say"))
+
+parent_child_relationship <- factor(contacts_unflat$fields$survey_behave_relationship)
+parent_child_relationship <- fct_expand(parent_child_relationship, "Parent", "Grandparent", "Aunt/Uncle", "Foster Parent", "Other", "Prefer not to say")
+parent_child_relationship <- forcats::fct_recode(parent_child_relationship,
+                                                 Parent = "parent",
+                                                 Grandparent = "grandparent",
+                                                 `Aunt/Uncle`= "uncle",
+                                                 `Foster Parent` = "foster",
+                                                 Other = "other",
+                                                 `Prefer not to say`  = "no")
+parent_child_relationship <- forcats::fct_relevel(parent_child_relationship,
+                                                  c("Parent", "Grandparent", "Aunt/Uncle", "Foster Parent", "Other", "Prefer not to say"))
+
+
+parent_relationship <- factor(contacts_unflat$fields$marital_status)
+parent_relationship <- forcats::fct_recode(parent_relationship,
+                                           `Prefer not to say`  = "no")
+parent_relationship <- fct_expand(parent_relationship, "Single", "Married", "Partnered", "Divorced", "Widowed", "Prefer not to say")
+parent_relationship <- forcats::fct_relevel(parent_relationship, c("Single", "Married", "Partnered", "Divorced", "Widowed", "Prefer not to say"))
+
+child_disabilities <- factor(contacts_unflat$fields$has_disability)
+child_disabilities <- fct_expand(child_disabilities, "Yes", "No")
+child_disabilities <- forcats::fct_recode(child_disabilities,
+                                          Yes = "yes",
+                                          No = "no",
+                                          `supp_disab`= "supp_disab")
+child_disabilities <- forcats::fct_relevel(child_disabilities,
+                                           c("Yes", "No", "supp_disab"))
+
+
+recruitment_channel <- factor(contacts_unflat$fields$enrollment)
+recruitment_channel <- forcats::fct_expand(recruitment_channel, c("LPPKN", "NGO", "Friends/Family", "U-Report", "Social media", "Other"))
+recruitment_channel <- forcats::fct_recode(recruitment_channel,
+                                           `LPPKN` = "LPPKN",
+                                           `NGO` = "Ngo",
+                                           `Friends/Family` = "Someone",
+                                           `U-Report` = "U-report",
+                                           `Social media` = "Social",
+                                           `Other` = "Other channel")
+recruitment_channel <- forcats::fct_relevel(recruitment_channel, c("LPPKN", "NGO", "Friends/Family", "U-Report", "Social media", "Other"))
+
+parenting_goal <- factor(as.numeric(contacts_unflat$fields$parenting_goal))
+parenting_goal <- forcats::fct_expand(parenting_goal, c("Relationship","Behaviour", "School", "COVID-19", "Stress", "Finances", "Family conflict", "Safety", "Disabilities", "Other"))
+parenting_goal <- forcats::fct_recode(parenting_goal,
+                                      `Relationship` = "1",
+                                      `Behaviour` = "2",
+                                      `School` = "3",
+                                      `COVID-19` = "4",
+                                      `Stress` = "5",
+                                      `Finances` = "6",
+                                      `Family conflict` = "7",
+                                      `Safety`= "8",
+                                      `Disabilities` = "9",
+                                      `Other` = "0")
+parenting_goal <- forcats::fct_relevel(parenting_goal,
+                                       c("Relationship","Behaviour",
+                                         "School", "COVID-19",
+                                         "Stress", "Finances",
+                                         "Family conflict", "Safety",
+                                         "Disabilities", "Other"))
+parenting_goal_wrap <- str_wrap_factor(parenting_goal, width = 15)
+
+# active users # N = contacts for which the time difference between the current time and the datetime variable "last_seen_on" is less than 24 h 
+active_users <- difftime(lubridate::now(tzone = "UTC"), as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"), units = "hours") <= 24
+active_users <- factor(active_users)
+if (length(levels(active_users)) == 1){
+  if (levels(active_users) == "FALSE"){
+    levels(active_users) <- c(levels(active_users),"TRUE")
+  } else if (levels(active_users) == "TRUE"){
+    levels(active_users) <- c(levels(active_users),"FALSE")
   }
-  active_users_24hr <- forcats::fct_expand(active_users_24hr, c("Yes", "No"))
-  active_users_24hr <- forcats::fct_recode(active_users_24hr,
+}
+active_users <- forcats::fct_expand(active_users, c("Yes", "No"))
+active_users <- forcats::fct_recode(active_users,
+                                    "No" = "FALSE",
+                                    "Yes" = "TRUE")
+active_users <- forcats::fct_relevel(active_users, c("Yes", "No"))
+
+active_users_7_days <- difftime(lubridate::now(tzone = "UTC"), as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"), units = "hours") <= 7*24
+active_users_7_days <- factor(active_users_7_days)
+if (length(levels(active_users_7_days)) == 1){
+  if (levels(active_users_7_days) == "FALSE"){
+    levels(active_users_7_days) <- c(levels(active_users_7_days),"TRUE")
+  } else if (levels(active_users_7_days) == "TRUE"){
+    levels(active_users_7_days) <- c(levels(active_users_7_days),"FALSE")
+  }
+}
+active_users_7_days <- forcats::fct_expand(active_users_7_days, c("Yes", "No"))
+active_users_7_days <- forcats::fct_recode(active_users_7_days,
                                            "No" = "FALSE",
                                            "Yes" = "TRUE")
-  active_users_24hr <- forcats::fct_relevel(active_users_24hr, c("Yes", "No"))
-  
-  active_users_7d <- difftime(lubridate::now(tzone = "UTC"), as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"), units = "hours") <= 7*24
-  active_users_7d <- factor(active_users_7d)
-  if (length(levels(active_users_7d)) == 1){
-    if (levels(active_users_7d) == "FALSE"){
-      levels(active_users_7d) <- c(levels(active_users_7d),"TRUE")
-    } else if (levels(active_users_7d) == "TRUE"){
-      levels(active_users_7d) <- c(levels(active_users_7d),"FALSE")
-    }
-  }
-  active_users_7d <- forcats::fct_expand(active_users_7d, c("Yes", "No"))
-  active_users_7d <- forcats::fct_recode(active_users_7d,
-                                         "No" = "FALSE",
-                                         "Yes" = "TRUE")
-  active_users_7d <- forcats::fct_relevel(active_users_7d, c("Yes", "No"))
-  
-  # comp_prog_overall
-  # TODO: only should be lookign at this for those who consented
-  n_skills <- as.numeric(as.character(contacts_unflat$fields$n_skills))
-  
-  # Participant age etc
-  # TODO: only should be lookign at this for those who consented
-  parent_age <- as.numeric(as.character(contacts_unflat$fields$age))
-  
-  # completed surveys
-  completed_welcome <- factor(contacts_unflat$fields$completed_welcome)
-  completed_welcome <- forcats::fct_expand(completed_welcome, c("Yes", "No"))
-  completed_welcome <- forcats::fct_recode(completed_welcome,
-                                           "No" = "no",
-                                           "Yes" = "yes")
-  completed_welcome[is.na(completed_welcome)] <- "No"
-  completed_welcome <- forcats::fct_relevel(completed_welcome, c("Yes", "No"))
-  
-  survey_completed_wk1 <- str_count(contacts_unflat$fields$surveyparenting_completion, fixed("|"))
-  if (length(survey_completed_wk1) == 0){survey_completed_wk1 <- rep(NA, length(enrolled))}
-  
-  survey_completed_wk2_plus <- str_count(contacts_unflat$fields$surveyparentingbehave_completion, fixed("|"))
-  if (length(survey_completed_wk2_plus) == 0){survey_completed_wk2_plus <- rep(NA, length(enrolled))}
-  
-  consent_survey_baseline <- c(data.frame(str_split(contacts_unflat$fields$surveyparenting_datestamps, ",", n = 2, simplify = TRUE))[1])$X1
-  if (length(consent_survey_baseline) == 0){consent_survey_baseline <- rep(NA, length(enrolled))}
-  consent_survey_baseline <- factor(consent_survey_baseline)
-  consent_survey_baseline <- forcats::fct_expand(consent_survey_baseline, c("Yes", "No"))
-  consent_survey_baseline <- forcats::fct_recode(consent_survey_baseline,
-                                              "No" = "no",
-                                              "Yes" = "yes")
-  #consent_survey_baseline[is.na(consent_survey_baseline)] <- "Did not interact"
-  consent_survey_baseline <- forcats::fct_relevel(consent_survey_baseline, c("Yes", "No", "Did not interact"))
-  
-  survey_consented_wk2_plus <- str_split(contacts_unflat$fields$surveyparentingbehave_datestamps, fixed("|"))
-  all_split_data <- NULL
-  for (j in 1:length(survey_consented_wk2_plus)){
-    if (is.na(survey_consented_wk2_plus[[j]])){
-      split_data <- data.frame(V1 = NA, V2 = NA, V3 = NA, row = j)
-    } else {
-      split_parenting_2 <- stringr::str_split(survey_consented_wk2_plus[[j]], ",")
-      split_data <- plyr::ldply(split_parenting_2[1:(length(split_parenting_2)-1)])
-      split_data <- split_data %>% mutate(row = j)
-    }
-    all_split_data[[j]] <- split_data
-  }
-  survey_consented_wk2_plus_data <- plyr::ldply(all_split_data)
-  survey_consented_wk2_plus_data$survey_response <- as.numeric(as.factor(survey_consented_wk2_plus_data$V1))
-  survey_consented_wk2_plus_data$survey_number <- survey_consented_wk2_plus_data$V2
-  survey_consented_wk2_plus_data$V1 <- NULL
-  survey_consented_wk2_plus_data$V2 <- NULL
-  survey_consented_wk2_plus_data$V3 <- NULL
+active_users_7_days <- forcats::fct_relevel(active_users_7_days, c("Yes", "No"))
 
-  survey_consented_wk2_plus_data <- merge(survey_consented_wk2_plus_data, df_ID_row, by = "row")
-  survey_consented_wk2_plus_data_wider <- pivot_wider(survey_consented_wk2_plus_data, id_cols = ID, names_from = survey_number,
-                                                      values_from = survey_response, names_prefix = "consent_survey_",
-                                                      values_fn = mean) # there are several responses for some. So find mean. If they ever consented they we say they did consent
-  survey_consented_wk2_plus_data_wider <- survey_consented_wk2_plus_data_wider %>%
-    mutate_at(vars(starts_with("consent_survey_")), round) %>%
-    mutate_at(vars(starts_with("consent_survey_")), as.factor)
-  
-  survey_consented_wk2_plus_data_wider <- survey_consented_wk2_plus_data_wider %>%
-    mutate_at(vars(starts_with("consent_survey_")), ~forcats::fct_recode(.,
-                                                                        "No" = "1",
-                                                                        "Yes" = "2"))
-  
-  challenging_type <- contacts_unflat$fields$survey_behave_most_challenging
-  challenging_type <- dplyr::case_when(
-    child_age_group == "Baby" & challenging_type == "1" ~ "Crying",
-    child_age_group == "Baby" & challenging_type == "2" ~ "Problems sleeping",
-    child_age_group == "Baby" & challenging_type == "3" ~ "Acting clingy",
-    child_age_group == "Baby" & challenging_type == "4" ~ "Whining",
-    child_age_group == "Baby" & challenging_type == "5" ~ "Bad tempered",
-    child_age_group == "Baby" & challenging_type == "6" ~ "Problems eating",
-    child_age_group == "Baby" & challenging_type == "7" ~ "Stubborn/fussy",
-    child_age_group == "Baby" & challenging_type == "8" ~ "Naughty behaviour",
-    child_age_group == "Baby" & challenging_type == "9" ~ "Temper Tantrums",
-    child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "1" ~ "Refuses to obey",
-    child_age_group %in% c("Child", "Default") & challenging_type == "2" ~ "Gets angry",
-    child_age_group %in% c("Child", "Default", "Teen") & challenging_type == "3" ~ "Rude behaviour",
-    child_age_group %in% c("Child", "Default") & challenging_type == "4" ~ "Mood swings",
-    child_age_group %in% c("Child", "Default") & challenging_type == "5" ~ "Does not follow rules",
-    child_age_group %in% c("Child", "Default") & challenging_type == "6" ~ "Stubbornness",
-    child_age_group %in% c("Child", "Default" ~ "Teen") & challenging_type == "7" ~ "Breaks things",
-    child_age_group %in% c("Child", "Default" ~ "Teen") & challenging_type == "8" ~ "Gets into fights",
-    child_age_group %in% c("Child", "Default" ~ "Teen") & challenging_type == "9" ~ "Teases others",
-    child_age_group %in% c("Teen") & challenging_type == "2" ~ "Temper Tantrums",
-    child_age_group %in% c("Teen") & challenging_type == "4" ~ "Whining",
-    child_age_group %in% c("Teen") & challenging_type == "5" ~ "Hyperactivity",
-    child_age_group %in% c("Teen") & challenging_type == "6" ~ "Hits others")
-  
-  challenging_type <- forcats::fct_expand(challenging_type, c("Crying", "Problems sleeping", "Acting clingy", "Whining", "Bad tempered", "Problems eating", "Stubborn/fussy", "Naughty behaviour", "Temper Tantrums", "Refuses to obey", "Gets angry", "Rude behaviour", "Mood swings", "Does not follow rules", "Stubbornness", "Breaks things", "Gets into fights", "Teases others", "Hyperactivity", "Hits others"))
-  challenging_type <- forcats::fct_relevel(challenging_type, c("Crying", "Problems sleeping", "Acting clingy", "Whining", "Bad tempered", "Problems eating", "Stubborn/fussy", "Naughty behaviour", "Temper Tantrums", "Refuses to obey", "Gets angry", "Rude behaviour", "Mood swings", "Does not follow rules", "Stubbornness", "Breaks things", "Gets into fights", "Teases others", "Hyperactivity", "Hits others"))
-  challenging_type_wrap <- str_wrap_factor(challenging_type, width = 10)
-  
-  df <- data.frame(ID, enrolled, created_on, true_consent, program, language, parent_gender, child_gender, child_age_group, parent_child_relationship, 
-                   parent_relationship_status, child_living_with_disabilities, recruitment_channel, parenting_goals, parenting_goals_wrap,
-                   active_users_24hr, active_users_7d, n_skills, parent_age, completed_welcome, survey_completed_wk1, survey_completed_wk2_plus,
-                   consent_survey_baseline,
-                   challenging_type, challenging_type_wrap)
-  
-  df <- merge(df, survey_consented_wk2_plus_data_wider, by = "ID")
-  
-  df <- df %>%
-    mutate(consent = ifelse(is.na(true_consent) &  is.na(language), "Did not interact",
-                            ifelse(is.na(true_consent) & !is.na(language), "Did not respond",
-                                   ifelse(true_consent == "Yes", "Yes", "No"))))
-  df <- df %>%
-    mutate(consent = forcats::fct_relevel(consent, c("Yes", "No", "Did not interact", "Did not respond")))
-  
-  # last online plot -------------------------------------------------------------------------------------------------------------
-  last_online <- as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT", tz = "UTC")
-  df$last_online <- last_online
-  
-  consent <- df$consent 
-  
-  df1 <- df %>% dplyr::select(c(ID, true_consent, consent, enrolled, parent_gender, child_gender, child_age_group))
-  df <- df %>% filter(true_consent == "Yes")
+# comp_prog_overall
+# TODO: only should be lookign at this for those who consented
+comp_prog_overall <- as.numeric(as.character(contacts_unflat$fields$n_skills))
+
+# Participant age etc
+# TODO: only should be lookign at this for those who consented
+parent_age <- as.numeric(as.character(contacts_unflat$fields$age))
+
+# completed surveys
+completed_welcome <- factor(contacts_unflat$fields$completed_welcome)
+completed_welcome <- forcats::fct_expand(completed_welcome, c("Yes", "No"))
+completed_welcome <- forcats::fct_recode(completed_welcome,
+                                         "No" = "no",
+                                         "Yes" = "yes")
+completed_welcome[is.na(completed_welcome)] <- "No"
+completed_welcome <- forcats::fct_relevel(completed_welcome, c("Yes", "No"))
+
+comp_survey_w1 <- str_count(contacts_unflat$fields$surveyparenting_completion, fixed("|"))
+if (length(comp_survey_w1) == 0){comp_survey_w1 <- rep(NA, length(enrolled))}
+
+comp_survey_w2 <- str_count(contacts_unflat$fields$surveyparentingbehave_completion, fixed("|"))
+if (length(comp_survey_w2) == 0){comp_survey_w2 <- rep(NA, length(enrolled))}
+
+consent_survey_w1 <- c(data.frame(str_split(contacts_unflat$fields$surveyparenting_datestamps, ",", n = 2, simplify = TRUE))[1])$X1
+if (length(consent_survey_w1) == 0){consent_survey_w1 <- rep(NA, length(enrolled))}
+consent_survey_w1 <- factor(consent_survey_w1)
+consent_survey_w1 <- forcats::fct_expand(consent_survey_w1, c("Yes", "No"))
+consent_survey_w1 <- forcats::fct_recode(consent_survey_w1,
+                                         "No" = "no",
+                                         "Yes" = "yes")
+#consent_survey_w1[is.na(consent_survey_w1)] <- "Did not interact"
+
+#consent_survey_w1[is.na(consent_survey_w1)] <- "Did not interact"
+consent_survey_w1 <- forcats::fct_relevel(consent_survey_w1, c("Yes", "No", "Did not interact"))
+
+survey_consented_wk2_plus <- str_split(contacts_unflat$fields$surveyparentingbehave_datestamps, fixed("|"))
+all_split_data <- NULL
+for (j in 1:length(survey_consented_wk2_plus)){
+  if (is.na(survey_consented_wk2_plus[[j]])){
+    split_data <- data.frame(V1 = NA, V2 = NA, V3 = NA, row = j)
+  } else {
+    split_parenting_2 <- stringr::str_split(survey_consented_wk2_plus[[j]], ",")
+    split_data <- plyr::ldply(split_parenting_2[1:(length(split_parenting_2)-1)])
+    split_data <- split_data %>% mutate(row = j)
+  }
+  all_split_data[[j]] <- split_data
+}
+survey_consented_wk2_plus_data <- plyr::ldply(all_split_data)
+survey_consented_wk2_plus_data$survey_response <- as.numeric(as.factor(survey_consented_wk2_plus_data$V1))
+survey_consented_wk2_plus_data$survey_number <- survey_consented_wk2_plus_data$V2
+survey_consented_wk2_plus_data$V1 <- NULL
+survey_consented_wk2_plus_data$V2 <- NULL
+survey_consented_wk2_plus_data$V3 <- NULL
+survey_consented_wk2_plus_data <- merge(survey_consented_wk2_plus_data, df_created_on, by = "row")
+survey_consented_wk2_plus_data_wider <- pivot_wider(survey_consented_wk2_plus_data, id_cols = ID, names_from = survey_number,
+                                                    values_from = survey_response, names_prefix = "consent_survey_w",
+                                                    values_fn = mean) # there are several responses for some. So find mean. If they ever consented they we say they did consent
+survey_consented_wk2_plus_data_wider <- survey_consented_wk2_plus_data_wider %>%
+  mutate_at(vars(starts_with("consent_survey_")), round) %>%
+  mutate_at(vars(starts_with("consent_survey_")), as.factor)
+
+survey_consented_wk2_plus_data_wider <- survey_consented_wk2_plus_data_wider %>%
+  mutate_at(vars(starts_with("consent_survey_")), ~forcats::fct_recode(.,
+                                                                       "No" = "1",
+                                                                       "Yes" = "2"))
+
+challenge_behav <- contacts_unflat$fields$survey_behave_most_challenging
+challenge_behav <- dplyr::case_when(
+  child_age_group == "Baby" & challenge_behav == "1" ~ "Crying",
+  child_age_group == "Baby" & challenge_behav == "2" ~ "Problems sleeping",
+  child_age_group == "Baby" & challenge_behav == "3" ~ "Acting clingy",
+  child_age_group == "Baby" & challenge_behav == "4" ~ "Whining",
+  child_age_group == "Baby" & challenge_behav == "5" ~ "Bad tempered",
+  child_age_group == "Baby" & challenge_behav == "6" ~ "Problems eating",
+  child_age_group == "Baby" & challenge_behav == "7" ~ "Stubborn/fussy",
+  child_age_group == "Baby" & challenge_behav == "8" ~ "Naughty behaviour",
+  child_age_group == "Baby" & challenge_behav == "9" ~ "Temper Tantrums",
+  child_age_group %in% c("Child", "Default", "Teen") & challenge_behav == "1" ~ "Refuses to obey",
+  child_age_group %in% c("Child", "Default") & challenge_behav == "2" ~ "Gets angry",
+  child_age_group %in% c("Child", "Default", "Teen") & challenge_behav == "3" ~ "Rude behaviour",
+  child_age_group %in% c("Child", "Default") & challenge_behav == "4" ~ "Mood swings",
+  child_age_group %in% c("Child", "Default") & challenge_behav == "5" ~ "Does not follow rules",
+  child_age_group %in% c("Child", "Default") & challenge_behav == "6" ~ "Stubbornness",
+  child_age_group %in% c("Child", "Default" ~ "Teen") & challenge_behav == "7" ~ "Breaks things",
+  child_age_group %in% c("Child", "Default" ~ "Teen") & challenge_behav == "8" ~ "Gets into fights",
+  child_age_group %in% c("Child", "Default" ~ "Teen") & challenge_behav == "9" ~ "Teases others",
+  child_age_group %in% c("Teen") & challenge_behav == "2" ~ "Temper Tantrums",
+  child_age_group %in% c("Teen") & challenge_behav == "4" ~ "Whining",
+  child_age_group %in% c("Teen") & challenge_behav == "5" ~ "Hyperactivity",
+  child_age_group %in% c("Teen") & challenge_behav == "6" ~ "Hits others")
+
+challenge_behav <- forcats::fct_expand(challenge_behav, c("Crying", "Problems sleeping", "Acting clingy", "Whining", "Bad tempered", "Problems eating", "Stubborn/fussy", "Naughty behaviour", "Temper Tantrums", "Refuses to obey", "Gets angry", "Rude behaviour", "Mood swings", "Does not follow rules", "Stubbornness", "Breaks things", "Gets into fights", "Teases others", "Hyperactivity", "Hits others"))
+challenge_behav <- forcats::fct_relevel(challenge_behav, c("Crying", "Problems sleeping", "Acting clingy", "Whining", "Bad tempered", "Problems eating", "Stubborn/fussy", "Naughty behaviour", "Temper Tantrums", "Refuses to obey", "Gets angry", "Rude behaviour", "Mood swings", "Does not follow rules", "Stubbornness", "Breaks things", "Gets into fights", "Teases others", "Hyperactivity", "Hits others"))
+challenge_behav_wrap <- str_wrap_factor(challenge_behav, width = 10)
+
+df <- data.frame(ID, created_on, last_online, enrolled, consent, program, language, parent_gender, child_gender, child_age_group, parent_child_relationship,
+                 state_of_origin, 
+                 parent_relationship, child_disabilities, recruitment_channel, parenting_goal, parenting_goals_wrap,
+                 active_users, active_users_7_days, comp_prog_overall, next_tip_main, next_tip_morning, next_tip_evening, parent_age, completed_welcome, comp_survey_w1, comp_survey_w2, consent_survey_w1,
+                 challenge_behav, challenge_behav_wrap)
+df <- df %>%
+  mutate(length_in_programme = as.numeric(as.Date(last_online) - as.Date(created_on)) + 1)
+df <- merge(df, survey_consented_wk2_plus_data_wider, by = "ID") %>%
+  mutate(across(starts_with("consent_survey_"), ~replace_na(., 0)))
+
+df <- df %>%
+  mutate(parent_child_relationship_2 = ifelse(is.na(parent_child_relationship), NA, paste(parent_child_relationship, parent_gender, sep = "_")))
+
+df <- df %>%
+  mutate(parent_child_relationship_2 = plyr::revalue(x=parent_child_relationship_2, 
+                                                     replace=c(`Parent_Woman` =  "Mother", `Grandparent_Woman` = "Grandmother", `Aunt/Uncle_Woman` = "Aunt", `Foster Parent_Woman` = "Foster Mother",
+                                                               `Other_Woman` = "Other (F)", `Prefer not to say_Woman` = "Prefer not to say (F)",
+                                                               `Parent_Man` =  "Father", `Grandparent_Man` = "Grandfather", `Aunt/Uncle_Man` = "Uncle", `Foster Parent_Man` = "Foster Father",
+                                                               `Other_Man` = "Other (M)", `Prefer not to say_Man` = "Prefer not to say (M)",
+                                                               `Parent_NA` =  "Parent", `Grandparent_NA` = "Grandparent", `Aunt/Uncle_NA` = "Aunt/Uncle", `Foster Parent_NA` = "Foster Parent",
+                                                               `Other_NA` = "Other (unknown)", `Prefer not to say_NA` = "Prefer not to say (unknown)")))
+
   
   # for Jamaica Only: Parent Pals data cleaning --------------------
   pp_n_recruited <- df %>% group_by(child_age_group) %>% # group_by will be "recruited by" in time
