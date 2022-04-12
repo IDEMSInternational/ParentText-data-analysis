@@ -66,6 +66,7 @@ get_archived_data <- function(rapidpro_site = get_rapidpro_site(), call_type = "
   return(archived_data_bank)
 }
 #archived_data <- get_archived_data()
+#getwd()
 #saveRDS(archived_data, file = "archived_data_monthly.RDS")
 #saveRDS(archived_data, file = "archived_data.RDS")
 
@@ -220,7 +221,9 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call
         dplyr::mutate(flow_type = uuid_flow[1,1]) 
     }
   }
-  names(flow_data) <- flow_name[1:length(flow_data)]
+  if (!is.null(flow_data)){
+    names(flow_data) <- flow_name[1:length(flow_data)]
+  }
   flow_data <- plyr::ldply(flow_data)
   
   if (!include_archived_data){
