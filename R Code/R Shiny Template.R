@@ -102,7 +102,7 @@ parenttext_shiny <- function(data){
                                                                         shiny::tableOutput("parent_gender_summary"),
                                                                         shiny::tableOutput("parent_age_summary"),
                                                                         shiny::tableOutput("parent_child_relationship_summary"),
-                                                                        shiny::tableOutput("parent_relationship_status_summary"),
+                                                                        shiny::tableOutput("parent_relationship_summary"),
                                                                     ),
                                                                     box(width=NULL,
                                                                         collapsible = FALSE,
@@ -111,7 +111,7 @@ parenttext_shiny <- function(data){
                                                                         solidHeader = TRUE,
                                                                         shiny::tableOutput("child_gender_summary"),
                                                                         shiny::tableOutput("child_age_summary"),
-                                                                        shiny::tableOutput("child_living_with_disabilities_summary"),
+                                                                        shiny::tableOutput("child_disabilities_summary"),
                                                                         
                                                                     ), # close child box
                                                                     cellWidths = c("50%", "50%"),
@@ -184,7 +184,7 @@ parenttext_shiny <- function(data){
                                                                         shiny::tableOutput("parent_gender_group_summary"),
                                                                         shiny::tableOutput("parent_age_group_summary"),
                                                                         shiny::tableOutput("parent_child_relationship_group_summary"),
-                                                                        shiny::tableOutput("parent_relationship_status_group_summary"),
+                                                                        shiny::tableOutput("parent_relationship_group_summary"),
                                                                     ),
                                                                     
                                                                     box(width=NULL,
@@ -194,7 +194,7 @@ parenttext_shiny <- function(data){
                                                                         solidHeader = TRUE,
                                                                         shiny::tableOutput("child_gender_group_summary"),
                                                                         shiny::tableOutput("child_age_group_summary"),
-                                                                        shiny::tableOutput("child_living_with_disabilities_group_summary"),
+                                                                        shiny::tableOutput("child_disabilities_group_summary"),
                                                                         
                                                                     ), # close child box
                                                                     cellWidths = c("50%", "50%"),
@@ -247,8 +247,8 @@ parenttext_shiny <- function(data){
                                                          fluidRow(
                                                            column(10, align = "center",
                                                                   splitLayout(
-                                                                    shiny::tableOutput("active_users_24hr_summary"),
-                                                                    shiny::tableOutput("active_users_7d_summary"),
+                                                                    shiny::tableOutput("active_users_summary"),
+                                                                    shiny::tableOutput("active_users_7_days_summary"),
                                                                     cellWidths = c("50%", "50%"),
                                                                     cellArgs = list(style = "vertical-align: top"))),
                                                            width = 10),
@@ -293,8 +293,8 @@ parenttext_shiny <- function(data){
                                                          fluidRow(
                                                            column(10, align = "center",
                                                                   splitLayout(
-                                                                    shiny::tableOutput("active_users_24hr_group_summary"),
-                                                                    shiny::tableOutput("active_users_7d_group_summary"),
+                                                                    shiny::tableOutput("active_users_group_summary"),
+                                                                    shiny::tableOutput("active_users_7_days_group_summary"),
                                                                     cellWidths = c("50%", "50%"),
                                                                     cellArgs = list(style = "vertical-align: top"))),
                                                            width = 10),
@@ -304,7 +304,7 @@ parenttext_shiny <- function(data){
                                                                   plotlyOutput(outputId = "last_online_group_plot"),
                                                            )),
                                                          br(),
-
+                                                         
                                                          fluidRow(
                                                            column(10, align = "center",
                                                                   shiny::tableOutput("completed_welcome_group_summary"),
@@ -449,7 +449,7 @@ parenttext_shiny <- function(data){
       
       updated_data <- update_data()
       df <- updated_data[[1]]
-      df1 <- updated_data[[2]]
+      df_consent <- updated_data[[2]]
       supportive_calm_flow <- updated_data[[3]]
       supportive_praise_flow <- updated_data[[4]]
       check_in_flow_names_flow <- updated_data[[5]]
@@ -462,14 +462,14 @@ parenttext_shiny <- function(data){
     
     updated_data <- update_data()
     df <- updated_data[[1]]
-    df1 <- updated_data[[2]]
+    df_consent <- updated_data[[2]]
     supportive_calm_flow <- updated_data[[3]]
     supportive_praise_flow <- updated_data[[4]]
     check_in_flow_names_flow <- updated_data[[5]]
     content_tip_flow_names_flow <- updated_data[[6]]
     supportive_flow_names_flow <- updated_data[[7]]
     enrolled <- updated_data[[8]]
-    true_consent <- updated_data[[9]]
+    consent <- updated_data[[9]]
     program <- updated_data[[10]]
     parenting_survey <- updated_data[[11]]
     pp_data_frame <- updated_data[[12]]
@@ -542,12 +542,12 @@ parenttext_shiny <- function(data){
     })
     
     language_summary <- reactive({
-      summary_PT(df, language, true_consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, language, consent, "Yes", TRUE, naming_convention = TRUE)
     })
     
     language_summary_group <- reactive({
       req(input$grouper)
-      summary_PT(df, c(language, (!!!rlang::syms(input$grouper))), true_consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, c(language, (!!!rlang::syms(input$grouper))), consent, "Yes", TRUE, naming_convention = TRUE)
     })
     
     output$plot_language <- renderPlotly({
@@ -587,7 +587,7 @@ parenttext_shiny <- function(data){
     })
     
     output$plot_consent <- renderPlotly({
-      ggplot(df1, aes(x = consent)) +
+      ggplot(df_consent, aes(x = consent)) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = "Consent", y = "Count") +
@@ -596,7 +596,7 @@ parenttext_shiny <- function(data){
     
     output$plot_consent_group <- renderPlotly({
       req(input$grouper)
-      ggplot(df1, aes(x = consent, fill = (!!!rlang::syms(input$grouper)))) +
+      ggplot(df_consent, aes(x = consent, fill = (!!!rlang::syms(input$grouper)))) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = "Consented", y = "Count") +
@@ -604,9 +604,9 @@ parenttext_shiny <- function(data){
     })
     
     output$parenting_goals_plot <- renderPlotly({
-      df_goals <- df %>% group_by(parenting_goals_wrap) %>% summarise(n = n())
+      df_goals <- df %>% group_by(parenting_goal_wrap) %>% summarise(n = n())
       
-      fig <- plot_ly(df_goals, labels = ~parenting_goals_wrap, values = ~n, type = 'pie')
+      fig <- plot_ly(df_goals, labels = ~parenting_goal_wrap, values = ~n, type = 'pie')
       fig %>% layout(xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
                      yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
       
@@ -623,7 +623,7 @@ parenttext_shiny <- function(data){
     
     output$parenting_goals_group_plot <- renderPlotly({
       req(input$grouper)
-      ggplot(df, aes(x = parenting_goals_wrap, fill = (!!!rlang::syms(input$grouper)))) +
+      ggplot(df, aes(x = parenting_goal_wrap, fill = (!!!rlang::syms(input$grouper)))) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = "Parenting goals", y = "Count") +
@@ -640,82 +640,81 @@ parenttext_shiny <- function(data){
     })
     
     consent_summary <- reactive({
-      summary_PT(df1, "consent", enrolled, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df_consent, "consent", enrolled, "Yes", TRUE, naming_convention = TRUE)
     })
     
     consent_summary_group <- reactive({
       req(input$grouper)
-      summary_PT(df1, c(consent, !!!rlang::syms(input$grouper)), enrolled, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df_consent, c(consent, !!!rlang::syms(input$grouper)), enrolled, "Yes", TRUE, naming_convention = TRUE)
     })
     
     #language_summary <-  reactive({
     #  summary_PT(df, language, ???, "Yes", TRUE, naming_convention = TRUE)
     #})
-    # ??? was true_consent but if it's true_consent then obvs no "Did not respond".
+    # ??? was consent but if it's consent then obvs no "Did not respond".
     
     parent_gender_summary <- reactive({
-      summary_PT(df, parent_gender, true_consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, parent_gender, consent, "Yes", TRUE, naming_convention = TRUE)
     })
     
     parent_gender_group_summary <- reactive({
-      summary_PT(df, c(parent_gender, !!!rlang::syms(input$grouper)), true_consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, c(parent_gender, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
     })
     
     child_gender_summary <- reactive({
-      summary_PT(df, child_gender, true_consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, child_gender, consent, "Yes", TRUE, naming_convention = TRUE)
     })
     
     child_gender_group_summary <- reactive({
       req(input$grouper)
-      summary_PT(df, c(child_gender, (!!!rlang::syms(input$grouper))), true_consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, c(child_gender, (!!!rlang::syms(input$grouper))), consent, "Yes", TRUE, naming_convention = TRUE)
     })
     child_age_summary <- reactive({
-      summary_PT(df, child_age_group, true_consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, child_age_group, consent, "Yes", TRUE, naming_convention = TRUE)
     })
     child_age_group_summary <- reactive({
       req(input$grouper)
-      summary_PT(df, c(child_age_group, (!!!rlang::syms(input$grouper))), true_consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, c(child_age_group, (!!!rlang::syms(input$grouper))), consent, "Yes", TRUE, naming_convention = TRUE)
     })
     parent_child_relationship_summary <- reactive({
-      summary_PT(df, parent_child_relationship, true_consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, parent_child_relationship, consent, "Yes", TRUE, naming_convention = TRUE)
     })
     parent_child_relationship_group_summary <- reactive({
       req(input$grouper)
-      summary_PT(df, c(parent_child_relationship, !!!rlang::syms(input$grouper)), true_consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, c(parent_child_relationship, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
     })
-    child_living_with_disabilities_summary <- reactive({
-      summary_PT(df, child_living_with_disabilities, true_consent, "Yes", TRUE, naming_convention = TRUE)
+    child_disabilities_summary <- reactive({
+      summary_PT(df, child_disabilities, consent, "Yes", TRUE, naming_convention = TRUE)
     })
-    child_living_with_disabilities_group_summary <- reactive({
+    child_disabilities_group_summary <- reactive({
       req(input$grouper)
-      summary_PT(df, c(child_living_with_disabilities, !!!rlang::syms(input$grouper)), true_consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, c(child_disabilities, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
     })
-    parent_relationship_status_summary <-  reactive({
-      summary_PT(df, parent_relationship_status, true_consent, "Yes", TRUE, naming_convention = TRUE)
+    parent_relationship_summary <-  reactive({
+      summary_PT(df, parent_relationship, consent, "Yes", TRUE, naming_convention = TRUE)
     })
-    parent_relationship_status_group_summary <-  reactive({
-      summary_PT(df, c(parent_relationship_status, !!!rlang::syms(input$grouper)), true_consent, "Yes", TRUE, naming_convention = TRUE)
+    parent_relationship_group_summary <-  reactive({
+      summary_PT(df, c(parent_relationship, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
     })
-    active_users_24hr_group_summary <- reactive({
+    active_users_group_summary <- reactive({
       req(input$grouper_engagement)
-      summary_PT(df, c(active_users_24hr, !!!rlang::syms(input$grouper_engagement)), program, together = TRUE, naming_convention = TRUE)
+      summary_PT(df, c(active_users, !!!rlang::syms(input$grouper_engagement)), program, together = TRUE, naming_convention = TRUE)
     })
-    active_users_24hr_summary <- reactive({
-      summary_PT(df, active_users_24hr, program, together = TRUE, naming_convention = TRUE)
+    active_users_summary <- reactive({
+      summary_PT(df, active_users, program, together = TRUE, naming_convention = TRUE)
     })
-    active_users_7d_summary <- reactive({
-      summary_PT(df, active_users_7d, program, together = TRUE, naming_convention = TRUE)
+    active_users_7_days_summary <- reactive({
+      summary_PT(df, active_users_7_days, program, together = TRUE, naming_convention = TRUE)
     })
-    active_users_7d_group_summary <- reactive({
+    active_users_7_days_group_summary <- reactive({
       req(input$grouper_engagement)
-      summary_PT(df, c(active_users_7d, !!!rlang::syms(input$grouper_engagement)), program, together = TRUE, naming_convention = TRUE)
+      summary_PT(df, c(active_users_7_days, !!!rlang::syms(input$grouper_engagement)), program, together = TRUE, naming_convention = TRUE)
     })
     
     comp_prog_summary <- reactive({
       comp_prog_df <- df %>% 
-        filter(true_consent == "Yes") %>%
-        summarise(program_completion_mean = round(mean(n_skills, na.rm = TRUE), 2),
-                  program_completion_sd = round(sd(n_skills, na.rm = TRUE), 2))
+        summarise(program_completion_mean = round(mean(comp_prog_overall, na.rm = TRUE), 2),
+                  program_completion_sd = round(sd(comp_prog_overall, na.rm = TRUE), 2))
       colnames(comp_prog_df) <- naming_conventions(colnames(comp_prog_df))
       comp_prog_df
     })
@@ -723,9 +722,8 @@ parenttext_shiny <- function(data){
     comp_prog_group_summary <- reactive({
       req(input$grouper_engagement)
       comp_prog_df <- df %>% group_by(!!!rlang::syms(input$grouper_engagement)) %>%
-        filter(true_consent == "Yes") %>%
-        summarise(program_completion_mean = round(mean(n_skills, na.rm = TRUE), 2),
-                  program_completion_sd = round(sd(n_skills, na.rm = TRUE), 2))
+        summarise(program_completion_mean = round(mean(comp_prog_overall, na.rm = TRUE), 2),
+                  program_completion_sd = round(sd(comp_prog_overall, na.rm = TRUE), 2))
       colnames(comp_prog_df) <- naming_conventions(colnames(comp_prog_df))
       comp_prog_df
     })
@@ -733,7 +731,6 @@ parenttext_shiny <- function(data){
     parent_age_summary <- reactive({
       req(input$grouper)
       parent_age_df <- df %>% 
-        filter(true_consent == "Yes") %>%
         summarise(parent_age_mean = round(mean(parent_age, na.rm = TRUE), 2),
                   parent_age_sd = round(sd(parent_age, na.rm = TRUE), 2))
       colnames(parent_age_df) <- naming_conventions(colnames(parent_age_df))
@@ -742,7 +739,6 @@ parenttext_shiny <- function(data){
     parent_age_group_summary <- reactive({
       req(input$grouper)
       parent_age_df <- df %>% group_by(!!!rlang::syms(input$grouper)) %>%
-        filter(true_consent == "Yes") %>%
         summarise(parent_age_mean = round(mean(parent_age, na.rm = TRUE), 2),
                   parent_age_sd = round(sd(parent_age, na.rm = TRUE), 2))
       colnames(parent_age_df) <- naming_conventions(colnames(parent_age_df))
@@ -750,19 +746,23 @@ parenttext_shiny <- function(data){
     })
     
     completed_welcome_summary <- reactive({
-      summary_PT(df, completed_welcome, true_consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(df, completed_welcome, consent, "Yes", TRUE, naming_convention = TRUE)
+    })
+    
+    completed_welcome_group_summary <- reactive({
+      req(input$grouper_engagement)
+      summary_PT(df, c(completed_welcome, !!!rlang::syms(input$grouper_engagement)), program, together = TRUE, naming_convention = TRUE)
     })
     
     # Note: These are the *number* of people that have completed the survey
     completed_survey_summary <- reactive({
-      df_consent <- df %>%
-        filter(true_consent == "Yes")
+      df_consent <- df
       survey_completed <- NULL
-      survey_completed[[1]] <- df_consent %>% summarise(n = sum(survey_completed_wk1 == 1, na.rm = TRUE))
+      survey_completed[[1]] <- df_consent %>% summarise(n = sum(comp_survey_w1 == 1, na.rm = TRUE))
       survey_completed[[1]]$perc <- survey_completed[[1]]$n/nrow(df_consent) * 100
       survey_completed[[1]]$Week <- "Week 1"
       for (i in 2:9){
-        survey_completed[[i]] <- df_consent %>% summarise(n = sum(survey_completed_wk2_plus == i, na.rm = TRUE))
+        survey_completed[[i]] <- df_consent %>% summarise(n = sum(comp_survey_w2 == i, na.rm = TRUE))
         survey_completed[[i]]$perc <- survey_completed[[i]]$n/nrow(df_consent) * 100
         survey_completed[[i]]$Week <- paste("Week ", i, sep = "")
       }
@@ -778,14 +778,13 @@ parenttext_shiny <- function(data){
     
     # Note: These are the *number* of people that have completed the survey
     consented_survey_summary <- reactive({
-      df_consent <- df %>%
-        filter(true_consent == "Yes")
+      df_consent <- df
       survey_completed <- NULL
       
-      wek1 <- summary_PT(df_consent, summary_var = consent_survey_baseline, together = TRUE)
-      wek2 <- summary_PT(df_consent, summary_var = consent_survey_2, together = TRUE)
-      wek3 <- summary_PT(df_consent, summary_var = consent_survey_3, together = TRUE)
-      wek4 <- summary_PT(df_consent, summary_var = consent_survey_4, together = TRUE)
+      wek1 <- summary_PT(df_consent, summary_var = consent_survey_w1, together = TRUE)
+      wek2 <- summary_PT(df_consent, summary_var = consent_survey_w2, together = TRUE)
+      wek3 <- summary_PT(df_consent, summary_var = consent_survey_w3, together = TRUE)
+      wek4 <- summary_PT(df_consent, summary_var = consent_survey_w4, together = TRUE)
       
       # TODO: do we want completed and consented?
       
@@ -799,11 +798,9 @@ parenttext_shiny <- function(data){
     
     consented_survey_group_summary <- reactive({
       req(input$grouper)
-      df_consent <- df %>%
-        filter(true_consent == "Yes")
+      df_consent <- df
       
-      df_consent <- df %>%
-        filter(true_consent == "Yes")
+      df_consent <- df
       survey_completed <- NULL
       
       df_consent %>% group_by(survey_completed_wk1) %>%
@@ -825,8 +822,7 @@ parenttext_shiny <- function(data){
     
     completed_survey_group_summary <- reactive({
       req(input$grouper)
-      df_consent <- df %>%
-        filter(true_consent == "Yes")
+      df_consent <- df
       survey_completed <- NULL
       survey_completed[[1]] <- df_consent %>% group_by(!!!rlang::syms(input$grouper)) %>% summarise(n = sum(survey_completed_wk1 == 1, na.rm = TRUE))
       survey_completed[[1]]$perc <- survey_completed[[1]]$n/nrow(df_consent) * 100
@@ -858,7 +854,7 @@ parenttext_shiny <- function(data){
       all_flows_df <- separate(all_flows_df, `Count (%)`, into = "Value") %>% mutate(Value = as.numeric(as.character(Value)))
       all_flows_df_total <- sum(all_flows_df$Value, na.rm = TRUE) 
       all_flows_df_summary <- all_flows_df %>% group_by(interacted) %>% summarise(n = sum(Value, na.rm = TRUE),
-                                                                                perc = n/all_flows_df_total*100)
+                                                                                  perc = n/all_flows_df_total*100)
       all_flows_df_summary <- all_flows_df_summary %>%
         mutate("Count (%)" := str_c(`n`, ' (', round(`perc`, 2), ")")) %>%
         dplyr::select(-c(n, perc))
@@ -923,7 +919,7 @@ parenttext_shiny <- function(data){
     
     output$behaviour_group_plots <- renderPlotly({
       #req(input$grouper)
-
+      
       df_age_group <- df %>% dplyr::select(c(ID, child_age_group, parent_gender, child_gender))
       parenting_survey1 <- merge(parenting_survey, df_age_group)
       
@@ -942,7 +938,7 @@ parenttext_shiny <- function(data){
     output$behaviour_baby_plot <- renderPlotly({
       df_baby <- df %>% filter(child_age_group == "Baby")
       
-      ggplot(df_baby, aes(x = challenging_type_wrap)) +
+      ggplot(df_baby, aes(x = challenge_behav_wrap)) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = NULL, y = NULL) +
@@ -953,7 +949,7 @@ parenttext_shiny <- function(data){
     output$behaviour_child_plot <- renderPlotly({
       df_child <- df %>% filter(child_age_group == "Child")
       
-      ggplot(df_child, aes(x = challenging_type_wrap)) +
+      ggplot(df_child, aes(x = challenge_behav_wrap)) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = NULL, y = NULL) +
@@ -964,7 +960,7 @@ parenttext_shiny <- function(data){
     output$behaviour_teen_plot <- renderPlotly({
       df_teen <- df %>% filter(child_age_group == "Teen")
       
-      ggplot(df_teen, aes(x = challenging_type_wrap)) +
+      ggplot(df_teen, aes(x = challenge_behav_wrap)) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = NULL, y = NULL) +
@@ -975,7 +971,7 @@ parenttext_shiny <- function(data){
     output$behaviour_default_plot <- renderPlotly({
       df_default <- df %>% filter(child_age_group == "Default")
       
-      ggplot(df_default, aes(x = challenging_type_wrap)) +
+      ggplot(df_default, aes(x = challenge_behav_wrap)) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = NULL, y = NULL) +
@@ -987,7 +983,7 @@ parenttext_shiny <- function(data){
       req(input$grouper_behaviour)
       df_baby <- df %>% filter(child_age_group == "Baby")
       
-      ggplot(df_baby, aes(x = challenging_type_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
+      ggplot(df_baby, aes(x = challenge_behav_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = NULL, y = NULL) +
@@ -1000,7 +996,7 @@ parenttext_shiny <- function(data){
       req(input$grouper_behaviour)
       df_child <- df %>% filter(child_age_group == "Child")
       
-      ggplot(df_child, aes(x = challenging_type_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
+      ggplot(df_child, aes(x = challenge_behav_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = NULL, y = NULL) +
@@ -1013,7 +1009,7 @@ parenttext_shiny <- function(data){
       req(input$grouper_behaviour)
       df_teen <- df %>% filter(child_age_group == "Teen")
       
-      ggplot(df_teen, aes(x = challenging_type_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
+      ggplot(df_teen, aes(x = challenge_behav_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = NULL, y = NULL) +
@@ -1026,7 +1022,7 @@ parenttext_shiny <- function(data){
       req(input$grouper_behaviour)
       df_default <- df %>% filter(child_age_group == "Default")
       
-      ggplot(df_default, aes(x = challenging_type_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
+      ggplot(df_default, aes(x = challenge_behav_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = NULL, y = NULL) +
@@ -1059,17 +1055,17 @@ parenttext_shiny <- function(data){
     
     # Output render ------------------------------------------------------------
     
-    df_enrolled <- summary_PT(df1,  enrolled,  enrolled, "Yes")
+    df_enrolled <- summary_PT(df_consent,  enrolled,  enrolled, "Yes")
     df_enrolled <- df_enrolled %>% mutate(group =  enrolled, count = enrolled_n) %>% dplyr::select(c(group, count))
     
-    df_consented <- summary_PT(df,  true_consent,  true_consent, "Yes")
-    df_consented <- df_consented %>% mutate(group =  true_consent, count = true_consent_n) %>% dplyr::select(c(group, count))
+    df_consented <- summary_PT(df,  consent,  consent, "Yes")
+    df_consented <- df_consented %>% mutate(group =  consent, count = consent_n) %>% dplyr::select(c(group, count))
     
     df_program <- summary_PT(df,  program,  program, "Yes")
     df_program <- df_program %>% mutate(group =  program, count = program_n) %>% dplyr::select(c(group, count))
     
-    df_active_24 <- (summary_PT(df, active_users_24hr, program) %>% filter(active_users_24hr == "Yes"))$active_users_24hr_n
-    df_active_7d <- (summary_PT(df, active_users_7d, program) %>% filter(active_users_7d == "Yes"))$active_users_7d_n
+    df_active_24 <- (summary_PT(df, active_users, program) %>% filter(active_users == "Yes"))$active_users_n
+    df_active_7d <- (summary_PT(df, active_users_7_days, program) %>% filter(active_users_7_days == "Yes"))$active_users_7_days_n
     
     output$myvaluebox1 <- shinydashboard::renderValueBox({
       shinydashboard::valueBox(df_enrolled$count[1], subtitle = "Enrolled", icon = icon("user"),
@@ -1115,14 +1111,14 @@ parenttext_shiny <- function(data){
     output$child_age_group_summary <- shiny::renderTable({(child_age_group_summary())}, striped = TRUE)
     output$parent_child_relationship_summary <- shiny::renderTable({(parent_child_relationship_summary())}, caption = "Relationship between the parent and child", striped = TRUE)
     output$parent_child_relationship_group_summary <- shiny::renderTable({(parent_child_relationship_group_summary())}, caption = "Relationship between the parent and child", striped = TRUE)
-    output$parent_relationship_status_group_summary <- shiny::renderTable({(parent_relationship_status_group_summary())}, caption = "Relationship status of the parent", striped = TRUE)
-    output$parent_relationship_status_summary <- shiny::renderTable({(parent_relationship_status_summary())}, caption = "Relationship status of the parent", striped = TRUE)
-    output$child_living_with_disabilities_summary <- shiny::renderTable({(child_living_with_disabilities_summary())}, caption = "Does the child have a disability?", striped = TRUE)
-    output$child_living_with_disabilities_group_summary <- shiny::renderTable({(child_living_with_disabilities_group_summary())}, caption = "Does the child have a disability?", striped = TRUE)
-    output$active_users_24hr_summary <- shiny::renderTable({(active_users_24hr_summary())}, striped = TRUE)
-    output$active_users_24hr_group_summary <- shiny::renderTable({(active_users_24hr_group_summary())}, striped = TRUE)
-    output$active_users_7d_summary <- shiny::renderTable({(active_users_7d_summary())}, striped = TRUE)
-    output$active_users_7d_group_summary <- shiny::renderTable({(active_users_7d_group_summary())}, striped = TRUE)
+    output$parent_relationship_group_summary <- shiny::renderTable({(parent_relationship_group_summary())}, caption = "Relationship status of the parent", striped = TRUE)
+    output$parent_relationship_summary <- shiny::renderTable({(parent_relationship_summary())}, caption = "Relationship status of the parent", striped = TRUE)
+    output$child_disabilities_summary <- shiny::renderTable({(child_disabilities_summary())}, caption = "Does the child have a disability?", striped = TRUE)
+    output$child_disabilities_group_summary <- shiny::renderTable({(child_disabilities_group_summary())}, caption = "Does the child have a disability?", striped = TRUE)
+    output$active_users_summary <- shiny::renderTable({(active_users_summary())}, striped = TRUE)
+    output$active_users_group_summary <- shiny::renderTable({(active_users_group_summary())}, striped = TRUE)
+    output$active_users_7_days_summary <- shiny::renderTable({(active_users_7_days_summary())}, striped = TRUE)
+    output$active_users_7_days_group_summary <- shiny::renderTable({(active_users_7_days_group_summary())}, striped = TRUE)
     output$comp_prog_summary <- shiny::renderTable({(comp_prog_summary())}, caption = "Number of skills in toolkit", striped = TRUE)
     output$comp_prog_group_summary <- shiny::renderTable({(comp_prog_group_summary())}, caption = "Number of skills in toolkit", striped = TRUE)
     output$completed_welcome_summary <- shiny::renderTable({completed_welcome_summary()}, striped = TRUE, caption = "Number (and percentage) of individuals who have completed the welcome survey")
