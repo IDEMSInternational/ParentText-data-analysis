@@ -56,7 +56,7 @@ update_data <- function(date_from = "2021-10-14", date_to = NULL) {
                                   ENG = "eng")
   language[is.na(language)] <- "Did not respond"
   language <- forcats::fct_relevel(language, c("ENG", "MSA", "Did not respond"))
-  df_consent <- data.frame(ID, program, enrolled, true_consent, language)
+  df_consent <- data.frame(ID, created_on, program, enrolled, true_consent, language)
   df_consent <- df_consent %>%
     mutate(consent = ifelse(is.na(true_consent) &  is.na(language), "Did not interact",
                             ifelse(is.na(true_consent) & !is.na(language), "Did not respond",
