@@ -432,14 +432,15 @@ summary_PT <- function(data = df, summary_var, denominator = NULL, denominator_l
   return(summary_perc)
 }
 
-flow_data_summary_function <- function(flow_interaction){
+flow_data_summary_function <- function(flow_interaction, flow_name = NULL){
   if (!is.data.frame(flow_interaction)){
     flow_interaction <- plyr::ldply(flow_interaction) 
   }
   flow_interaction$interacted <- ifelse(flow_interaction$interacted == TRUE, "Yes", "No")
   flow_interaction$interacted <- forcats::fct_expand(flow_interaction$interacted, c("Yes", "No"))
+  
   flow_interaction_output <- flow_interaction %>%
-    group_by(interacted, .drop = FALSE) %>%
+    group_by({{ flow_name }}, interacted, .drop = FALSE) %>%
     summarise(count = n(), perc = round(n()/nrow(.)*100,2)) %>%
     mutate("Count (%)" := str_c(`count`, ' (', round(`perc`, 1), ")")) %>%
     dplyr::select(-c(count, perc)) %>% map_df(rev)
