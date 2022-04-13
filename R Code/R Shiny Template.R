@@ -35,13 +35,14 @@ parenttext_shiny <- function(data){
         shinydashboard::valueBoxOutput("myvaluebox4", width=2),
         shinydashboard::valueBoxOutput("myvaluebox5", width=2)),
       
-      #column(6, align = "centre",
-      #       box( width=NULL,
-      #            collapsible = FALSE,
-      #            solidHeader = TRUE,
-      #            splitLayout(textInput(inputId = "datefrom_text", label = "Date from:", value = "2021-12-07"),
-      #                        cellArgs = list(style = "vertical-align: top"),
-      #                        cellWidths = c("80%", "20%")),
+      column(6, align = "center",
+             box( width=NULL,
+                  collapsible = FALSE,
+                  solidHeader = TRUE,
+                  splitLayout(textInput(inputId = "datefrom_text", label = "Date from:", value = "2021-10-14"),
+                              cellArgs = list(style = "vertical-align: top"),
+                              cellWidths = c("80%", "20%")))),
+      #,
       #            splitLayout(textInput(inputId = "dateto_text", label = "Date to:", value = ""),
       #                        actionButton("btn_dates", "Change Dates", class="btn-success"),
       #                        cellArgs = list(style = "vertical-align: top"),
@@ -49,10 +50,9 @@ parenttext_shiny <- function(data){
       
       tabItems(
         # First tab content
-        
         tabItem(tabName = "demographics",
                 fluidRow(
-                  column(10, align = "centre",
+                  column(12, align = "center",
                          box(splitLayout(h2("Demographics"), icon("users", "fa-6x"),
                                          cellArgs = list(style = "vertical-align: top"),
                                          cellWidths = c("80%", "20%")),
@@ -64,171 +64,127 @@ parenttext_shiny <- function(data){
                              height = "95px"))),
                 tabsetPanel(type = "tabs",
                             tabPanel("Overall",
-                                     fluidRow(column(12,
-                                                     box(width = NULL,
+                                     fluidRow(column(12, align = "center",
+                                                     splitLayout(
+                                                       box( width=NULL,
+                                                            collapsible = FALSE,
+                                                            title = "Consent Frequency",
+                                                            status = "primary", # primary, success, info, warning, danger
+                                                            solidHeader = TRUE,
+                                                            plotlyOutput(outputId = "plot_consent", height = "240"),
+                                                            shiny::tableOutput("consent_summary")),
+                                                       box( width=NULL,
+                                                            title = "Language",
+                                                            status = "primary",
+                                                            solidHeader = TRUE,
+                                                            collapsible = FALSE,
+                                                            plotlyOutput(outputId = "plot_language", height = "240", width = "100%"),
+                                                            shiny::tableOutput("language_summary")),
+                                                       cellWidths = c("50%", "50%"),
+                                                       cellArgs = list(style = "vertical-align: top")))),
+                                     fluidRow(column(12, align = "center",
+                                                     splitLayout(
+                                                       box(width=NULL,
+                                                           collapsible = FALSE,
+                                                           title = "Parent Demographics",
+                                                           status = "primary", # primary, success, info, warning, danger
+                                                           solidHeader = TRUE,
+                                                           shiny::tableOutput("parent_gender_summary"),
+                                                           shiny::tableOutput("parent_age_summary"),
+                                                           shiny::tableOutput("parent_child_relationship_summary"),
+                                                           shiny::tableOutput("parent_relationship_summary")),
+                                                       box(width=NULL,
+                                                           collapsible = FALSE,
+                                                           title = "Child Demographics",
+                                                           status = "primary", # primary, success, info, warning, danger
+                                                           solidHeader = TRUE,
+                                                           shiny::tableOutput("child_gender_summary"),
+                                                           shiny::tableOutput("child_age_summary"),
+                                                           shiny::tableOutput("child_disabilities_summary")), # close child box
+                                                       cellWidths = c("50%", "50%"),
+                                                       cellArgs = list(style = "vertical-align: top"))), width = 10), # fluid row close
+                                     fluidRow(column(12, align = "center",
+                                                     box(height="300px",
+                                                         width=12,
                                                          collapsible = FALSE,
+                                                         title = "Parenting Goals",
+                                                         status = "primary", # primary, success, info, warning, danger
                                                          solidHeader = TRUE,
-                                                         fluidRow(
-                                                           column(10, align = "center",
-                                                                  splitLayout(
-                                                                    box( width=NULL,
-                                                                         collapsible = FALSE,
-                                                                         title = "Consent Frequency",
-                                                                         status = "primary", # primary, success, info, warning, danger
-                                                                         solidHeader = TRUE,
-                                                                         plotlyOutput(outputId = "plot_consent", height = "240"),
-                                                                         shiny::tableOutput("consent_summary")),
-                                                                    box( width=NULL,
-                                                                         title = "Language",
-                                                                         status = "primary",
-                                                                         solidHeader = TRUE,
-                                                                         collapsible = FALSE,
-                                                                         plotlyOutput(outputId = "plot_language", height = "240", width = "100%"),
-                                                                         shiny::tableOutput("language_summary")
-                                                                    ),
-                                                                    cellWidths = c("50%", "50%"),
-                                                                    cellArgs = list(style = "vertical-align: top"))),
-                                                           width = 10),
-                                                         
-                                                         fluidRow(
-                                                           column(10, align = "center",
-                                                                  #shiny::tableOutput("language_summary"),
-                                                                  splitLayout(
-                                                                    box(width=NULL,
-                                                                        collapsible = FALSE,
-                                                                        title = "Parent Demographics",
-                                                                        status = "primary", # primary, success, info, warning, danger
-                                                                        solidHeader = TRUE,
-                                                                        shiny::tableOutput("parent_gender_summary"),
-                                                                        shiny::tableOutput("parent_age_summary"),
-                                                                        shiny::tableOutput("parent_child_relationship_summary"),
-                                                                        shiny::tableOutput("parent_relationship_summary"),
-                                                                    ),
-                                                                    box(width=NULL,
-                                                                        collapsible = FALSE,
-                                                                        title = "Child Demographics",
-                                                                        status = "primary", # primary, success, info, warning, danger
-                                                                        solidHeader = TRUE,
-                                                                        shiny::tableOutput("child_gender_summary"),
-                                                                        shiny::tableOutput("child_age_summary"),
-                                                                        shiny::tableOutput("child_disabilities_summary"),
-                                                                        
-                                                                    ), # close child box
-                                                                    cellWidths = c("50%", "50%"),
-                                                                    cellArgs = list(style = "vertical-align: top"))),
-                                                           width = 10), # fluid row close
-                                                         fluidRow(
-                                                           column(12,
-                                                                  box( height="300px",  width=12,
-                                                                       collapsible = FALSE,
-                                                                       title = "Parenting Goals",
-                                                                       status = "primary", # primary, success, info, warning, danger
-                                                                       solidHeader = TRUE,
-                                                                       plotlyOutput(outputId = "parenting_goals_plot", height = "240", width = "100%")
-                                                                  ),
-                                                                  column(12,
-                                                                         box( height="300px",  width=12,
-                                                                              collapsible = FALSE,
-                                                                              title = "Recruitment Channel",
-                                                                              status = "primary", # primary, success, info, warning, danger
-                                                                              solidHeader = TRUE,
-                                                                              plotlyOutput(outputId = "recruitment_channel_plot", height = "240", width = "100%")
-                                                                         )
-                                                                  )
-                                                           )
-                                                         ) # close fluid row
-                                                     )))), # close box, col, fluid row, tab panel
+                                                         plotlyOutput(outputId = "parenting_goals_plot", height = "240", width = "100%")),
+                                                     box(height="300px",  width=12,
+                                                         collapsible = FALSE,
+                                                         title = "Recruitment Channel",
+                                                         status = "primary", # primary, success, info, warning, danger
+                                                         solidHeader = TRUE,
+                                                         plotlyOutput(outputId = "recruitment_channel_plot", height = "240", width = "100%")))) # close fluid row
+                            ), # close "Overall" tab 
                             tabPanel("By group",
-                                     fluidRow(column(12,
-                                                     box(width = NULL,
+                                     fluidRow(
+                                       column(12, align = "center",
+                                              box(width = NULL,
+                                                  collapsible = FALSE,
+                                                  solidHeader = TRUE,
+                                                  fluidRow(column(6, uiOutput("groups"))),
+                                              splitLayout(
+                                                box(width=NULL,
+                                                    collapsible = FALSE,
+                                                    title = "Consent Frequency",
+                                                    status = "primary", # primary, success, info, warning, danger
+                                                    solidHeader = TRUE,
+                                                    plotlyOutput(outputId = "plot_consent_group", height = "240"),
+                                                    shiny::tableOutput("consent_summary_group")),
+                                                box(width=NULL,
+                                                    title = "Language",
+                                                    status = "primary",
+                                                    solidHeader = TRUE,
+                                                    collapsible = FALSE,
+                                                    plotlyOutput(outputId = "plot_language_group", height = "240", width = "100%"),
+                                                    shiny::tableOutput("language_summary_group")),
+                                                cellWidths = c("50%", "50%"),
+                                                cellArgs = list(style = "vertical-align: top"))))),
+                                     fluidRow(column(12, align = "center",
+                                                     splitLayout(
+                                                       box(width=NULL,
+                                                           collapsible = FALSE,
+                                                           title = "Parent Demographics",
+                                                           status = "primary", # primary, success, info, warning, danger
+                                                           solidHeader = TRUE,
+                                                           shiny::tableOutput("parent_gender_group_summary"),
+                                                           shiny::tableOutput("parent_age_group_summary"),
+                                                           shiny::tableOutput("parent_child_relationship_group_summary"),
+                                                           shiny::tableOutput("parent_relationship_group_summary"),
+                                                       ),
+                                                       box(width=NULL,
+                                                           collapsible = FALSE,
+                                                           title = "Child Demographics",
+                                                           status = "primary", # primary, success, info, warning, danger
+                                                           solidHeader = TRUE,
+                                                           shiny::tableOutput("child_gender_group_summary"),
+                                                           shiny::tableOutput("child_age_group_summary"),
+                                                           shiny::tableOutput("child_disabilities_group_summary"),
+                                                       ), # close child box
+                                                       cellWidths = c("50%", "50%"),
+                                                       cellArgs = list(style = "vertical-align: top")), # split layout for parent to child demographics close
+                                                     box(height="300px",  width=12,
                                                          collapsible = FALSE,
+                                                         title = "Parenting Goals",
+                                                         status = "primary", # primary, success, info, warning, danger
                                                          solidHeader = TRUE,
-                                                         fluidRow(
-                                                           column(
-                                                             width = 12,
-                                                             #align = "center",
-                                                             fluidRow(
-                                                               column(6, uiOutput("groups")),
-                                                             ) #fluid row closure
-                                                           ) #Outer column closure
-                                                         ),
-                                                         fluidRow(
-                                                           column(10, align = "center",
-                                                                  splitLayout(
-                                                                    box(width=NULL,
-                                                                        collapsible = FALSE,
-                                                                        title = "Consent Frequency",
-                                                                        status = "primary", # primary, success, info, warning, danger
-                                                                        solidHeader = TRUE,
-                                                                        plotlyOutput(outputId = "plot_consent_group", height = "240"),
-                                                                        shiny::tableOutput("consent_summary_group")),
-                                                                    box(width=NULL,
-                                                                        title = "Language",
-                                                                        status = "primary",
-                                                                        solidHeader = TRUE,
-                                                                        collapsible = FALSE,
-                                                                        plotlyOutput(outputId = "plot_language_group", height = "240", width = "100%"),
-                                                                        shiny::tableOutput("language_summary_group")
-                                                                    ),
-                                                                    cellWidths = c("50%", "50%"),
-                                                                    cellArgs = list(style = "vertical-align: top"))),
-                                                           width = 10),
-                                                         fluidRow(
-                                                           column(10, align = "center",
-                                                                  splitLayout(
-                                                                    box(width=NULL,
-                                                                        collapsible = FALSE,
-                                                                        title = "Parent Demographics",
-                                                                        status = "primary", # primary, success, info, warning, danger
-                                                                        solidHeader = TRUE,
-                                                                        shiny::tableOutput("parent_gender_group_summary"),
-                                                                        shiny::tableOutput("parent_age_group_summary"),
-                                                                        shiny::tableOutput("parent_child_relationship_group_summary"),
-                                                                        shiny::tableOutput("parent_relationship_group_summary"),
-                                                                    ),
-                                                                    
-                                                                    box(width=NULL,
-                                                                        collapsible = FALSE,
-                                                                        title = "Child Demographics",
-                                                                        status = "primary", # primary, success, info, warning, danger
-                                                                        solidHeader = TRUE,
-                                                                        shiny::tableOutput("child_gender_group_summary"),
-                                                                        shiny::tableOutput("child_age_group_summary"),
-                                                                        shiny::tableOutput("child_disabilities_group_summary"),
-                                                                        
-                                                                    ), # close child box
-                                                                    cellWidths = c("50%", "50%"),
-                                                                    cellArgs = list(style = "vertical-align: top")), # split layout for parent to child demographics close
-                                                                  fluidRow(
-                                                                    column(12,
-                                                                           box( height="300px",  width=12,
-                                                                                collapsible = FALSE,
-                                                                                title = "Parenting Goals",
-                                                                                status = "primary", # primary, success, info, warning, danger
-                                                                                solidHeader = TRUE,
-                                                                                plotlyOutput(outputId = "parenting_goals_group_plot", height = "240", width = "100%")
-                                                                           )
-                                                                    ),
-                                                                    column(12,
-                                                                           box( height="300px",  width=12,
-                                                                                collapsible = FALSE,
-                                                                                title = "Recruitment Channel",
-                                                                                status = "primary", # primary, success, info, warning, danger
-                                                                                solidHeader = TRUE,
-                                                                                plotlyOutput(outputId = "recruitment_channel_group_plot", height = "240", width = "100%")
-                                                                           )
-                                                                    )
-                                                                  ) # close fluid row
-                                                           )
-                                                         )
-                                                     )))) # close box, col, fluid row, tab panel
-                ) # close tabset panel
-        ), # close tab
-        
+                                                         plotlyOutput(outputId = "parenting_goals_group_plot", height = "240", width = "100%")),
+                                                     box(height="300px",  width=12,
+                                                         collapsible = FALSE,
+                                                         title = "Recruitment Channel",
+                                                         status = "primary", # primary, success, info, warning, danger
+                                                         solidHeader = TRUE,
+                                                         plotlyOutput(outputId = "recruitment_channel_group_plot", height = "240", width = "100%"))
+                                     )) # close col, fr
+                            ) # close by group panel
+                ) # close tab panel       
+        ),
         # Second tab content
         tabItem(tabName = "engagement",
                 fluidRow(
-                  column(10, align = "centre",
+                  column(12, align = "center",
                          box(splitLayout(h2("Engagement"), icon("clipboard", "fa-6x"),
                                          cellArgs = list(style = "vertical-align: top"),
                                          cellWidths = c("80%", "20%")),
@@ -240,89 +196,63 @@ parenttext_shiny <- function(data){
                              height = "95px"))),
                 tabsetPanel(type = "tabs",
                             tabPanel("Overall",
-                                     fluidRow(column(10,
+                                     fluidRow(column(12, align = "center",
                                                      box(width = NULL,
                                                          collapsible = FALSE,
                                                          solidHeader = TRUE,
-                                                         fluidRow(
-                                                           column(10, align = "center",
-                                                                  splitLayout(
-                                                                    shiny::tableOutput("active_users_summary"),
-                                                                    shiny::tableOutput("active_users_7_days_summary"),
-                                                                    cellWidths = c("50%", "50%"),
-                                                                    cellArgs = list(style = "vertical-align: top"))),
-                                                           width = 10),
+                                                         splitLayout(
+                                                           shiny::tableOutput("active_users_summary"),
+                                                           shiny::tableOutput("active_users_7_days_summary"),
+                                                           cellWidths = c("50%", "50%"),
+                                                           cellArgs = list(style = "vertical-align: top")),
                                                          br(),
-                                                         fluidRow(
-                                                           column(10, align = "center",
-                                                                  plotlyOutput(outputId = "last_online_plot"),
-                                                           )),
+                                                         plotlyOutput(outputId = "last_online_plot"),
                                                          br(),
-                                                         fluidRow(
-                                                           column(10, align = "center",
-                                                                  shiny::tableOutput("comp_prog_summary"),
-                                                                  shiny::tableOutput("completed_welcome_summary"),
-                                                                  shiny::tableOutput("completed_survey_summary"),
-                                                                  shiny::tableOutput("consented_survey_summary"),
-                                                                  shiny::tableOutput("all_flows_response"))
-                                                         ),
-                                                         fluidRow(
-                                                           column(12,
-                                                                  box( height="300px",  width=12,
-                                                                       collapsible = FALSE,
-                                                                       title = "Plot of Flows",
-                                                                       status = "primary", # primary, success, info, warning, danger
-                                                                       solidHeader = TRUE,
-                                                                       plotlyOutput(outputId = "plot_flow", height = "240", width = "100%")
-                                                                  )
-                                                           )
-                                                         ) # close fluid row
-                                                     ))) # close box, col, fluid row
+                                                         shiny::tableOutput("comp_prog_summary"),
+                                                         shiny::tableOutput("completed_welcome_summary"),
+                                                         shiny::tableOutput("completed_survey_summary"),
+                                                         shiny::tableOutput("consented_survey_summary"),
+                                                         shiny::tableOutput("all_flows_response")), # close box
+                                                     
+                                                     box(height="300px",
+                                                         width=12,
+                                                         collapsible = FALSE,
+                                                         title = "Plot of Flows",
+                                                         status = "primary", # primary, success, info, warning, danger
+                                                         solidHeader = TRUE,
+                                                         plotlyOutput(outputId = "plot_flow", height = "240", width = "100%"))
+                                     )) # close col, fr
                             ), # close Overall tab
                             tabPanel("By group",
-                                     fluidRow(column(10,
-                                                     box(width = NULL,
-                                                         collapsible = FALSE,
-                                                         solidHeader = TRUE,
-                                                         
-                                                         fluidRow(
-                                                           column(6,
-                                                                  uiOutput("groups_engagement")),
-                                                         ), #fluid row closure
-                                                         
-                                                         fluidRow(
-                                                           column(10, align = "center",
-                                                                  splitLayout(
-                                                                    shiny::tableOutput("active_users_group_summary"),
-                                                                    shiny::tableOutput("active_users_7_days_group_summary"),
-                                                                    cellWidths = c("50%", "50%"),
-                                                                    cellArgs = list(style = "vertical-align: top"))),
-                                                           width = 10),
-                                                         br(),
-                                                         fluidRow(
-                                                           column(10, align = "center",
-                                                                  plotlyOutput(outputId = "last_online_group_plot"),
-                                                           )),
-                                                         br(),
-                                                         
-                                                         fluidRow(
-                                                           column(10, align = "center",
-                                                                  shiny::tableOutput("completed_welcome_group_summary"),
-                                                                  shiny::tableOutput("completed_survey_group_summary"),
-                                                                  shiny::tableOutput("consented_survey_group_summary"))
-                                                         ),
-                                                         fluidRow(
-                                                           column(10, align = "center",
-                                                                  shinydashboard::valueBoxOutput("comp_prog_group_summary", width = 12),
-                                                                  cellArgs = list(style = "vertical-align: top")))
-                                                     )))
-                            ) # close by group tab
+                                     fluidRow(
+                                       column(12, align = "center",
+                                              box(width = NULL,
+                                                  collapsible = FALSE,
+                                                  solidHeader = TRUE,
+                                                  fluidRow(column(6, uiOutput("groups_engagement"))),
+                                              box(width = NULL,
+                                                  collapsible = FALSE,
+                                                  solidHeader = TRUE,
+                                                  splitLayout(
+                                                    shiny::tableOutput("active_users_group_summary"),
+                                                    shiny::tableOutput("active_users_7_days_group_summary"),
+                                                    cellWidths = c("50%", "50%"),
+                                                    cellArgs = list(style = "vertical-align: top")), # split layout close
+                                                  br(),
+                                                  plotlyOutput(outputId = "last_online_group_plot"),
+                                                  br(),
+                                                  shiny::tableOutput("completed_welcome_group_summary"),
+                                                  shiny::tableOutput("completed_survey_group_summary"),
+                                                  shiny::tableOutput("consented_survey_group_summary")),
+                                       shinydashboard::valueBoxOutput("comp_prog_group_summary", width = 12),
+                                       cellArgs = list(style = "vertical-align: top")
+                                     )))) # close col, fr, by group tab
                 ) # close tab type
         ), # close engagement tab
         
         # tabItem(tabname = "parentpals",
         #          fluidRow(
-        #            column(10, align = "centre",
+        #            column(10, align = "center",
         #                   box(splitLayout(h2("Parentpals"), icon("user", "fa-6x"),
         #                                   cellArgs = list(style = "vertical-align: top"),
         ##                                   cellWidths = c("80%", "20%")),
@@ -336,7 +266,7 @@ parenttext_shiny <- function(data){
         
         tabItem(tabName = "parentpals",
                 fluidRow(
-                  column(10, align = "centre",
+                  column(10, align = "center",
                          box(splitLayout(h2("Parent Pals"), icon("user", "fa-6x"),
                                          cellArgs = list(style = "vertical-align:top"),
                                          cellWidths = c("80%", "20%")),
@@ -358,7 +288,7 @@ parenttext_shiny <- function(data){
         
         tabItem(tabName = "behaviours",
                 fluidRow(
-                  column(10, align = "centre",
+                  column(10, align = "center",
                          box(splitLayout(h2("Behaviours"), icon("brain", "fa-6x"),
                                          cellArgs = list(style = "vertical-align: top"),
                                          cellWidths = c("80%", "20%")),
@@ -370,69 +300,60 @@ parenttext_shiny <- function(data){
                              height = "95px"))),
                 tabsetPanel(type = "tabs",
                             tabPanel("Overall",
-                                     fluidRow(column(10,
+                                     fluidRow(column(12, align = "center",
                                                      box(width = NULL,
                                                          collapsible = FALSE,
                                                          solidHeader = TRUE,
                                                          fluidRow(column(6, uiOutput("groups_survey"))),
-                                                         fluidRow(
-                                                           column(12, align = "center",
-                                                                  #splitLayout(
-                                                                  shiny::tableOutput("parenting_survey_summary"),
-                                                                  plotlyOutput(outputId = "parenting_survey_plot"),#, height = "580px")
-                                                                  plotlyOutput(outputId = "behaviour_plots")
-                                                                  # cellWidths = c("50%", "50%"),
-                                                                  #  cellArgs = list(style = "vertical-align: top"))
-                                                           )
-                                                         ),
-                                                         br(),
-                                                         
-                                                         fluidRow(
-                                                           column(12,
-                                                                  box(width=12,
-                                                                      collapsible = FALSE,
-                                                                      title = "Behaviour Problems",
-                                                                      status = "primary", # primary, success, info, warning, danger
-                                                                      solidHeader = TRUE,
-                                                                      splitLayout(
-                                                                        plotlyOutput("behaviour_baby_plot"),
-                                                                        plotlyOutput("behaviour_child_plot"),
-                                                                        cellWidths = c("50%", "50%"),
-                                                                        cellArgs = list(style = "vertical-align: top")),
-                                                                      splitLayout(
-                                                                        plotlyOutput("behaviour_teen_plot"),
-                                                                        plotlyOutput("behaviour_default_plot"),
-                                                                        cellWidths = c("50%", "50%"),
-                                                                        cellArgs = list(style = "vertical-align: top"))
-                                                                  )
-                                                           )
-                                                         ) # close fluid row
-                                                     )))), # close box, column, fluid row, tab
+                                                         shiny::tableOutput("parenting_survey_summary"),
+                                                         plotlyOutput(outputId = "parenting_survey_plot"),#, height = "580px")
+                                                         plotlyOutput(outputId = "behaviour_plots")
+                                                     ), # close box
+                                                     br(),
+                                                     box(width=12,
+                                                         collapsible = FALSE,
+                                                         title = "Behaviour Problems",
+                                                         status = "primary", # primary, success, info, warning, danger
+                                                         solidHeader = TRUE,
+                                                         splitLayout(
+                                                           plotlyOutput("behaviour_baby_plot"),
+                                                           plotlyOutput("behaviour_child_plot"),
+                                                           cellWidths = c("50%", "50%"),
+                                                           cellArgs = list(style = "vertical-align: top")),
+                                                         splitLayout(
+                                                           plotlyOutput("behaviour_teen_plot"),
+                                                           plotlyOutput("behaviour_default_plot"),
+                                                           cellWidths = c("50%", "50%"),
+                                                           cellArgs = list(style = "vertical-align: top"))
+                                                     ) # close box
+                                     )) # close col, fluid row
+                            ), # close overall tab
                             tabPanel("By group",
-                                     fluidRow(column(10,
-                                                     box(
-                                                       fluidRow(
-                                                         column(6,
-                                                                uiOutput("groups_behaviour")),
-                                                       ), #fluid row closure
-                                                       plotlyOutput(outputId = "behaviour_group_plots"),
-                                                       splitLayout(
-                                                         plotlyOutput("behaviour_baby_group_plot"),
-                                                         plotlyOutput("behaviour_child_group_plot"),
-                                                         cellWidths = c("50%", "50%"),
-                                                         cellArgs = list(style = "vertical-align: top")),
-                                                       footer = splitLayout(
-                                                         plotlyOutput(outputId = "behaviour_teen_group_plot"),
-                                                         plotlyOutput(outputId = "behaviour_default_group_plot"),
-                                                         cellWidths = c("50%", "50%"),
-                                                         cellArgs = list(style = "vertical-align: top")
-                                                       ),
-                                                       width = 12,
-                                                       solidHeader = TRUE,
-                                                       status = "primary", # primary, success, info, warning, danger
-                                                       title = "Behaviour Problems"
-                                                     )))) # close box, column, fluid row, tab
-                ) # close tabsetPanel
+                                     fluidRow(
+                                       column(12, align = "center",
+                                              box(width = NULL,
+                                                  collapsible = FALSE,
+                                                  solidHeader = TRUE,
+                                                  fluidRow(column(6, uiOutput("groups_behaviour"))),
+                                                  plotlyOutput(outputId = "behaviour_group_plots")),
+                                              box(width=12,
+                                                  collapsible = FALSE,
+                                                  title = "Behaviour Problems",
+                                                  status = "primary", # primary, success, info, warning, danger
+                                                  solidHeader = TRUE,
+                                                  splitLayout(
+                                                    plotlyOutput("behaviour_baby_group_plot"),
+                                                    plotlyOutput("behaviour_child_group_plot"),
+                                                    cellWidths = c("50%", "50%"),
+                                                    cellArgs = list(style = "vertical-align: top")),
+                                                  footer = splitLayout(
+                                                    plotlyOutput(outputId = "behaviour_teen_group_plot"),
+                                                    plotlyOutput(outputId = "behaviour_default_group_plot"),
+                                                    cellWidths = c("50%", "50%"),
+                                                    cellArgs = list(style = "vertical-align: top")) # close footer
+                                              ) # close box
+                                       ))) # col, fr, tabpanel
+                ) # close tabs
         ) # close behaviour tab
       ) # close items
     ) # close body
@@ -440,47 +361,50 @@ parenttext_shiny <- function(data){
   
   # Define server function
   server <- function(input, output) {
-    
     autoRefresh <- reactiveTimer(6 * 60 * 60 * 1000)
-    
     
     observe({
       autoRefresh()
-      
       updated_data <- update_data()
       df <- updated_data[[1]]
       df_consent <- updated_data[[2]]
-      supportive_calm_flow <- updated_data[[3]]
-      supportive_praise_flow <- updated_data[[4]]
-      check_in_flow_names_flow <- updated_data[[5]]
-      content_tip_flow_names_flow <- updated_data[[6]]
-      supportive_flow_names_flow <- updated_data[[7]]
-      enrolled <- updated_data[[8]]
-      parenting_survey <- updated_data[[11]]
-      pp_data_frame <- updated_data[[12]]
+      all_flows <- updated_data[[3]]
+      parenting_survey <- updated_data[[4]]
+      pp_data_frame <- updated_data[[5]]
     })
     
     updated_data <- update_data()
     df <- updated_data[[1]]
     df_consent <- updated_data[[2]]
-    supportive_calm_flow <- updated_data[[3]]
-    supportive_praise_flow <- updated_data[[4]]
-    check_in_flow_names_flow <- updated_data[[5]]
-    content_tip_flow_names_flow <- updated_data[[6]]
-    supportive_flow_names_flow <- updated_data[[7]]
-    enrolled <- updated_data[[8]]
-    consent <- updated_data[[9]]
-    program <- updated_data[[10]]
-    parenting_survey <- updated_data[[11]]
-    pp_data_frame <- updated_data[[12]]
+    all_flows <- updated_data[[3]]
+    parenting_survey <- updated_data[[4]]
+    pp_data_frame <- updated_data[[5]]
     
     # Subset data
     selected_data <- reactive({
       df
     })
     
+    selected_data_date_from <- reactive({
+      df <- df %>%
+        filter(created_on >= as.Date(input$datefrom_text))
+      return(df)
+    })
+    
+    selected_consented_data_date_from <- reactive({
+      df_consent <- df_consent %>%
+        filter(created_on >= as.Date(input$datefrom_text))
+      return(df_consent)
+    })
+    
+    selected_survey_data_date_from <- reactive({
+      parenting_survey <- parenting_survey %>%
+        filter(created_on >= as.Date(input$datefrom_text))
+      return(parenting_survey)
+    })
+
     output$groups <- renderUI({
-      df <- df
+      df <- selected_data_date_from()
       selectInput(
         inputId = "grouper",
         label = "Group variable",
@@ -492,7 +416,7 @@ parenttext_shiny <- function(data){
     })
     
     output$groups_engagement <- renderUI({
-      df <- df
+      df <- selected_data_date_from()
       selectInput(
         inputId = "grouper_engagement",
         label = "Group variable",
@@ -504,7 +428,7 @@ parenttext_shiny <- function(data){
     })
     
     output$groups_behaviour <- renderUI({
-      df <- df
+      df <- selected_data_date_from()
       selectInput(
         inputId = "grouper_behaviour",
         label = "Group variable",
@@ -516,7 +440,7 @@ parenttext_shiny <- function(data){
     })
     
     output$groups_survey <- renderUI({
-      df <- df
+      df <- selected_data_date_from()
       selectInput(
         inputId = "grouper_survey",
         label = "Survey to View",
@@ -542,16 +466,15 @@ parenttext_shiny <- function(data){
     })
     
     language_summary <- reactive({
-      summary_PT(df, language, consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), language, consent, "Yes", TRUE, naming_convention = TRUE)
     })
     
     language_summary_group <- reactive({
-      req(input$grouper)
-      summary_PT(df, c(language, (!!!rlang::syms(input$grouper))), consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), c(language, (!!!rlang::syms(input$grouper))), consent, "Yes", TRUE, naming_convention = TRUE)
     })
     
     output$plot_language <- renderPlotly({
-      ggplot(df, aes(x = language)) +
+      ggplot(selected_data_date_from(), aes(x = language)) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = "language", y = "Count") +
@@ -560,7 +483,7 @@ parenttext_shiny <- function(data){
     
     output$plot_language_group <- renderPlotly({
       req(input$grouper)
-      ggplot(df, aes(x = language, fill = (!!!rlang::syms(input$grouper)))) +
+      ggplot(selected_data_date_from(), aes(x = language, fill = (!!!rlang::syms(input$grouper)))) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = "language", y = "Count") +
@@ -568,7 +491,7 @@ parenttext_shiny <- function(data){
     })
     
     output$last_online_plot <- renderPlotly({
-      ggplot(df, aes(x = last_online)) +
+      ggplot(selected_data_date_from(), aes(x = last_online)) +
         geom_point(stat="count") +
         geom_line(stat = "count") +
         labs(x = "Date Last Online", y = "Frequency") +
@@ -578,7 +501,7 @@ parenttext_shiny <- function(data){
     
     output$last_online_group_plot <- renderPlotly({
       req(input$grouper_engagement)
-      ggplot(df, aes(x = last_online, colour = (!!!rlang::syms(input$grouper_engagement)))) +
+      ggplot(selected_data_date_from(), aes(x = last_online, colour = (!!!rlang::syms(input$grouper_engagement)))) +
         geom_point(stat="count") +
         geom_line(stat = "count") +
         labs(x = "Date Last Online", y = "Frequency") +
@@ -587,7 +510,7 @@ parenttext_shiny <- function(data){
     })
     
     output$plot_consent <- renderPlotly({
-      ggplot(df_consent, aes(x = consent)) +
+      ggplot(selected_consented_data_date_from(), aes(x = consent)) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = "Consent", y = "Count") +
@@ -596,7 +519,7 @@ parenttext_shiny <- function(data){
     
     output$plot_consent_group <- renderPlotly({
       req(input$grouper)
-      ggplot(df_consent, aes(x = consent, fill = (!!!rlang::syms(input$grouper)))) +
+      ggplot(selected_consented_data_date_from(), aes(x = consent, fill = (!!!rlang::syms(input$grouper)))) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = "Consented", y = "Count") +
@@ -604,7 +527,7 @@ parenttext_shiny <- function(data){
     })
     
     output$parenting_goals_plot <- renderPlotly({
-      df_goals <- df %>% group_by(parenting_goal_wrap) %>% summarise(n = n())
+      df_goals <- selected_data_date_from() %>% group_by(parenting_goal_wrap) %>% summarise(n = n())
       
       fig <- plot_ly(df_goals, labels = ~parenting_goal_wrap, values = ~n, type = 'pie')
       fig %>% layout(xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
@@ -613,7 +536,7 @@ parenttext_shiny <- function(data){
     })
     
     output$recruitment_channel_plot <- renderPlotly({
-      df_recruitment <- df %>% group_by(recruitment_channel) %>% summarise(n = n())
+      df_recruitment <- selected_data_date_from() %>% group_by(recruitment_channel) %>% summarise(n = n())
       
       fig <- plot_ly(df_recruitment, labels = ~recruitment_channel, values = ~n, type = 'pie')
       fig %>% layout(xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
@@ -623,7 +546,7 @@ parenttext_shiny <- function(data){
     
     output$parenting_goals_group_plot <- renderPlotly({
       req(input$grouper)
-      ggplot(df, aes(x = parenting_goal_wrap, fill = (!!!rlang::syms(input$grouper)))) +
+      ggplot(selected_data_date_from(), aes(x = parenting_goal_wrap, fill = (!!!rlang::syms(input$grouper)))) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = "Parenting goals", y = "Count") +
@@ -632,7 +555,7 @@ parenttext_shiny <- function(data){
     
     output$recruitment_channel_group_plot <- renderPlotly({
       req(input$grouper)
-      ggplot(df, aes(x = recruitment_channel, fill = (!!!rlang::syms(input$grouper)))) +
+      ggplot(selected_data_date_from(), aes(x = recruitment_channel, fill = (!!!rlang::syms(input$grouper)))) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = "Recruitment channel", y = "Count") +
@@ -640,79 +563,79 @@ parenttext_shiny <- function(data){
     })
     
     consent_summary <- reactive({
-      summary_PT(df_consent, "consent", enrolled, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(selected_consented_data_date_from(), "consent", enrolled, "Yes", TRUE, naming_convention = TRUE)
     })
     
     consent_summary_group <- reactive({
       req(input$grouper)
-      summary_PT(df_consent, c(consent, !!!rlang::syms(input$grouper)), enrolled, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(selected_consented_data_date_from(), c(consent, !!!rlang::syms(input$grouper)), enrolled, "Yes", TRUE, naming_convention = TRUE)
     })
     
     #language_summary <-  reactive({
-    #  summary_PT(df, language, ???, "Yes", TRUE, naming_convention = TRUE)
+    #  summary_PT(selected_data_date_from(), language, ???, "Yes", TRUE, naming_convention = TRUE)
     #})
     # ??? was consent but if it's consent then obvs no "Did not respond".
     
     parent_gender_summary <- reactive({
-      summary_PT(df, parent_gender, consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), parent_gender, consent, "Yes", TRUE, naming_convention = TRUE)
     })
     
     parent_gender_group_summary <- reactive({
-      summary_PT(df, c(parent_gender, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), c(parent_gender, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
     })
     
     child_gender_summary <- reactive({
-      summary_PT(df, child_gender, consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), child_gender, consent, "Yes", TRUE, naming_convention = TRUE)
     })
     
     child_gender_group_summary <- reactive({
       req(input$grouper)
-      summary_PT(df, c(child_gender, (!!!rlang::syms(input$grouper))), consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), c(child_gender, (!!!rlang::syms(input$grouper))), consent, "Yes", TRUE, naming_convention = TRUE)
     })
     child_age_summary <- reactive({
-      summary_PT(df, child_age_group, consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), child_age_group, consent, "Yes", TRUE, naming_convention = TRUE)
     })
     child_age_group_summary <- reactive({
       req(input$grouper)
-      summary_PT(df, c(child_age_group, (!!!rlang::syms(input$grouper))), consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), c(child_age_group, (!!!rlang::syms(input$grouper))), consent, "Yes", TRUE, naming_convention = TRUE)
     })
     parent_child_relationship_summary <- reactive({
-      summary_PT(df, parent_child_relationship, consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), parent_child_relationship, consent, "Yes", TRUE, naming_convention = TRUE)
     })
     parent_child_relationship_group_summary <- reactive({
       req(input$grouper)
-      summary_PT(df, c(parent_child_relationship, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), c(parent_child_relationship, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
     })
     child_disabilities_summary <- reactive({
-      summary_PT(df, child_disabilities, consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), child_disabilities, consent, "Yes", TRUE, naming_convention = TRUE)
     })
     child_disabilities_group_summary <- reactive({
       req(input$grouper)
-      summary_PT(df, c(child_disabilities, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), c(child_disabilities, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
     })
     parent_relationship_summary <-  reactive({
-      summary_PT(df, parent_relationship, consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), parent_relationship, consent, "Yes", TRUE, naming_convention = TRUE)
     })
     parent_relationship_group_summary <-  reactive({
-      summary_PT(df, c(parent_relationship, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), c(parent_relationship, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
     })
     active_users_group_summary <- reactive({
       req(input$grouper_engagement)
-      summary_PT(df, c(active_users, !!!rlang::syms(input$grouper_engagement)), program, together = TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), c(active_users, !!!rlang::syms(input$grouper_engagement)), program, together = TRUE, naming_convention = TRUE)
     })
     active_users_summary <- reactive({
-      summary_PT(df, active_users, program, together = TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), active_users, program, together = TRUE, naming_convention = TRUE)
     })
     active_users_7_days_summary <- reactive({
-      summary_PT(df, active_users_7_days, program, together = TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), active_users_7_days, program, together = TRUE, naming_convention = TRUE)
     })
     active_users_7_days_group_summary <- reactive({
       req(input$grouper_engagement)
-      summary_PT(df, c(active_users_7_days, !!!rlang::syms(input$grouper_engagement)), program, together = TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), c(active_users_7_days, !!!rlang::syms(input$grouper_engagement)), program, together = TRUE, naming_convention = TRUE)
     })
     
     comp_prog_summary <- reactive({
-      comp_prog_df <- df %>% 
+      comp_prog_df <- selected_data_date_from() %>% 
         summarise(program_completion_mean = round(mean(comp_prog_overall, na.rm = TRUE), 2),
                   program_completion_sd = round(sd(comp_prog_overall, na.rm = TRUE), 2))
       colnames(comp_prog_df) <- naming_conventions(colnames(comp_prog_df))
@@ -721,7 +644,7 @@ parenttext_shiny <- function(data){
     
     comp_prog_group_summary <- reactive({
       req(input$grouper_engagement)
-      comp_prog_df <- df %>% group_by(!!!rlang::syms(input$grouper_engagement)) %>%
+      comp_prog_df <- selected_data_date_from() %>% group_by(!!!rlang::syms(input$grouper_engagement)) %>%
         summarise(program_completion_mean = round(mean(comp_prog_overall, na.rm = TRUE), 2),
                   program_completion_sd = round(sd(comp_prog_overall, na.rm = TRUE), 2))
       colnames(comp_prog_df) <- naming_conventions(colnames(comp_prog_df))
@@ -730,7 +653,7 @@ parenttext_shiny <- function(data){
     
     parent_age_summary <- reactive({
       req(input$grouper)
-      parent_age_df <- df %>% 
+      parent_age_df <- selected_data_date_from() %>% 
         summarise(parent_age_mean = round(mean(parent_age, na.rm = TRUE), 2),
                   parent_age_sd = round(sd(parent_age, na.rm = TRUE), 2))
       colnames(parent_age_df) <- naming_conventions(colnames(parent_age_df))
@@ -738,7 +661,7 @@ parenttext_shiny <- function(data){
     })
     parent_age_group_summary <- reactive({
       req(input$grouper)
-      parent_age_df <- df %>% group_by(!!!rlang::syms(input$grouper)) %>%
+      parent_age_df <- selected_data_date_from() %>% group_by(!!!rlang::syms(input$grouper)) %>%
         summarise(parent_age_mean = round(mean(parent_age, na.rm = TRUE), 2),
                   parent_age_sd = round(sd(parent_age, na.rm = TRUE), 2))
       colnames(parent_age_df) <- naming_conventions(colnames(parent_age_df))
@@ -746,24 +669,24 @@ parenttext_shiny <- function(data){
     })
     
     completed_welcome_summary <- reactive({
-      summary_PT(df, completed_welcome, consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), completed_welcome, consent, "Yes", TRUE, naming_convention = TRUE)
     })
     
     completed_welcome_group_summary <- reactive({
       req(input$grouper_engagement)
-      summary_PT(df, c(completed_welcome, !!!rlang::syms(input$grouper_engagement)), program, together = TRUE, naming_convention = TRUE)
+      summary_PT(selected_data_date_from(), c(completed_welcome, !!!rlang::syms(input$grouper_engagement)), program, together = TRUE, naming_convention = TRUE)
     })
     
     # Note: These are the *number* of people that have completed the survey
     completed_survey_summary <- reactive({
-      df_consent <- df
+      df <- selected_data_date_from()
       survey_completed <- NULL
-      survey_completed[[1]] <- df_consent %>% summarise(n = sum(comp_survey_w1 == 1, na.rm = TRUE))
-      survey_completed[[1]]$perc <- survey_completed[[1]]$n/nrow(df_consent) * 100
+      survey_completed[[1]] <- df %>% summarise(n = sum(comp_survey_w1 == 1, na.rm = TRUE))
+      survey_completed[[1]]$perc <- survey_completed[[1]]$n/nrow(df) * 100
       survey_completed[[1]]$Week <- "Week 1"
       for (i in 2:9){
-        survey_completed[[i]] <- df_consent %>% summarise(n = sum(comp_survey_w2 == i, na.rm = TRUE))
-        survey_completed[[i]]$perc <- survey_completed[[i]]$n/nrow(df_consent) * 100
+        survey_completed[[i]] <- df %>% summarise(n = sum(comp_survey_w2 == i, na.rm = TRUE))
+        survey_completed[[i]]$perc <- survey_completed[[i]]$n/nrow(df) * 100
         survey_completed[[i]]$Week <- paste("Week ", i, sep = "")
       }
       survey_completed <- plyr::ldply(survey_completed)
@@ -778,15 +701,13 @@ parenttext_shiny <- function(data){
     
     # Note: These are the *number* of people that have completed the survey
     consented_survey_summary <- reactive({
-      df_consent <- df
+      df <- selected_data_date_from()
       survey_completed <- NULL
       
-      wek1 <- summary_PT(df_consent, summary_var = consent_survey_w1, together = TRUE)
-      wek2 <- summary_PT(df_consent, summary_var = consent_survey_w2, together = TRUE)
-      wek3 <- summary_PT(df_consent, summary_var = consent_survey_w3, together = TRUE)
-      wek4 <- summary_PT(df_consent, summary_var = consent_survey_w4, together = TRUE)
-      
-      # TODO: do we want completed and consented?
+      wek1 <- summary_PT(df, summary_var = consent_survey_w1, together = TRUE)
+      wek2 <- summary_PT(df, summary_var = consent_survey_w2, together = TRUE)
+      wek3 <- summary_PT(df, summary_var = consent_survey_w3, together = TRUE)
+      wek4 <- summary_PT(df, summary_var = consent_survey_w4, together = TRUE)
       
       names(wek1) <- c("Consented", "Baseline")
       names(wek2) <- c("Consented", "Week 2")
@@ -798,19 +719,13 @@ parenttext_shiny <- function(data){
     
     consented_survey_group_summary <- reactive({
       req(input$grouper)
-      df_consent <- df
-      
-      df_consent <- df
+      df <- selected_data_date_from()
       survey_completed <- NULL
-      
-      df_consent %>% group_by(survey_completed_wk1) %>%
-        summarise(n = n(),
-                  perc = n()/nrow(.) * 100)
-      
-      wek1 <- summary_PT(df_consent, c(consent_survey_summary, (!!!rlang::syms(input$grouper))), together = TRUE)
-      wek2 <- summary_PT(df_consent, c(consent_survey_2, (!!!rlang::syms(input$grouper))), together = TRUE)
-      wek3 <- summary_PT(df_consent, c(consent_survey_3, (!!!rlang::syms(input$grouper))), together = TRUE)
-      wek4 <- summary_PT(df_consent, c(consent_survey_4, (!!!rlang::syms(input$grouper))), together = TRUE)
+
+      wek1 <- summary_PT(df, c(consent_survey_w1, (!!!rlang::syms(input$grouper))), together = TRUE)
+      wek2 <- summary_PT(df, c(consent_survey_w2, (!!!rlang::syms(input$grouper))), together = TRUE)
+      wek3 <- summary_PT(df, c(consent_survey_w3, (!!!rlang::syms(input$grouper))), together = TRUE)
+      wek4 <- summary_PT(df, c(consent_survey_w4, (!!!rlang::syms(input$grouper))), together = TRUE)
       
       names(wek1)[c(1, 3)] <- c("Consented", "Baseline")
       names(wek2)[c(1, 3)] <- c("Consented", "Week 2")
@@ -822,14 +737,16 @@ parenttext_shiny <- function(data){
     
     completed_survey_group_summary <- reactive({
       req(input$grouper)
-      df_consent <- df
+      df <- selected_data_date_from()
       survey_completed <- NULL
-      survey_completed[[1]] <- df_consent %>% group_by(!!!rlang::syms(input$grouper)) %>% summarise(n = sum(survey_completed_wk1 == 1, na.rm = TRUE))
-      survey_completed[[1]]$perc <- survey_completed[[1]]$n/nrow(df_consent) * 100
+      survey_completed[[1]] <- df %>%
+        group_by(!!!rlang::syms(input$grouper)) %>%
+        summarise(n = sum(comp_survey_w1 == 1, na.rm = TRUE))
+      survey_completed[[1]]$perc <- survey_completed[[1]]$n/nrow(df) * 100
       survey_completed[[1]]$Week <- "Week 1"
       for (i in 2:9){
-        survey_completed[[i]] <- df_consent %>% group_by(!!!rlang::syms(input$grouper)) %>% summarise(n = sum(survey_completed_wk2_plus == i, na.rm = TRUE))
-        survey_completed[[i]]$perc <- survey_completed[[i]]$n/nrow(df_consent) * 100
+        survey_completed[[i]] <- df %>% group_by(!!!rlang::syms(input$grouper)) %>% summarise(n = sum(comp_survey_w2 == i, na.rm = TRUE))
+        survey_completed[[i]]$perc <- survey_completed[[i]]$n/nrow(df) * 100
         survey_completed[[i]]$Week <- paste("Week ", i, sep = "")
       }
       survey_completed <- plyr::ldply(survey_completed)
@@ -841,43 +758,11 @@ parenttext_shiny <- function(data){
       pivot_wider(survey_completed, names_from = Week, values_from = `Completed survey (%)`)
     })
     
-    supportive_calm_flow_df <- flow_data_summary_function(supportive_calm_flow)
-    #if (is.null(supportive_calm_flow_df)) { supportive_calm_flow_df <- data.frame(response = c("No", "Yes"), count = c(NA, NA)); colnames(supportive_calm_flow_df)[2] <- "Count (%)"}
-    supportive_praise_flow_df <- flow_data_summary_function(supportive_praise_flow)
-    #if (is.null(supportive_praise_flow_df)) { supportive_praise_flow_df <- data.frame(response = c("No", "Yes"), count = c(NA, NA)); colnames(supportive_praise_flow_df)[2] <- "Count (%)"}
-    supportive_flow_df <- flow_data_summary_function(supportive_flow_names_flow)
-    check_in_flow_df <- flow_data_summary_function(check_in_flow_names_flow)
-    content_flow_df <- flow_data_summary_function(content_tip_flow_names_flow)
-    
-    all_flows_response <- reactive({
-      all_flows_df <- rbind(content_flow_df, check_in_flow_df, supportive_calm_flow_df, supportive_praise_flow_df, supportive_flow_df)
-      all_flows_df <- separate(all_flows_df, `Count (%)`, into = "Value") %>% mutate(Value = as.numeric(as.character(Value)))
-      all_flows_df_total <- sum(all_flows_df$Value, na.rm = TRUE) 
-      all_flows_df_summary <- all_flows_df %>% group_by(interacted) %>% summarise(n = sum(Value, na.rm = TRUE),
-                                                                                  perc = n/all_flows_df_total*100)
-      all_flows_df_summary <- all_flows_df_summary %>%
-        mutate("Count (%)" := str_c(`n`, ' (', round(`perc`, 2), ")")) %>%
-        dplyr::select(-c(n, perc))
-      colnames(all_flows_df_summary)[2] <- c("Overall response")
-      all_flows_df_summary <- all_flows_df_summary %>% map_df(rev)
-      
-      colnames(content_flow_df)[2] <- "Content flows"
-      colnames(check_in_flow_df)[2] <- "Check-in flows"
-      colnames(supportive_calm_flow_df)[2] <- "Calm flow"
-      colnames(supportive_praise_flow_df)[2] <- "Praise flow"
-      colnames(supportive_flow_df)[2] <- "Other supportive flows"
-      
-      table_flows_df <- left_join(left_join(left_join(left_join(left_join(content_flow_df, check_in_flow_df), supportive_calm_flow_df), supportive_praise_flow_df), supportive_flow_df), all_flows_df_summary)
-      colnames(table_flows_df)[1] <- "Interacted"
-      table_flows_df
-    })
-    
     # Survey stuff -----------------------------------------------------------------------
-    
     parenting_survey_summary <- reactive({
       req(input$grouper_survey)
       
-      parenting_survey %>%
+      selected_survey_data_date_from() %>%
         dplyr::filter(week == input$grouper_survey) %>%
         group_by(week, Group) %>%
         summarise(Mean = mean(vals, na.rm = TRUE), SD = sd(vals, na.rm = TRUE), `Number of responses` = sum(!is.na(vals))) %>%
@@ -888,7 +773,7 @@ parenttext_shiny <- function(data){
     })
     
     output$parenting_survey_plot <- renderPlotly({
-      parenting_survey1 <- parenting_survey %>% mutate(week = as.numeric(week)) %>% filter(Group %in% c("Positive parenting", "Child maltreatment", "Stress", "Child Behaviour"))
+      parenting_survey1 <- selected_survey_data_date_from() %>% mutate(week = as.numeric(week)) %>% filter(Group %in% c("Positive parenting", "Child maltreatment", "Stress", "Child Behaviour"))
       parenting_survey_plot <- summarySE(parenting_survey1, groups = c(week, Group), var = vals, na.rm = TRUE)
       ggplot(parenting_survey_plot, aes(x=week, y=mean, colour=Group, group = Group), width = 2) + 
         geom_line() +
@@ -902,10 +787,7 @@ parenttext_shiny <- function(data){
     })
     
     output$behaviour_plots <- renderPlotly({
-      df_age_group <- df %>% dplyr::select(c(ID))
-      parenting_survey1 <- merge(parenting_survey, df_age_group)
-      
-      parenting_survey1 <- parenting_survey1 %>% filter(!is.na(vals))
+      parenting_survey1 <- selected_survey_data_date_from() %>% filter(!is.na(vals))
       
       parenting_survey_plot <- summarySE(parenting_survey1, groups = c(week), var = vals, na.rm = TRUE)
       ggplot(parenting_survey_plot, aes(x=week, y=mean, group = week), width = 2) + 
@@ -920,8 +802,8 @@ parenttext_shiny <- function(data){
     output$behaviour_group_plots <- renderPlotly({
       #req(input$grouper)
       
-      df_age_group <- df %>% dplyr::select(c(ID, child_age_group, parent_gender, child_gender))
-      parenting_survey1 <- merge(parenting_survey, df_age_group)
+      df_age_group <- selected_data_date_from() %>% dplyr::select(c(ID, child_age_group, parent_gender, child_gender))
+      parenting_survey1 <- merge(selected_survey_data_date_from(), df_age_group)
       
       parenting_survey1 <- parenting_survey1 %>% filter(!is.na(vals))
       
@@ -936,7 +818,7 @@ parenttext_shiny <- function(data){
     })
     
     output$behaviour_baby_plot <- renderPlotly({
-      df_baby <- df %>% filter(child_age_group == "Baby")
+      df_baby <- selected_data_date_from() %>% filter(child_age_group == "Baby")
       
       ggplot(df_baby, aes(x = challenge_behav_wrap)) +
         geom_histogram(stat = "count") +
@@ -947,7 +829,7 @@ parenttext_shiny <- function(data){
     })
     
     output$behaviour_child_plot <- renderPlotly({
-      df_child <- df %>% filter(child_age_group == "Child")
+      df_child <- selected_data_date_from() %>% filter(child_age_group == "Child")
       
       ggplot(df_child, aes(x = challenge_behav_wrap)) +
         geom_histogram(stat = "count") +
@@ -958,7 +840,7 @@ parenttext_shiny <- function(data){
     })
     
     output$behaviour_teen_plot <- renderPlotly({
-      df_teen <- df %>% filter(child_age_group == "Teen")
+      df_teen <- selected_data_date_from() %>% filter(child_age_group == "Teen")
       
       ggplot(df_teen, aes(x = challenge_behav_wrap)) +
         geom_histogram(stat = "count") +
@@ -969,7 +851,7 @@ parenttext_shiny <- function(data){
     })
     
     output$behaviour_default_plot <- renderPlotly({
-      df_default <- df %>% filter(child_age_group == "Default")
+      df_default <- selected_data_date_from() %>% filter(child_age_group == "Default")
       
       ggplot(df_default, aes(x = challenge_behav_wrap)) +
         geom_histogram(stat = "count") +
@@ -981,7 +863,7 @@ parenttext_shiny <- function(data){
     
     output$behaviour_baby_group_plot <- renderPlotly({
       req(input$grouper_behaviour)
-      df_baby <- df %>% filter(child_age_group == "Baby")
+      df_baby <- selected_data_date_from() %>% filter(child_age_group == "Baby")
       
       ggplot(df_baby, aes(x = challenge_behav_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
         geom_histogram(stat = "count") +
@@ -994,7 +876,7 @@ parenttext_shiny <- function(data){
     
     output$behaviour_child_group_plot <- renderPlotly({
       req(input$grouper_behaviour)
-      df_child <- df %>% filter(child_age_group == "Child")
+      df_child <- selected_data_date_from() %>% filter(child_age_group == "Child")
       
       ggplot(df_child, aes(x = challenge_behav_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
         geom_histogram(stat = "count") +
@@ -1007,7 +889,7 @@ parenttext_shiny <- function(data){
     
     output$behaviour_teen_group_plot <- renderPlotly({
       req(input$grouper_behaviour)
-      df_teen <- df %>% filter(child_age_group == "Teen")
+      df_teen <- selected_data_date_from() %>% filter(child_age_group == "Teen")
       
       ggplot(df_teen, aes(x = challenge_behav_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
         geom_histogram(stat = "count") +
@@ -1020,7 +902,7 @@ parenttext_shiny <- function(data){
     
     output$behaviour_default_group_plot <- renderPlotly({
       req(input$grouper_behaviour)
-      df_default <- df %>% filter(child_age_group == "Default")
+      df_default <- selected_data_date_from() %>% filter(child_age_group == "Default")
       
       ggplot(df_default, aes(x = challenge_behav_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
         geom_histogram(stat = "count") +
@@ -1030,64 +912,63 @@ parenttext_shiny <- function(data){
         theme_classic()
     })
     
-    # Flows stuff ------------------------------------------------------------
+    # Flow Tab ------------------------------------------------------------
+    selected_flow_data_date_from <- reactive({
+      valid_IDs <- selected_data_date_from()$ID
+      all_flows <- all_flows %>% filter(ID %in% c(valid_IDs))
+      all_flows_df <- flow_data_summary_function(all_flows, Flow) %>% 
+        return(all_flows_df)
+    })
+    
+    all_flows_response <- reactive({
+      selected_flow_data_date_from() %>%
+        #filter(!is.na(Flow)) %>%
+        pivot_wider(id_cols = interacted, names_from = Flow, values_from = `Count (%)`) %>%
+        dplyr::select(-c(`NA`))
+    })
     
     output$plot_flow <- renderPlotly({
-      colnames(supportive_calm_flow_df)[2] <- "Supportive - Calm flow"
-      colnames(supportive_praise_flow_df)[2] <- "Supportive - Praise flow"
-      colnames(supportive_flow_df)[2] <- "Supportive flow"
-      colnames(check_in_flow_df)[2] <- "Check-in flows"
-      colnames(content_flow_df)[2] <- "Content flows"
-      table_flows_df <- left_join(left_join(left_join(left_join(supportive_calm_flow_df, supportive_praise_flow_df), supportive_flow_df), check_in_flow_df), content_flow_df)
-      colnames(table_flows_df)[1] <- "Response"
-      flow_pivot <- pivot_longer(table_flows_df,
-                                 cols = c(`Supportive - Calm flow`, `Supportive - Praise flow`, `Supportive flow`, `Check-in flows`, `Content flows`),
-                                 names_to = "Flow name",
-                                 values_to = "Value") %>%
-        separate(Value, into = "Value") %>%
-        mutate(Value = as.numeric(as.character(Value)))
+      all_flows_df <- selected_flow_data_date_from() %>%
+        separate(`Count (%)`, into = "Count") %>%
+        mutate(Count = as.numeric(as.character(Count)))
       
-      ggplot(flow_pivot, aes(x = Response, y = Value, fill = `Flow name`)) +
+      ggplot(all_flows_df, aes(x = interacted, y = Count, fill = `Flow`)) +
         geom_bar(stat = "identity") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
-        theme_classic()
+        theme_classic() +
+        labs(x = "Interacted")
     })
     
     # Output render ------------------------------------------------------------
-    
-    df_enrolled <- summary_PT(df_consent,  enrolled,  enrolled, "Yes")
-    df_enrolled <- df_enrolled %>% mutate(group =  enrolled, count = enrolled_n) %>% dplyr::select(c(group, count))
-    
-    df_consented <- summary_PT(df,  consent,  consent, "Yes")
-    df_consented <- df_consented %>% mutate(group =  consent, count = consent_n) %>% dplyr::select(c(group, count))
-    
-    df_program <- summary_PT(df,  program,  program, "Yes")
-    df_program <- df_program %>% mutate(group =  program, count = program_n) %>% dplyr::select(c(group, count))
-    
-    df_active_24 <- (summary_PT(df, active_users, program) %>% filter(active_users == "Yes"))$active_users_n
-    df_active_7d <- (summary_PT(df, active_users_7_days, program) %>% filter(active_users_7_days == "Yes"))$active_users_7_days_n
-    
     output$myvaluebox1 <- shinydashboard::renderValueBox({
+      df_enrolled <- summary_PT(selected_consented_data_date_from(), enrolled, enrolled, "Yes")
+      df_enrolled <- df_enrolled %>% mutate(group =  enrolled, count = enrolled_n) %>% dplyr::select(c(group, count))
       shinydashboard::valueBox(df_enrolled$count[1], subtitle = "Enrolled", icon = icon("user"),
                                color = "aqua"
       )
     })
     output$myvaluebox2 <- shinydashboard::renderValueBox({
+      df_consented <- summary_PT(selected_data_date_from(), consent, consent, "Yes")
+      df_consented <- df_consented %>% mutate(group =  consent, count = consent_n) %>% dplyr::select(c(group, count))
       shinydashboard::valueBox(df_consented$count[1],subtitle = "Consented",icon = icon("check"),
                                color = "green"
       )
     })
     output$myvaluebox3 <- shinydashboard::renderValueBox({
+      df_program <- summary_PT(selected_data_date_from(), program, program, "Yes")
+      df_program <- df_program %>% mutate(group =  program, count = program_n) %>% dplyr::select(c(group, count))
       shinydashboard::valueBox(df_program$count[1],subtitle = "In Program",icon = icon("clipboard"),
                                color = "yellow"
       )
     })
     output$myvaluebox4 <- shinydashboard::renderValueBox({
+      df_active_24 <- (summary_PT(selected_data_date_from(), active_users, program) %>% filter(active_users == "Yes"))$active_users_n
       shinydashboard::valueBox(df_active_24,subtitle = "Active in last 24 hours",icon = icon("clock"),
                                color = "purple"
       )
     })
     output$myvaluebox5 <- shinydashboard::renderValueBox({
+      df_active_7d <- (summary_PT(selected_data_date_from(), active_users_7_days, program) %>% filter(active_users_7_days == "Yes"))$active_users_7_days_n
       shinydashboard::valueBox(df_active_7d, subtitle = "Active in last 7 days", icon = icon("signal"),
                                color = "fuchsia"
       )
@@ -1100,7 +981,6 @@ parenttext_shiny <- function(data){
     output$language_summary_group <- shiny::renderTable({(language_summary_group())}, striped = TRUE)
     output$consent_summary <- shiny::renderTable({(consent_summary())}, striped = TRUE)
     output$consent_summary_group <- shiny::renderTable({(consent_summary_group())}, striped = TRUE)
-    #output$language_summary <- shiny::renderTable({(language_summary())}, striped = TRUE)
     output$parent_gender_summary <- shiny::renderTable({(parent_gender_summary())}, striped = TRUE)
     output$parent_gender_group_summary <- shiny::renderTable({(parent_gender_group_summary())}, striped = TRUE)
     output$parent_age_summary <- shiny::renderTable({(parent_age_summary())}, striped = TRUE)
