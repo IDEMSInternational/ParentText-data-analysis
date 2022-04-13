@@ -13,6 +13,7 @@ key <- read.table("./tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
 set_rapidpro_key(key = key[[1]])
 set_rapidpro_site(site = "https://app.rapidpro.io/api/v2/")
 set_rapidpro_uuid_names()
+archived_data <- readRDS("archived_data_monthly.RDS")
 update_data <- function(date_from = "2021-10-14", date_to = NULL) {
   
   # base data -----------------------------------------------------
@@ -324,6 +325,8 @@ update_data <- function(date_from = "2021-10-14", date_to = NULL) {
   df <- df %>%
     filter(ID %in% list_of_ids)
   
+  df_consent <- data.frame(df_consent, parent_gender, child_gender, child_age_group)
+    
   # for Jamaica Only: Parent Pals data cleaning --------------------
   pp_n_recruited <- df %>% group_by(child_age_group) %>% # group_by will be "recruited by" in time
     mutate(completed_welcome = ifelse(completed_welcome == "Yes", 1, 0)) %>% # reorder welcome survey
@@ -361,34 +364,28 @@ update_data <- function(date_from = "2021-10-14", date_to = NULL) {
                               "PLH - Content - Positive - Safe or unsafe touch - Timed intro", "PLH - Content - Relax - Take a pause - Timed intro", "PLH - Content - Relax - Exercise", "PLH - Content - Time - One on one time baby - Timed intro", 
                               "PLH - Content - Extra - COVID", "PLH - Content - Extra - Disability", "PLH - Content - Positive - Family", 
                               "PLH - Content - Time - One on one time child - Timed intro", "PLH - Content - Time - One on one time teen - Timed intro", "PLH - Content - Positive - introduction", "PLH - Content - Positive - Positive instructions", "PLH - Content - Relax - Quick Pause", "PLH - Content - Relax - Anger management", "PLH - Content - Relax - Anger management 2", "PLH - Content - Positive - IPV", "PLH - Content - Positive - Community safety")
-  # TODO: send chiara archived data
-  archived_data <- readRDS("archived_data_monthly.RDS")
   df_created_on$row <- NULL
   supportive_praise_flow <- get_flow_data(flow_name = supportive_praise, flow_type = "praise", include_archived_data = TRUE)
   supportive_praise_flow$ID <- supportive_praise_flow$uuid
   supportive_praise_flow$uuid <- NULL
   supportive_praise_flow <- supportive_praise_flow %>% mutate(Flow = "Supportive Praise")
   supportive_praise_flow$response <- replace_na(supportive_praise_flow$response, "No Response")
-  supportive_praise_flow <- supportive_praise_flow %>% mutate(ID %in% list_of_ids)
-  
+
   supportive_calm_flow <- get_flow_data(flow_name = supportive_calm, flow_type = "calm", include_archived_data = TRUE)
   supportive_calm_flow$ID <- supportive_calm_flow$uuid
   supportive_calm_flow$uuid <- NULL
   supportive_calm_flow <- supportive_calm_flow %>% mutate(Flow = "Supportive Calm")
-  supportive_calm_flow <- supportive_calm_flow %>% mutate(ID %in% list_of_ids)
-  
+
   supportive_activities_flow <- get_flow_data(flow_name = supportive_activities, include_archived_data = TRUE)
   supportive_activities_flow$ID <- supportive_activities_flow$uuid
   supportive_activities_flow$uuid <- NULL
   supportive_activities_flow <- supportive_activities_flow %>% mutate(Flow = "Supportive Activities")
-  supportive_activities_flow <- supportive_activities_flow %>% mutate(ID %in% list_of_ids)
-  
+
   supportive_flow_names_flow <- get_flow_data(flow_name = supportive_flow_names, include_archived_data = TRUE)
   supportive_flow_names_flow$ID <- supportive_flow_names_flow$uuid
   supportive_flow_names_flow$uuid <- NULL
   supportive_flow_names_flow <- supportive_flow_names_flow %>% mutate(Flow = "Supportive Flow Names")
-  supportive_flow_names_flow <- supportive_flow_names_flow %>% mutate(ID %in% list_of_ids)
-  
+
   check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names, flow_type = "check_in", include_archived_data = TRUE)
   check_in_flow_names_flow$ID <- check_in_flow_names_flow$uuid
   check_in_flow_names_flow$uuid <- NULL
@@ -401,15 +398,17 @@ update_data <- function(date_from = "2021-10-14", date_to = NULL) {
   check_in_flow_names_flow <- check_in_flow_names_flow %>% mutate(Flow = "Check in")
   check_in_flow_names_flow$response <- replace_na(check_in_flow_names_flow$response, "No Response")
   check_in_flow_names_flow$managed_to_do_something <- replace_na(check_in_flow_names_flow$managed_to_do_something, "No Response")
-  check_in_flow_names_flow <- check_in_flow_names_flow %>% mutate(ID %in% list_of_ids)
-  
+
   content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names, flow_type = "tips", include_archived_data = TRUE)
   content_tip_flow_names_flow$ID <- content_tip_flow_names_flow$uuid
   content_tip_flow_names_flow$uuid <- NULL
   content_tip_flow_names_flow <- content_tip_flow_names_flow %>% mutate(Flow = "Content Tip")
   content_tip_flow_names_flow$category <- replace_na(content_tip_flow_names_flow$category, "No Response")
-  content_tip_flow_names_flow <- content_tip_flow_names_flow %>% mutate(ID %in% list_of_ids)
+
+  all_flows <- dplyr::bind_rows(supportive_praise_flow, supportive_calm_flow, supportive_flow_names_flow,
+                                check_in_flow_names_flow, content_tip_flow_names_flow)
   
+  all_flows <- dplyr::full_join(all_flows, df_created_on)
   
   # Survey Level Data ---------------------------------------------------------------------------------------------------------------------------
   play <- get_survey_data(contacts_unflat$fields$surveytime_datetime) %>% mutate(Group = "Play")
@@ -461,32 +460,11 @@ update_data <- function(date_from = "2021-10-14", date_to = NULL) {
   objects_to_return <- NULL
   objects_to_return[[1]] <- df
   objects_to_return[[2]] <- df_consent
-  objects_to_return[[3]] <- supportive_calm_flow
-  objects_to_return[[4]] <- supportive_praise_flow
-  objects_to_return[[5]] <- check_in_flow_names_flow
-  objects_to_return[[6]] <- content_tip_flow_names_flow
-  objects_to_return[[7]] <- supportive_flow_names_flow
-  objects_to_return[[8]] <- enrolled
-  objects_to_return[[9]] <- true_consent
-  objects_to_return[[10]] <- program
-  objects_to_return[[11]] <- parenting_survey
-  objects_to_return[[12]] <- pp_data_frame # for Jamaica only (otherwise NULL?)
+  objects_to_return[[3]] <- all_flows
+  objects_to_return[[4]] <- parenting_survey
+  objects_to_return[[5]] <- pp_data_frame # for Jamaica only (otherwise NULL?)
   return(objects_to_return)
 }
-
-#updated_data <- update_data()
-#df <- updated_data[[1]]
-#df1 <- updated_data[[2]]
-#supportive_calm_flow <- updated_data[[3]]
-#supportive_praise_flow <- updated_data[[4]]
-#check_in_flow_names_flow <- updated_data[[5]]
-#content_tip_flow_names_flow <- updated_data[[6]]
-#supportive_flow_names_flow <- updated_data[[7]]
-#enrolled <- updated_data[[8]]
-#true_consent <- updated_data[[9]]
-#program <- updated_data[[10]]
-#parenting_survey <- updated_data[[11]]
-#pp_data_frame <- updated_data[[12]]
 
 # retention_exit ---------------------------------------------------------------
 # number of contacts for which the contact field "exit_message" is not empty &
