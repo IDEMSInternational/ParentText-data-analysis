@@ -12,8 +12,8 @@ key <- read.table("./tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
 set_rapidpro_key(key = key[[1]])
 set_rapidpro_site(site = "https://app.rapidpro.io/api/v2/")
 set_rapidpro_uuid_names()
-archived_data <- readRDS("archived_data_monthly.RDS")
-include_archived_data <- TRUE
+#archived_data <- readRDS("archived_data_monthly.RDS")
+include_archived_data <- FALSE
 
 update_data <- function(date_from = "2021-10-14", date_to = NULL) {
   
