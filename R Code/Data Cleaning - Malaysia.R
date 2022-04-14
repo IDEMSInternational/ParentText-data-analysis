@@ -8,12 +8,13 @@ source("R Shiny Template.R")
 #library(rapidpror)
 
 # RapidPro set up --------------------------------------------------------------
-#key <- read.table("C:/Users/lzc1n17/OneDrive - University of Southampton/PhD/IDEMS/ParentText/PT_malaysia_key.txt", quote="\"", comment.char="")
 key <- read.table("./tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
 set_rapidpro_key(key = key[[1]])
 set_rapidpro_site(site = "https://app.rapidpro.io/api/v2/")
 set_rapidpro_uuid_names()
 archived_data <- readRDS("archived_data_monthly.RDS")
+include_archived_data <- TRUE
+
 update_data <- function(date_from = "2021-10-14", date_to = NULL) {
   
   # base data -----------------------------------------------------
@@ -365,41 +366,43 @@ update_data <- function(date_from = "2021-10-14", date_to = NULL) {
                               "PLH - Content - Extra - COVID", "PLH - Content - Extra - Disability", "PLH - Content - Positive - Family", 
                               "PLH - Content - Time - One on one time child - Timed intro", "PLH - Content - Time - One on one time teen - Timed intro", "PLH - Content - Positive - introduction", "PLH - Content - Positive - Positive instructions", "PLH - Content - Relax - Quick Pause", "PLH - Content - Relax - Anger management", "PLH - Content - Relax - Anger management 2", "PLH - Content - Positive - IPV", "PLH - Content - Positive - Community safety")
   df_created_on$row <- NULL
-  supportive_praise_flow <- get_flow_data(flow_name = supportive_praise, flow_type = "praise", include_archived_data = TRUE)
+  supportive_praise_flow <- get_flow_data(flow_name = supportive_praise, flow_type = "praise", include_archived_data = include_archived_data)
   supportive_praise_flow$ID <- supportive_praise_flow$uuid
   supportive_praise_flow$uuid <- NULL
   supportive_praise_flow <- supportive_praise_flow %>% mutate(Flow = "Supportive Praise")
   supportive_praise_flow$response <- replace_na(supportive_praise_flow$response, "No Response")
 
-  supportive_calm_flow <- get_flow_data(flow_name = supportive_calm, flow_type = "calm", include_archived_data = TRUE)
+  supportive_calm_flow <- get_flow_data(flow_name = supportive_calm, flow_type = "calm", include_archived_data = include_archived_data)
   supportive_calm_flow$ID <- supportive_calm_flow$uuid
   supportive_calm_flow$uuid <- NULL
   supportive_calm_flow <- supportive_calm_flow %>% mutate(Flow = "Supportive Calm")
 
-  supportive_activities_flow <- get_flow_data(flow_name = supportive_activities, include_archived_data = TRUE)
+  supportive_activities_flow <- get_flow_data(flow_name = supportive_activities, include_archived_data = include_archived_data)
   supportive_activities_flow$ID <- supportive_activities_flow$uuid
   supportive_activities_flow$uuid <- NULL
   supportive_activities_flow <- supportive_activities_flow %>% mutate(Flow = "Supportive Activities")
 
-  supportive_flow_names_flow <- get_flow_data(flow_name = supportive_flow_names, include_archived_data = TRUE)
+  supportive_flow_names_flow <- get_flow_data(flow_name = supportive_flow_names, include_archived_data = include_archived_data)
   supportive_flow_names_flow$ID <- supportive_flow_names_flow$uuid
   supportive_flow_names_flow$uuid <- NULL
   supportive_flow_names_flow <- supportive_flow_names_flow %>% mutate(Flow = "Supportive Flow Names")
 
-  check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names, flow_type = "check_in", include_archived_data = TRUE)
+  check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names, flow_type = "check_in", include_archived_data = include_archived_data)
   check_in_flow_names_flow$ID <- check_in_flow_names_flow$uuid
   check_in_flow_names_flow$uuid <- NULL
-  check_in_flow_names_flow <- check_in_flow_names_flow %>% mutate(response = ifelse(response == "1", "Surprised",
-                                                                                    ifelse(response == "2", "Happy",
-                                                                                           ifelse(response == "3", "My child did not like it",
-                                                                                                  ifelse(response == 4, "I don't know", 
-                                                                                                         response)))))
-  check_in_flow_names_flow <- check_in_flow_names_flow %>% mutate(response = ifelse(response == "neutral", "Neutral", response))
+  if (length(check_in_flow_names_flow) > 0){
+    check_in_flow_names_flow <- check_in_flow_names_flow %>% mutate(response = ifelse(response == "1", "Surprised",
+                                                                                      ifelse(response == "2", "Happy",
+                                                                                             ifelse(response == "3", "My child did not like it",
+                                                                                                    ifelse(response == 4, "I don't know", 
+                                                                                                           response)))))
+    check_in_flow_names_flow <- check_in_flow_names_flow %>% mutate(response = ifelse(response == "neutral", "Neutral", response))
+  }
   check_in_flow_names_flow <- check_in_flow_names_flow %>% mutate(Flow = "Check in")
   check_in_flow_names_flow$response <- replace_na(check_in_flow_names_flow$response, "No Response")
   check_in_flow_names_flow$managed_to_do_something <- replace_na(check_in_flow_names_flow$managed_to_do_something, "No Response")
 
-  content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names, flow_type = "tips", include_archived_data = TRUE)
+  content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names, flow_type = "tips", include_archived_data = include_archived_data)
   content_tip_flow_names_flow$ID <- content_tip_flow_names_flow$uuid
   content_tip_flow_names_flow$uuid <- NULL
   content_tip_flow_names_flow <- content_tip_flow_names_flow %>% mutate(Flow = "Content Tip")
