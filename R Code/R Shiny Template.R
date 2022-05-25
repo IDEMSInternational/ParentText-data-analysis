@@ -5,13 +5,13 @@ library(shinyjs)
 library(plotly)
 library(shinydashboard)
 
-parenttext_shiny <- function(data){
+parenttext_shiny <- function(country = "Malaysia"){
   # Define UI
   ui <- dashboardPage(
     header = dashboardHeader(title = "ParentText Dashboard"),
     
     sidebar = dashboardSidebar(
-      if (data == "Jamaica"){
+      if (country == "Jamaica"){
         sidebarMenu(
           menuItem("Demographics", tabName = "demographics", icon = icon("users")),
           menuItem("Parentpals", tabName = "parentpals", icon = icon("users")),
@@ -365,7 +365,7 @@ parenttext_shiny <- function(data){
     
     observe({
       autoRefresh()
-      updated_data <- update_data()
+      updated_data <- update_data(country = country)
       df <- updated_data[[1]]
       df_consent <- updated_data[[2]]
       all_flows <- updated_data[[3]]
@@ -373,7 +373,7 @@ parenttext_shiny <- function(data){
       pp_data_frame <- updated_data[[5]]
     })
     
-    updated_data <- update_data()
+    updated_data <- update_data(country = country)
     df <- updated_data[[1]]
     df_consent <- updated_data[[2]]
     all_flows <- updated_data[[3]]
@@ -466,11 +466,11 @@ parenttext_shiny <- function(data){
     })
     
     language_summary <- reactive({
-      summary_PT(selected_data_date_from(), language, consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_table(data = selected_data_date_from(), factors = language, include_margins = TRUE, replace = NULL)
     })
     
     language_summary_group <- reactive({
-      summary_PT(selected_data_date_from(), c(language, (!!!rlang::syms(input$grouper))), consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_table(data = selected_data_date_from(), factors = c(language), columns_to_summarise = (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     
     output$plot_language <- renderPlotly({
@@ -563,75 +563,70 @@ parenttext_shiny <- function(data){
     })
     
     consent_summary <- reactive({
-      summary_PT(selected_consented_data_date_from(), "consent", enrolled, "Yes", TRUE, naming_convention = TRUE)
+      summary_table(data = selected_consented_data_date_from(), factors = consent, include_margins = TRUE, replace = NULL)
     })
     
     consent_summary_group <- reactive({
       req(input$grouper)
-      summary_PT(selected_consented_data_date_from(), c(consent, !!!rlang::syms(input$grouper)), enrolled, "Yes", TRUE, naming_convention = TRUE)
+      summary_table(selected_consented_data_date_from(), consent, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     
-    #language_summary <-  reactive({
-    #  summary_PT(selected_data_date_from(), language, ???, "Yes", TRUE, naming_convention = TRUE)
-    #})
-    # ??? was consent but if it's consent then obvs no "Did not respond".
-    
     parent_gender_summary <- reactive({
-      summary_PT(selected_data_date_from(), parent_gender, consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_table(data = selected_data_date_from(), factors = parent_gender, include_margins = TRUE, replace = NULL)
     })
     
     parent_gender_group_summary <- reactive({
-      summary_PT(selected_data_date_from(), c(parent_gender, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_table(selected_data_date_from(), parent_gender, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     
     child_gender_summary <- reactive({
-      summary_PT(selected_data_date_from(), child_gender, consent, "Yes", TRUE, naming_convention = TRUE)
-    })
+      summary_table(data = selected_data_date_from(), factors = child_gender, include_margins = TRUE, replace = NULL)
+      })
     
     child_gender_group_summary <- reactive({
       req(input$grouper)
-      summary_PT(selected_data_date_from(), c(child_gender, (!!!rlang::syms(input$grouper))), consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_table(selected_data_date_from(), child_gender, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     child_age_summary <- reactive({
-      summary_PT(selected_data_date_from(), child_age_group, consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_table(data = selected_data_date_from(), factors = child_age_group, include_margins = TRUE, replace = NULL)
     })
     child_age_group_summary <- reactive({
       req(input$grouper)
-      summary_PT(selected_data_date_from(), c(child_age_group, (!!!rlang::syms(input$grouper))), consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_table(selected_data_date_from(), child_age_group, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     parent_child_relationship_summary <- reactive({
-      summary_PT(selected_data_date_from(), parent_child_relationship, consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_table(data = selected_data_date_from(), factors = parent_child_relationship, include_margins = TRUE, replace = NULL)
     })
     parent_child_relationship_group_summary <- reactive({
       req(input$grouper)
-      summary_PT(selected_data_date_from(), c(parent_child_relationship, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_table(selected_data_date_from(), parent_child_relationship, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     child_disabilities_summary <- reactive({
-      summary_PT(selected_data_date_from(), child_disabilities, consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_table(data = selected_data_date_from(), factors = child_disabilities, include_margins = TRUE, replace = NULL)
     })
     child_disabilities_group_summary <- reactive({
       req(input$grouper)
-      summary_PT(selected_data_date_from(), c(child_disabilities, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_table(selected_data_date_from(), child_disabilities, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     parent_relationship_summary <-  reactive({
-      summary_PT(selected_data_date_from(), parent_relationship, consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_table(data = selected_data_date_from(), factors = parent_relationship, include_margins = TRUE, replace = NULL)
     })
     parent_relationship_group_summary <-  reactive({
-      summary_PT(selected_data_date_from(), c(parent_relationship, !!!rlang::syms(input$grouper)), consent, "Yes", TRUE, naming_convention = TRUE)
+      summary_table(selected_data_date_from(), parent_relationship, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     active_users_group_summary <- reactive({
       req(input$grouper_engagement)
-      summary_PT(selected_data_date_from(), c(active_users, !!!rlang::syms(input$grouper_engagement)), program, together = TRUE, naming_convention = TRUE)
+      summary_table(selected_data_date_from(), active_users, (!!!rlang::syms(input$grouper_engagement)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     active_users_summary <- reactive({
-      summary_PT(selected_data_date_from(), active_users, program, together = TRUE, naming_convention = TRUE)
+      summary_table(data = selected_data_date_from(), factors = active_users, include_margins = TRUE, replace = NULL)
     })
     active_users_7_days_summary <- reactive({
-      summary_PT(selected_data_date_from(), active_users_7_days, program, together = TRUE, naming_convention = TRUE)
-    })
+      summary_table(data = selected_data_date_from(), factors = active_users_7_days, include_margins = TRUE, replace = NULL)
+      })
     active_users_7_days_group_summary <- reactive({
       req(input$grouper_engagement)
-      summary_PT(selected_data_date_from(), c(active_users_7_days, !!!rlang::syms(input$grouper_engagement)), program, together = TRUE, naming_convention = TRUE)
+      summary_table(selected_data_date_from(), active_users_7_days, (!!!rlang::syms(input$grouper_engagement)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     
     comp_prog_summary <- reactive({
@@ -669,12 +664,12 @@ parenttext_shiny <- function(data){
     })
     
     completed_welcome_summary <- reactive({
-      summary_PT(selected_data_date_from(), completed_welcome, consent, "Yes", TRUE, naming_convention = TRUE)
-    })
+      summary_table(data = selected_data_date_from(), factors = completed_welcome, include_margins = TRUE, replace = NULL)
+      })
     
     completed_welcome_group_summary <- reactive({
       req(input$grouper_engagement)
-      summary_PT(selected_data_date_from(), c(completed_welcome, !!!rlang::syms(input$grouper_engagement)), program, together = TRUE, naming_convention = TRUE)
+      summary_table(selected_data_date_from(), completed_welcome, (!!!rlang::syms(input$grouper_engagement)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     
     # Note: These are the *number* of people that have completed the survey
@@ -704,10 +699,10 @@ parenttext_shiny <- function(data){
       df <- selected_data_date_from()
       survey_completed <- NULL
       
-      wek1 <- summary_PT(df, summary_var = consent_survey_w1, together = TRUE)
-      wek2 <- summary_PT(df, summary_var = consent_survey_w2, together = TRUE)
-      wek3 <- summary_PT(df, summary_var = consent_survey_w3, together = TRUE)
-      wek4 <- summary_PT(df, summary_var = consent_survey_w4, together = TRUE)
+      wek1 <- summary_table(data = df, factors = consent_survey_w1, include_margins = TRUE, replace = NULL)
+      wek2 <- summary_table(data = df, factors = consent_survey_w2, include_margins = TRUE, replace = NULL)
+      wek3 <- summary_table(data = df, factors = consent_survey_w3, include_margins = TRUE, replace = NULL)
+      wek4 <- summary_table(data = df, factors = consent_survey_w4, include_margins = TRUE, replace = NULL)
       
       names(wek1) <- c("Consented", "Baseline")
       names(wek2) <- c("Consented", "Week 2")
@@ -722,10 +717,10 @@ parenttext_shiny <- function(data){
       df <- selected_data_date_from()
       survey_completed <- NULL
 
-      wek1 <- summary_PT(df, c(consent_survey_w1, (!!!rlang::syms(input$grouper))), together = TRUE)
-      wek2 <- summary_PT(df, c(consent_survey_w2, (!!!rlang::syms(input$grouper))), together = TRUE)
-      wek3 <- summary_PT(df, c(consent_survey_w3, (!!!rlang::syms(input$grouper))), together = TRUE)
-      wek4 <- summary_PT(df, c(consent_survey_w4, (!!!rlang::syms(input$grouper))), together = TRUE)
+      wek1 <- summary_table(data = df, factors = consent_survey_w1, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
+      wek2 <- summary_table(data = df, factors = consent_survey_w2, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
+      wek3 <- summary_table(data = df, factors = consent_survey_w3, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
+      wek4 <- summary_table(data = df, factors = consent_survey_w4, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
       
       names(wek1)[c(1, 3)] <- c("Consented", "Baseline")
       names(wek2)[c(1, 3)] <- c("Consented", "Week 2")
@@ -871,7 +866,6 @@ parenttext_shiny <- function(data){
         labs(x = NULL, y = NULL) +
         facet_grid(cols = vars(child_age_group)) +
         theme_classic()
-      
     })
     
     output$behaviour_child_group_plot <- renderPlotly({
@@ -941,34 +935,35 @@ parenttext_shiny <- function(data){
     
     # Output render ------------------------------------------------------------
     output$myvaluebox1 <- shinydashboard::renderValueBox({
-      df_enrolled <- summary_PT(selected_consented_data_date_from(), enrolled, enrolled, "Yes")
-      df_enrolled <- df_enrolled %>% mutate(group =  enrolled, count = enrolled_n) %>% dplyr::select(c(group, count))
+      df_enrolled <- summary_table(data = selected_consented_data_date_from(), factors = enrolled, include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = FALSE)
+      df_enrolled <- df_enrolled %>% mutate(group =  enrolled, count = n) %>% dplyr::select(c(group, count))
       shinydashboard::valueBox(df_enrolled$count[1], subtitle = "Enrolled", icon = icon("user"),
                                color = "aqua"
       )
     })
     output$myvaluebox2 <- shinydashboard::renderValueBox({
-      df_consented <- summary_PT(selected_data_date_from(), consent, consent, "Yes")
-      df_consented <- df_consented %>% mutate(group =  consent, count = consent_n) %>% dplyr::select(c(group, count))
+      df_consented <- summary_table(data = selected_data_date_from(), factors = consent, include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = FALSE)
+      df_consented <- df_consented %>% mutate(group = consent, count = n) %>% dplyr::select(c(group, count))
       shinydashboard::valueBox(df_consented$count[1],subtitle = "Consented",icon = icon("check"),
                                color = "green"
       )
     })
     output$myvaluebox3 <- shinydashboard::renderValueBox({
-      df_program <- summary_PT(selected_data_date_from(), program, program, "Yes")
-      df_program <- df_program %>% mutate(group =  program, count = program_n) %>% dplyr::select(c(group, count))
+      df_program <- summary_table(data = selected_data_date_from(), factors = program, include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = FALSE)
+      df_program <- df_program %>% mutate(group =  program, count = n) %>% dplyr::select(c(group, count))
       shinydashboard::valueBox(df_program$count[1],subtitle = "In Program",icon = icon("clipboard"),
                                color = "yellow"
       )
     })
     output$myvaluebox4 <- shinydashboard::renderValueBox({
-      df_active_24 <- (summary_PT(selected_data_date_from(), active_users, program) %>% filter(active_users == "Yes"))$active_users_n
-      shinydashboard::valueBox(df_active_24,subtitle = "Active in last 24 hours",icon = icon("clock"),
-                               color = "purple"
-      )
+      df_active_24 <-  summary_table(data = selected_data_date_from(), factors = active_users, include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = FALSE)
+      df_active_24 <- (df_active_24 %>% filter(active_users == "Yes"))$n
+      shinydashboard::valueBox(df_active_24, subtitle = "Active in last 24 hours",icon = icon("clock"),
+                               color = "purple")
     })
     output$myvaluebox5 <- shinydashboard::renderValueBox({
-      df_active_7d <- (summary_PT(selected_data_date_from(), active_users_7_days, program) %>% filter(active_users_7_days == "Yes"))$active_users_7_days_n
+      df_active_7d <- summary_table(data = selected_data_date_from(), factors = active_users_7_days, include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = FALSE)
+      df_active_7d <- (df_active_7d %>% filter(active_users_7_days == "Yes"))$n
       shinydashboard::valueBox(df_active_7d, subtitle = "Active in last 7 days", icon = icon("signal"),
                                color = "fuchsia"
       )

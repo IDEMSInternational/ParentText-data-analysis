@@ -391,7 +391,13 @@ get_survey_data <- function(parenting_variable){
 
 # aesthetics - removing _, and making first letter capital
 
-naming_conventions <- function(x) {
+naming_conventions <- function(x, replace, replace_after) {
+  if (!missing(replace)){
+    x <- gsub(paste("^.*?", replace, ".*", sep = ""), "", x)
+  }
+  if (!missing(replace_after)){
+    x <- gsub(paste(replace_after, "$", sep = ""), "", x)
+  }
   substr(x, 1, 1) <- toupper(substr(x, 1, 1))
   x <- gsub("_", " ", x)
   x
@@ -403,33 +409,131 @@ str_wrap_factor <- function(x, ...) {
   x
 }
 
-summary_PT <- function(data = df, summary_var, denominator = NULL, denominator_level = "Yes", together = FALSE, naming_convention = FALSE){
-  
-  if (!missing(denominator)) {
-    summary_perc <- data %>%
-      filter({{ denominator }} == denominator_level) %>%
-      group_by(across({{ summary_var }}), .drop = FALSE) %>%
-      summarise("{{summary_var}}_n" := n(),
-                "{{summary_var}}_perc" := n()/nrow(.) * 100)
+# same function used in parent text
+summary_calculation <- function(data = plhdata_org_clean, factors, columns_to_summarise = NULL, summaries = c("frequencies", "mean"),
+                                together = FALSE, include_margins = FALSE){
+  summaries <- match.arg(summaries)
+  if (summaries == "frequencies"){
+    summary_output <- data %>%
+      mutate(across(c({{ columns_to_summarise }}), ~ as.character(.x))) %>%
+      group_by(across(c({{ columns_to_summarise }}, {{ factors }})), .drop = FALSE) %>%
+      summarise(n = n(),
+                perc = n()/nrow(.) * 100)
+    if (include_margins){
+      cts_margin <- data %>%
+        group_by(across(c({{ columns_to_summarise }})), .drop = FALSE) %>%
+        summarise(n = n(),
+                  perc = n()/nrow(.) * 100)      
+      ftr_margin <- data %>%
+        group_by(across(c({{ factors }})), .drop = FALSE) %>%
+        summarise(n = n(),
+                  perc = n()/nrow(.) * 100)      
+      corner_margin <- data %>%
+        summarise(n = n(),
+                  perc = n()/nrow(.) * 100)
+      summary_output <- bind_rows(summary_output, cts_margin, ftr_margin, corner_margin, .id = "id")
+      
+      summary_output <- summary_output %>%
+        ungroup() %>%
+        mutate(across({{ factors }}, as.character)) %>%
+        mutate(across({{ factors }}, ~ifelse(id %in% c(2, 4), "Total", .x))) %>%
+        mutate(across({{ columns_to_summarise }}, ~ifelse(id %in% c(3, 4), "Total", .x)))
+      
+      summary_output <- summary_output %>%
+        mutate(across({{ factors }}, ~fct_relevel(.x, "Total", after = Inf))) %>%
+        mutate(across({{ columns_to_summarise }}, ~fct_relevel(.x, "Total", after = Inf))) %>%
+        select(-c("id"))
+      if (together){
+        summary_output <- summary_output %>%
+          mutate("Count (%)" := str_c(`n`, ' (', round(`perc`, 2), ")")) %>%
+          dplyr::select(-c(n, perc))
+      }
+    }
   } else {
-    summary_perc <- data %>%
-      group_by(across({{ summary_var }}), .drop = FALSE) %>%
-      summarise("{{summary_var}}_n" := n(),
-                "{{summary_var}}_perc" := n()/nrow(.) * 100)
+    summary_output <- data %>%
+      group_by(across({{ factors }}), .drop = FALSE) %>%
+      #mutate(across({{ columns_to_summarise }}, ~as.numeric(.))) %>%
+      summarise(across({{ columns_to_summarise }}, ~mean(.x, na.rm = TRUE)))
+    
+    if (include_margins){
+      corner_margin <- data %>%
+        summarise(across(c({{ columns_to_summarise }}), ~mean(.x, na.rm  = TRUE)))
+      
+      summary_output <- bind_rows(summary_output, corner_margin, .id = "id")
+      
+      summary_output <- summary_output %>%
+        ungroup() %>%
+        mutate(across({{ factors }}, as.character)) %>%
+        mutate(across({{ factors }}, ~ifelse(id == 2, "Total", .x)))
+      
+      summary_output <- summary_output %>%
+        mutate(across({{ factors }}, ~fct_relevel(.x, "Total", after = Inf))) %>%
+        select(-c("id"))
+    }
+    
   }
+  return(unique(summary_output))
+}
+
+summary_table <- function(data = plhdata_org_clean, factors = Org, columns_to_summarise = NULL, summaries = c("frequencies", "mean"),
+                          replace = "rp.contact.field.", include_margins = FALSE, wider_table = TRUE,
+                          display_table = FALSE, naming_convention = TRUE, include_percentages = FALSE,
+                          together = TRUE){
   
-  if (together == TRUE){
-    colnames(summary_perc)[length(summary_perc)-1] <- "n"
-    colnames(summary_perc)[length(summary_perc)] <- "perc"
-    summary_perc <- summary_perc %>%
-      mutate("Count (%)" := str_c(`n`, ' (', round(`perc`, 2), ")")) %>%
-      dplyr::select(-c(n, perc))
-  }
+  summaries <- match.arg(summaries)
   
-  if (naming_convention == TRUE){
-    colnames(summary_perc) <- naming_conventions(colnames(summary_perc))
+  return_table <- summary_calculation(data = data,
+                                      factors = c({{ factors }}),
+                                      columns_to_summarise = c({{ columns_to_summarise }}),
+                                      include_margins = include_margins,
+                                      summaries = summaries,
+                                      together = together)
+  return_table_names <- naming_conventions(colnames(return_table), replace = replace)
+  if (summaries == "mean"){
+    if (naming_convention){
+      colnames(return_table) <- naming_conventions(colnames(return_table), replace = replace)
+    }
   }
-  return(summary_perc)
+  if (display_table){
+    if (summaries == "frequencies"){
+      return_table <- return_table %>% pivot_wider(id_cols = {{ factors }}, names_from =  {{ columns_to_summarise }}, values_from = n)
+    }
+    
+    return_table <- gt(as_tibble(return_table)) %>%
+      tab_header(
+        title = paste(return_table_names[1], "by", return_table_names[2])  # fix up. 
+      ) %>%
+      tab_style(locations = list(cells_body(columns = 1)),
+                style = list(cell_borders(
+                  sides = "right",
+                  color = "black",
+                  weight = px(2)),
+                  cell_text(weight = "bold"))) %>%
+      tab_style(locations = list(cells_column_labels(columns = gt::everything())),
+                style = list(cell_borders( 
+                  sides = "bottom",
+                  color = "black",
+                  weight = px(2)),
+                  cell_text(weight = "bold")))
+    #if (summaries == "mean"){
+    #  names(return_table$`_data`) <- naming_conventions(names(return_table$`_data`), replace = replace)
+    #}
+  } else {
+    if (summaries == "frequencies"){
+      if (wider_table && !missing(columns_to_summarise)){
+        if (together){
+          values_from <- "Count (%)"
+        } else {
+          values_from <- "n"
+        }
+        return_table <- return_table %>% pivot_wider(id_cols = {{ factors }}, names_from =  {{ columns_to_summarise }}, values_from = values_from, names_prefix = "")
+      }
+      if (naming_convention){
+        colnames(return_table) <- naming_conventions(colnames(return_table), replace = replace)
+      }
+    }
+  }
+  return(return_table)
 }
 
 flow_data_summary_function <- function(flow_interaction, flow_name = NULL){
