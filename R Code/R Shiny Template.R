@@ -6,9 +6,19 @@ library(plotly)
 library(shinydashboard)
 
 parenttext_shiny <- function(country = "Malaysia"){
+  
+  if (country == "Malaysia"){
+    skin <- "blue"
+    status <- "primary"
+  } else {
+    skin <- "yellow"
+    status <- "warning"
+  }
   # Define UI
   ui <- dashboardPage(
-    header = dashboardHeader(title = "ParentText Dashboard"),
+    header = dashboardHeader(title = paste(country, "ParentText Dashboard")),
+    
+    skin = skin,
     
     sidebar = dashboardSidebar(
       if (country == "Jamaica"){
@@ -56,11 +66,12 @@ parenttext_shiny <- function(country = "Malaysia"){
                          box(splitLayout(h2("Demographics"), icon("users", "fa-6x"),
                                          cellArgs = list(style = "vertical-align: top"),
                                          cellWidths = c("80%", "20%")),
+                             status = status,
+                             background = skin,
                              width = 10,
                              title = NULL,
                              collapsible = FALSE,
                              solidHeader = TRUE,
-                             background = "light-blue",
                              height = "95px"))),
                 tabsetPanel(type = "tabs",
                             tabPanel("Overall",
@@ -69,13 +80,13 @@ parenttext_shiny <- function(country = "Malaysia"){
                                                        box( width=NULL,
                                                             collapsible = FALSE,
                                                             title = "Consent Frequency",
-                                                            status = "primary", # primary, success, info, warning, danger
+                                                            status = status, # primary, success, info, warning, danger
                                                             solidHeader = TRUE,
                                                             plotlyOutput(outputId = "plot_consent", height = "240"),
                                                             shiny::tableOutput("consent_summary")),
                                                        box( width=NULL,
                                                             title = "Language",
-                                                            status = "primary",
+                                                            status = status,
                                                             solidHeader = TRUE,
                                                             collapsible = FALSE,
                                                             plotlyOutput(outputId = "plot_language", height = "240", width = "100%"),
@@ -87,7 +98,7 @@ parenttext_shiny <- function(country = "Malaysia"){
                                                        box(width=NULL,
                                                            collapsible = FALSE,
                                                            title = "Parent Demographics",
-                                                           status = "primary", # primary, success, info, warning, danger
+                                                           status = status, # primary, success, info, warning, danger
                                                            solidHeader = TRUE,
                                                            shiny::tableOutput("parent_gender_summary"),
                                                            shiny::tableOutput("parent_age_summary"),
@@ -96,7 +107,7 @@ parenttext_shiny <- function(country = "Malaysia"){
                                                        box(width=NULL,
                                                            collapsible = FALSE,
                                                            title = "Child Demographics",
-                                                           status = "primary", # primary, success, info, warning, danger
+                                                           status = status, # primary, success, info, warning, danger
                                                            solidHeader = TRUE,
                                                            shiny::tableOutput("child_gender_summary"),
                                                            shiny::tableOutput("child_age_summary"),
@@ -108,13 +119,13 @@ parenttext_shiny <- function(country = "Malaysia"){
                                                          width=12,
                                                          collapsible = FALSE,
                                                          title = "Parenting Goals",
-                                                         status = "primary", # primary, success, info, warning, danger
+                                                         status = status, # primary, success, info, warning, danger
                                                          solidHeader = TRUE,
                                                          plotlyOutput(outputId = "parenting_goals_plot", height = "240", width = "100%")),
                                                      box(height="300px",  width=12,
                                                          collapsible = FALSE,
                                                          title = "Recruitment Channel",
-                                                         status = "primary", # primary, success, info, warning, danger
+                                                         status = status, # primary, success, info, warning, danger
                                                          solidHeader = TRUE,
                                                          plotlyOutput(outputId = "recruitment_channel_plot", height = "240", width = "100%")))) # close fluid row
                             ), # close "Overall" tab 
@@ -129,13 +140,13 @@ parenttext_shiny <- function(country = "Malaysia"){
                                                 box(width=NULL,
                                                     collapsible = FALSE,
                                                     title = "Consent Frequency",
-                                                    status = "primary", # primary, success, info, warning, danger
+                                                    status = status, # primary, success, info, warning, danger
                                                     solidHeader = TRUE,
                                                     plotlyOutput(outputId = "plot_consent_group", height = "240"),
                                                     shiny::tableOutput("consent_summary_group")),
                                                 box(width=NULL,
                                                     title = "Language",
-                                                    status = "primary",
+                                                    status = status,
                                                     solidHeader = TRUE,
                                                     collapsible = FALSE,
                                                     plotlyOutput(outputId = "plot_language_group", height = "240", width = "100%"),
@@ -147,7 +158,7 @@ parenttext_shiny <- function(country = "Malaysia"){
                                                        box(width=NULL,
                                                            collapsible = FALSE,
                                                            title = "Parent Demographics",
-                                                           status = "primary", # primary, success, info, warning, danger
+                                                           status = status, # primary, success, info, warning, danger
                                                            solidHeader = TRUE,
                                                            shiny::tableOutput("parent_gender_group_summary"),
                                                            shiny::tableOutput("parent_age_group_summary"),
@@ -157,7 +168,7 @@ parenttext_shiny <- function(country = "Malaysia"){
                                                        box(width=NULL,
                                                            collapsible = FALSE,
                                                            title = "Child Demographics",
-                                                           status = "primary", # primary, success, info, warning, danger
+                                                           status = status, # primary, success, info, warning, danger
                                                            solidHeader = TRUE,
                                                            shiny::tableOutput("child_gender_group_summary"),
                                                            shiny::tableOutput("child_age_group_summary"),
@@ -168,13 +179,13 @@ parenttext_shiny <- function(country = "Malaysia"){
                                                      box(height="300px",  width=12,
                                                          collapsible = FALSE,
                                                          title = "Parenting Goals",
-                                                         status = "primary", # primary, success, info, warning, danger
+                                                         status = status, # primary, success, info, warning, danger
                                                          solidHeader = TRUE,
                                                          plotlyOutput(outputId = "parenting_goals_group_plot", height = "240", width = "100%")),
                                                      box(height="300px",  width=12,
                                                          collapsible = FALSE,
                                                          title = "Recruitment Channel",
-                                                         status = "primary", # primary, success, info, warning, danger
+                                                         status = status, # primary, success, info, warning, danger
                                                          solidHeader = TRUE,
                                                          plotlyOutput(outputId = "recruitment_channel_group_plot", height = "240", width = "100%"))
                                      )) # close col, fr
@@ -189,10 +200,11 @@ parenttext_shiny <- function(country = "Malaysia"){
                                          cellArgs = list(style = "vertical-align: top"),
                                          cellWidths = c("80%", "20%")),
                              width = 10,
+                             status = status,
                              title = NULL,
                              collapsible = FALSE,
                              solidHeader = TRUE,
-                             background = "light-blue",
+                             background = skin,
                              height = "95px"))),
                 tabsetPanel(type = "tabs",
                             tabPanel("Overall",
@@ -218,7 +230,7 @@ parenttext_shiny <- function(country = "Malaysia"){
                                                          width=12,
                                                          collapsible = FALSE,
                                                          title = "Plot of Flows",
-                                                         status = "primary", # primary, success, info, warning, danger
+                                                         status = status, # primary, success, info, warning, danger
                                                          solidHeader = TRUE,
                                                          plotlyOutput(outputId = "plot_flow", height = "240", width = "100%"))
                                      )) # close col, fr
@@ -271,10 +283,11 @@ parenttext_shiny <- function(country = "Malaysia"){
                                          cellArgs = list(style = "vertical-align:top"),
                                          cellWidths = c("80%", "20%")),
                              width = 10,
+                             status = status,
                              title = NULL,
                              collapsible = FALSE,
                              solidHeader = TRUE,
-                             background = "light-blue",
+                             background = skin,
                              height = "95px"))),
                 fluidRow(
                   box(dataTableOutput('pp_table'),
@@ -296,7 +309,7 @@ parenttext_shiny <- function(country = "Malaysia"){
                              title = NULL,
                              collapsible = FALSE,
                              solidHeader = TRUE,
-                             background = "light-blue",
+                             background = skin,
                              height = "95px"))),
                 tabsetPanel(type = "tabs",
                             tabPanel("Overall",
@@ -313,7 +326,7 @@ parenttext_shiny <- function(country = "Malaysia"){
                                                      box(width=12,
                                                          collapsible = FALSE,
                                                          title = "Behaviour Problems",
-                                                         status = "primary", # primary, success, info, warning, danger
+                                                         status = status, # primary, success, info, warning, danger
                                                          solidHeader = TRUE,
                                                          splitLayout(
                                                            plotlyOutput("behaviour_baby_plot"),
@@ -339,7 +352,7 @@ parenttext_shiny <- function(country = "Malaysia"){
                                               box(width=12,
                                                   collapsible = FALSE,
                                                   title = "Behaviour Problems",
-                                                  status = "primary", # primary, success, info, warning, danger
+                                                  status = status, # primary, success, info, warning, danger
                                                   solidHeader = TRUE,
                                                   splitLayout(
                                                     plotlyOutput("behaviour_baby_group_plot"),
@@ -370,7 +383,7 @@ parenttext_shiny <- function(country = "Malaysia"){
       df_consent <- updated_data[[2]]
       all_flows <- updated_data[[3]]
       parenting_survey <- updated_data[[4]]
-      pp_data_frame <- updated_data[[5]]
+      #pp_data_frame <- updated_data[[5]]
     })
     
     updated_data <- update_data(country = country)
@@ -378,7 +391,7 @@ parenttext_shiny <- function(country = "Malaysia"){
     df_consent <- updated_data[[2]]
     all_flows <- updated_data[[3]]
     parenting_survey <- updated_data[[4]]
-    pp_data_frame <- updated_data[[5]]
+    #pp_data_frame <- updated_data[[5]]
     
     # Subset data
     selected_data <- reactive({
@@ -968,10 +981,10 @@ parenttext_shiny <- function(country = "Malaysia"){
                                color = "fuchsia"
       )
     })
-    output$pp_table <- renderDataTable(pp_data_frame,
-                                       options = list(
-                                         pageLength = 5)
-    )
+    #output$pp_table <- renderDataTable(pp_data_frame,
+    #                                   options = list(
+    #                                     pageLength = 5)
+    #)
     output$language_summary <- shiny::renderTable({(language_summary())}, striped = TRUE)
     output$language_summary_group <- shiny::renderTable({(language_summary_group())}, striped = TRUE)
     output$consent_summary <- shiny::renderTable({(consent_summary())}, striped = TRUE)
