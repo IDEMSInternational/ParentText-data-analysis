@@ -9,9 +9,11 @@ parenttext_shiny <- function(country = "Malaysia"){
   
   if (country == "Malaysia"){
     skin <- "blue"
+    background <- "light-blue"
     status <- "primary"
   } else {
     skin <- "yellow"
+    background <- "yellow" # red, yellow, aqua, blue, light-blue, green, navy, teal, olive, lime, orange, fuchsia, purple, maroon, black.
     status <- "warning"
   }
   # Define UI
@@ -67,7 +69,7 @@ parenttext_shiny <- function(country = "Malaysia"){
                                          cellArgs = list(style = "vertical-align: top"),
                                          cellWidths = c("80%", "20%")),
                              status = status,
-                             background = skin,
+                             background = background,
                              width = 10,
                              title = NULL,
                              collapsible = FALSE,
@@ -204,7 +206,7 @@ parenttext_shiny <- function(country = "Malaysia"){
                              title = NULL,
                              collapsible = FALSE,
                              solidHeader = TRUE,
-                             background = skin,
+                             background = background,
                              height = "95px"))),
                 tabsetPanel(type = "tabs",
                             tabPanel("Overall",
@@ -287,7 +289,7 @@ parenttext_shiny <- function(country = "Malaysia"){
                              title = NULL,
                              collapsible = FALSE,
                              solidHeader = TRUE,
-                             background = skin,
+                             background = background,
                              height = "95px"))),
                 fluidRow(
                   box(dataTableOutput('pp_table'),
@@ -309,7 +311,7 @@ parenttext_shiny <- function(country = "Malaysia"){
                              title = NULL,
                              collapsible = FALSE,
                              solidHeader = TRUE,
-                             background = skin,
+                             background = background,
                              height = "95px"))),
                 tabsetPanel(type = "tabs",
                             tabPanel("Overall",
