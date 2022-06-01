@@ -33,15 +33,8 @@ state_15 <- "NA"
 state_16 <- "NA"
 state_17 <- "NA"
 
-
-
 #shiny template
 skin <- "yellow"
 background <- "yellow" # red, yellow, aqua, blue, light-blue, green, navy, teal, olive, lime, orange, fuchsia, purple, maroon, black.
 status <- "warning"
 #flag?
-
-#@fields.state_of_origin  #integers
-
-
-

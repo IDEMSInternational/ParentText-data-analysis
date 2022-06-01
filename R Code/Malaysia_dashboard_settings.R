@@ -9,7 +9,7 @@ if (include_archived_data){
 }
 default_date_from <- "2021-10-14"
 default_date_to <- NULL
-prefix <- "MY"  #JM #PH #SA
+prefix <- "MY"
 
 # for region/states
 state_title <- "State/territory"
@@ -36,7 +36,3 @@ skin <- "blue"
 background <- "light-blue"
 status <- "primary"
 #flag?
-
-#@fields.state_of_origin  #integers
-
-

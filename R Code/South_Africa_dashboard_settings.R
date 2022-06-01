@@ -1,0 +1,40 @@
+# South Africa Configuration
+
+# TODO: update key, site to give correct key and site.
+# TODO: default_date_from
+
+key <- read.table("tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
+site <- "https://app.rapidpro.io/api/v2/"
+include_archived_data <- FALSE # for now FALSE
+#if (include_archived_data){
+#  archived_data <- TODO
+#}
+default_date_from <- "2021-10-14"
+default_date_to <- NULL
+prefix <- "SA"
+
+# for region/states
+state_title <- "Province"
+state_1 <- "Eastern Cape"
+state_2 <- "Free State"
+state_3 <- "Gauteng"
+state_4 <- "KwaZulu-Natal"
+state_5 <- "Limpopo"
+state_6 <- "Mpumalanga"
+state_7 <- "North West"
+state_8 <- "Northern Cape"
+state_9 <- "Western Cape"
+state_10 <- "NA"
+state_11 <- "NA" 
+state_12 <- "NA"
+state_13 <- "NA"
+state_14 <- "NA"
+state_15 <- "NA"
+state_16 <- "NA"
+state_17 <- "NA"
+
+#shiny template
+skin <- "red"
+background <- "red" # red, yellow, aqua, blue, light-blue, green, navy, teal, olive, lime, orange, fuchsia, purple, maroon, black.
+status <- "danger"
+#flag?
