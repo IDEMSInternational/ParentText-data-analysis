@@ -5,17 +5,7 @@ library(shinyjs)
 library(plotly)
 library(shinydashboard)
 
-parenttext_shiny <- function(country = "Malaysia"){
-  
-  if (country == "Malaysia"){
-    skin <- "blue"
-    background <- "light-blue"
-    status <- "primary"
-  } else {
-    skin <- "yellow"
-    background <- "yellow" # red, yellow, aqua, blue, light-blue, green, navy, teal, olive, lime, orange, fuchsia, purple, maroon, black.
-    status <- "warning"
-  }
+parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_archived_data = FALSE){
   # Define UI
   ui <- dashboardPage(
     header = dashboardHeader(title = paste(country, "ParentText Dashboard")),
@@ -23,20 +13,20 @@ parenttext_shiny <- function(country = "Malaysia"){
     skin = skin,
     
     sidebar = dashboardSidebar(
-      if (country == "Jamaica"){
+      #if (country == "Jamaica"){
+      #  sidebarMenu(
+      #    menuItem("Demographics", tabName = "demographics", icon = icon("users")),
+      #    menuItem("Parentpals", tabName = "parentpals", icon = icon("users")),
+      #    menuItem("Engagement", tabName = "engagement", icon = icon("clipboard")),
+      #    menuItem("Behaviours", tabName = "behaviours", icon = icon("brain"))
+      #  )
+      #} else {
         sidebarMenu(
           menuItem("Demographics", tabName = "demographics", icon = icon("users")),
-          menuItem("Parentpals", tabName = "parentpals", icon = icon("users")),
           menuItem("Engagement", tabName = "engagement", icon = icon("clipboard")),
           menuItem("Behaviours", tabName = "behaviours", icon = icon("brain"))
         )
-      } else {
-        sidebarMenu(
-          menuItem("Demographics", tabName = "demographics", icon = icon("users")),
-          menuItem("Engagement", tabName = "engagement", icon = icon("clipboard")),
-          menuItem("Behaviours", tabName = "behaviours", icon = icon("brain"))
-        )
-      }
+      #}
     ),
     
     dashboardBody(
@@ -85,15 +75,22 @@ parenttext_shiny <- function(country = "Malaysia"){
                                                             status = status, # primary, success, info, warning, danger
                                                             solidHeader = TRUE,
                                                             plotlyOutput(outputId = "plot_consent", height = "240"),
-                                                            shiny::tableOutput("consent_summary")),
+                                                            shiny::tableOutput("consent_table")),
                                                        box( width=NULL,
                                                             title = "Language",
                                                             status = status,
                                                             solidHeader = TRUE,
                                                             collapsible = FALSE,
                                                             plotlyOutput(outputId = "plot_language", height = "240", width = "100%"),
-                                                            shiny::tableOutput("language_summary")),
-                                                       cellWidths = c("50%", "50%"),
+                                                            shiny::tableOutput("language_table")),
+                                                       box(width=NULL,
+                                                           title = paste(state_title, "the parent is from"),
+                                                           status = status,
+                                                           solidHeader = TRUE,
+                                                           collapsible = FALSE,
+                                                           plotlyOutput(outputId = "plot_state", height = "240", width = "100%"),
+                                                           shiny::tableOutput("state_table")),
+                                                       cellWidths = c("33.3%", "33.3%", "33.3%"),
                                                        cellArgs = list(style = "vertical-align: top")))),
                                      fluidRow(column(12, align = "center",
                                                      splitLayout(
@@ -102,18 +99,18 @@ parenttext_shiny <- function(country = "Malaysia"){
                                                            title = "Parent Demographics",
                                                            status = status, # primary, success, info, warning, danger
                                                            solidHeader = TRUE,
-                                                           shiny::tableOutput("parent_gender_summary"),
-                                                           shiny::tableOutput("parent_age_summary"),
-                                                           shiny::tableOutput("parent_child_relationship_summary"),
-                                                           shiny::tableOutput("parent_relationship_summary")),
+                                                           shiny::tableOutput("parent_gender_table"),
+                                                           shiny::tableOutput("parent_age_table"),
+                                                           shiny::tableOutput("parent_child_relationship_table"),
+                                                           shiny::tableOutput("parent_relationship_table")),
                                                        box(width=NULL,
                                                            collapsible = FALSE,
                                                            title = "Child Demographics",
                                                            status = status, # primary, success, info, warning, danger
                                                            solidHeader = TRUE,
-                                                           shiny::tableOutput("child_gender_summary"),
-                                                           shiny::tableOutput("child_age_summary"),
-                                                           shiny::tableOutput("child_disabilities_summary")), # close child box
+                                                           shiny::tableOutput("child_gender_table"),
+                                                           shiny::tableOutput("child_age_table"),
+                                                           shiny::tableOutput("child_disabilities_table")), # close child box
                                                        cellWidths = c("50%", "50%"),
                                                        cellArgs = list(style = "vertical-align: top"))), width = 10), # fluid row close
                                      fluidRow(column(12, align = "center",
@@ -145,15 +142,22 @@ parenttext_shiny <- function(country = "Malaysia"){
                                                     status = status, # primary, success, info, warning, danger
                                                     solidHeader = TRUE,
                                                     plotlyOutput(outputId = "plot_consent_group", height = "240"),
-                                                    shiny::tableOutput("consent_summary_group")),
+                                                    shiny::tableOutput("consent_table_group")),
                                                 box(width=NULL,
                                                     title = "Language",
                                                     status = status,
                                                     solidHeader = TRUE,
                                                     collapsible = FALSE,
                                                     plotlyOutput(outputId = "plot_language_group", height = "240", width = "100%"),
-                                                    shiny::tableOutput("language_summary_group")),
-                                                cellWidths = c("50%", "50%"),
+                                                    shiny::tableOutput("language_table_group")),
+                                                box(width=NULL,
+                                                    title = paste(state_title, "the parent is from"),
+                                                    status = status,
+                                                    solidHeader = TRUE,
+                                                    collapsible = FALSE,
+                                                    plotlyOutput(outputId = "plot_state_group", height = "240", width = "100%"),
+                                                    shiny::tableOutput("state_table_group")),
+                                                cellWidths = c("33.3%", "33.3%", "33.3%"),
                                                 cellArgs = list(style = "vertical-align: top"))))),
                                      fluidRow(column(12, align = "center",
                                                      splitLayout(
@@ -162,19 +166,19 @@ parenttext_shiny <- function(country = "Malaysia"){
                                                            title = "Parent Demographics",
                                                            status = status, # primary, success, info, warning, danger
                                                            solidHeader = TRUE,
-                                                           shiny::tableOutput("parent_gender_group_summary"),
-                                                           shiny::tableOutput("parent_age_group_summary"),
-                                                           shiny::tableOutput("parent_child_relationship_group_summary"),
-                                                           shiny::tableOutput("parent_relationship_group_summary"),
+                                                           shiny::tableOutput("parent_gender_group_table"),
+                                                           shiny::tableOutput("parent_age_group_table"),
+                                                           shiny::tableOutput("parent_child_relationship_group_table"),
+                                                           shiny::tableOutput("parent_relationship_group_table"),
                                                        ),
                                                        box(width=NULL,
                                                            collapsible = FALSE,
                                                            title = "Child Demographics",
                                                            status = status, # primary, success, info, warning, danger
                                                            solidHeader = TRUE,
-                                                           shiny::tableOutput("child_gender_group_summary"),
-                                                           shiny::tableOutput("child_age_group_summary"),
-                                                           shiny::tableOutput("child_disabilities_group_summary"),
+                                                           shiny::tableOutput("child_gender_group_table"),
+                                                           shiny::tableOutput("child_age_group_table"),
+                                                           shiny::tableOutput("child_disabilities_group_table"),
                                                        ), # close child box
                                                        cellWidths = c("50%", "50%"),
                                                        cellArgs = list(style = "vertical-align: top")), # split layout for parent to child demographics close
@@ -215,17 +219,17 @@ parenttext_shiny <- function(country = "Malaysia"){
                                                          collapsible = FALSE,
                                                          solidHeader = TRUE,
                                                          splitLayout(
-                                                           shiny::tableOutput("active_users_summary"),
-                                                           shiny::tableOutput("active_users_7_days_summary"),
+                                                           shiny::tableOutput("active_users_table"),
+                                                           shiny::tableOutput("active_users_7_days_table"),
                                                            cellWidths = c("50%", "50%"),
                                                            cellArgs = list(style = "vertical-align: top")),
                                                          br(),
                                                          plotlyOutput(outputId = "last_online_plot"),
                                                          br(),
-                                                         shiny::tableOutput("comp_prog_summary"),
-                                                         shiny::tableOutput("completed_welcome_summary"),
-                                                         shiny::tableOutput("completed_survey_summary"),
-                                                         shiny::tableOutput("consented_survey_summary"),
+                                                         shiny::tableOutput("comp_prog_table"),
+                                                         shiny::tableOutput("completed_welcome_table"),
+                                                         shiny::tableOutput("completed_survey_table"),
+                                                         shiny::tableOutput("consented_survey_table"),
                                                          shiny::tableOutput("all_flows_response")), # close box
                                                      
                                                      box(height="300px",
@@ -248,17 +252,17 @@ parenttext_shiny <- function(country = "Malaysia"){
                                                   collapsible = FALSE,
                                                   solidHeader = TRUE,
                                                   splitLayout(
-                                                    shiny::tableOutput("active_users_group_summary"),
-                                                    shiny::tableOutput("active_users_7_days_group_summary"),
+                                                    shiny::tableOutput("active_users_group_table"),
+                                                    shiny::tableOutput("active_users_7_days_group_table"),
                                                     cellWidths = c("50%", "50%"),
                                                     cellArgs = list(style = "vertical-align: top")), # split layout close
                                                   br(),
                                                   plotlyOutput(outputId = "last_online_group_plot"),
                                                   br(),
-                                                  shiny::tableOutput("completed_welcome_group_summary"),
-                                                  shiny::tableOutput("completed_survey_group_summary"),
-                                                  shiny::tableOutput("consented_survey_group_summary")),
-                                       shinydashboard::valueBoxOutput("comp_prog_group_summary", width = 12),
+                                                  shiny::tableOutput("completed_welcome_group_table"),
+                                                  shiny::tableOutput("completed_survey_group_table"),
+                                                  shiny::tableOutput("consented_survey_group_table")),
+                                       shinydashboard::valueBoxOutput("comp_prog_group_table", width = 12),
                                        cellArgs = list(style = "vertical-align: top")
                                      )))) # close col, fr, by group tab
                 ) # close tab type
@@ -320,7 +324,7 @@ parenttext_shiny <- function(country = "Malaysia"){
                                                          collapsible = FALSE,
                                                          solidHeader = TRUE,
                                                          fluidRow(column(6, uiOutput("groups_survey"))),
-                                                         shiny::tableOutput("parenting_survey_summary"),
+                                                         shiny::tableOutput("parenting_survey_table"),
                                                          plotlyOutput(outputId = "parenting_survey_plot"),#, height = "580px")
                                                          plotlyOutput(outputId = "behaviour_plots")
                                                      ), # close box
@@ -380,7 +384,7 @@ parenttext_shiny <- function(country = "Malaysia"){
     
     observe({
       autoRefresh()
-      updated_data <- update_data(country = country)
+      updated_data <- update_data(country = country, date_from = date_from, date_to = date_to, include_archived_data = include_archived_data)
       df <- updated_data[[1]]
       df_consent <- updated_data[[2]]
       all_flows <- updated_data[[3]]
@@ -388,7 +392,7 @@ parenttext_shiny <- function(country = "Malaysia"){
       #pp_data_frame <- updated_data[[5]]
     })
     
-    updated_data <- update_data(country = country)
+    updated_data <- update_data(country = country, date_from = date_from, date_to = date_to, include_archived_data = include_archived_data)
     df <- updated_data[[1]]
     df_consent <- updated_data[[2]]
     all_flows <- updated_data[[3]]
@@ -480,12 +484,20 @@ parenttext_shiny <- function(country = "Malaysia"){
       }
     })
     
-    language_summary <- reactive({
+    language_table <- reactive({
       summary_table(data = selected_data_date_from(), factors = language, include_margins = TRUE, replace = NULL)
     })
     
-    language_summary_group <- reactive({
+    language_table_group <- reactive({
       summary_table(data = selected_data_date_from(), factors = c(language), columns_to_summarise = (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
+    })
+    
+    state_table <- reactive({
+      summary_table(data = selected_data_date_from(), factors = state_of_origin, include_margins = TRUE, replace = NULL)
+    })
+    
+    state_table_group <- reactive({
+      summary_table(data = selected_data_date_from(), factors = c(state_of_origin), columns_to_summarise = (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     
     output$plot_language <- renderPlotly({
@@ -496,6 +508,15 @@ parenttext_shiny <- function(country = "Malaysia"){
         theme_classic()
     })
     
+    output$plot_state <- renderPlotly({
+      ggplot(selected_data_date_from(), aes(x = state_of_origin)) +
+        geom_histogram(stat = "count") +
+        viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
+        labs(x = paste(state_title), y = "Count") +
+        theme_classic() +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+    })
+    
     output$plot_language_group <- renderPlotly({
       req(input$grouper)
       ggplot(selected_data_date_from(), aes(x = language, fill = (!!!rlang::syms(input$grouper)))) +
@@ -503,6 +524,16 @@ parenttext_shiny <- function(country = "Malaysia"){
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = "language", y = "Count") +
         theme_classic()
+    })
+    
+    output$plot_state_group <- renderPlotly({
+      req(input$grouper)
+      ggplot(selected_data_date_from(), aes(x = state_of_origin, fill = (!!!rlang::syms(input$grouper)))) +
+        geom_histogram(stat = "count") +
+        viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
+        labs(x = paste(state_title), y = "Count") +
+        theme_classic() +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
     })
     
     output$last_online_plot <- renderPlotly({
@@ -577,74 +608,74 @@ parenttext_shiny <- function(country = "Malaysia"){
         theme_classic()
     })
     
-    consent_summary <- reactive({
+    consent_table <- reactive({
       summary_table(data = selected_consented_data_date_from(), factors = consent, include_margins = TRUE, replace = NULL)
     })
     
-    consent_summary_group <- reactive({
+    consent_table_group <- reactive({
       req(input$grouper)
       summary_table(selected_consented_data_date_from(), consent, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     
-    parent_gender_summary <- reactive({
+    parent_gender_table <- reactive({
       summary_table(data = selected_data_date_from(), factors = parent_gender, include_margins = TRUE, replace = NULL)
     })
     
-    parent_gender_group_summary <- reactive({
+    parent_gender_group_table <- reactive({
       summary_table(selected_data_date_from(), parent_gender, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     
-    child_gender_summary <- reactive({
+    child_gender_table <- reactive({
       summary_table(data = selected_data_date_from(), factors = child_gender, include_margins = TRUE, replace = NULL)
       })
     
-    child_gender_group_summary <- reactive({
+    child_gender_group_table <- reactive({
       req(input$grouper)
       summary_table(selected_data_date_from(), child_gender, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
-    child_age_summary <- reactive({
+    child_age_table <- reactive({
       summary_table(data = selected_data_date_from(), factors = child_age_group, include_margins = TRUE, replace = NULL)
     })
-    child_age_group_summary <- reactive({
+    child_age_group_table <- reactive({
       req(input$grouper)
       summary_table(selected_data_date_from(), child_age_group, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
-    parent_child_relationship_summary <- reactive({
+    parent_child_relationship_table <- reactive({
       summary_table(data = selected_data_date_from(), factors = parent_child_relationship, include_margins = TRUE, replace = NULL)
     })
-    parent_child_relationship_group_summary <- reactive({
+    parent_child_relationship_group_table <- reactive({
       req(input$grouper)
       summary_table(selected_data_date_from(), parent_child_relationship, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
-    child_disabilities_summary <- reactive({
+    child_disabilities_table <- reactive({
       summary_table(data = selected_data_date_from(), factors = child_disabilities, include_margins = TRUE, replace = NULL)
     })
-    child_disabilities_group_summary <- reactive({
+    child_disabilities_group_table <- reactive({
       req(input$grouper)
       summary_table(selected_data_date_from(), child_disabilities, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
-    parent_relationship_summary <-  reactive({
+    parent_relationship_table <-  reactive({
       summary_table(data = selected_data_date_from(), factors = parent_relationship, include_margins = TRUE, replace = NULL)
     })
-    parent_relationship_group_summary <-  reactive({
+    parent_relationship_group_table <-  reactive({
       summary_table(selected_data_date_from(), parent_relationship, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
-    active_users_group_summary <- reactive({
+    active_users_group_table <- reactive({
       req(input$grouper_engagement)
       summary_table(selected_data_date_from(), active_users, (!!!rlang::syms(input$grouper_engagement)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
-    active_users_summary <- reactive({
+    active_users_table <- reactive({
       summary_table(data = selected_data_date_from(), factors = active_users, include_margins = TRUE, replace = NULL)
     })
-    active_users_7_days_summary <- reactive({
+    active_users_7_days_table <- reactive({
       summary_table(data = selected_data_date_from(), factors = active_users_7_days, include_margins = TRUE, replace = NULL)
       })
-    active_users_7_days_group_summary <- reactive({
+    active_users_7_days_group_table <- reactive({
       req(input$grouper_engagement)
       summary_table(selected_data_date_from(), active_users_7_days, (!!!rlang::syms(input$grouper_engagement)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     
-    comp_prog_summary <- reactive({
+    comp_prog_table <- reactive({
       comp_prog_df <- selected_data_date_from() %>% 
         summarise(program_completion_mean = round(mean(comp_prog_overall, na.rm = TRUE), 2),
                   program_completion_sd = round(sd(comp_prog_overall, na.rm = TRUE), 2))
@@ -652,7 +683,7 @@ parenttext_shiny <- function(country = "Malaysia"){
       comp_prog_df
     })
     
-    comp_prog_group_summary <- reactive({
+    comp_prog_group_table <- reactive({
       req(input$grouper_engagement)
       comp_prog_df <- selected_data_date_from() %>% group_by(!!!rlang::syms(input$grouper_engagement)) %>%
         summarise(program_completion_mean = round(mean(comp_prog_overall, na.rm = TRUE), 2),
@@ -661,7 +692,7 @@ parenttext_shiny <- function(country = "Malaysia"){
       comp_prog_df
     })
     
-    parent_age_summary <- reactive({
+    parent_age_table <- reactive({
       req(input$grouper)
       parent_age_df <- selected_data_date_from() %>% 
         summarise(parent_age_mean = round(mean(parent_age, na.rm = TRUE), 2),
@@ -669,7 +700,7 @@ parenttext_shiny <- function(country = "Malaysia"){
       colnames(parent_age_df) <- naming_conventions(colnames(parent_age_df))
       parent_age_df
     })
-    parent_age_group_summary <- reactive({
+    parent_age_group_table <- reactive({
       req(input$grouper)
       parent_age_df <- selected_data_date_from() %>% group_by(!!!rlang::syms(input$grouper)) %>%
         summarise(parent_age_mean = round(mean(parent_age, na.rm = TRUE), 2),
@@ -678,17 +709,17 @@ parenttext_shiny <- function(country = "Malaysia"){
       parent_age_df
     })
     
-    completed_welcome_summary <- reactive({
+    completed_welcome_table <- reactive({
       summary_table(data = selected_data_date_from(), factors = completed_welcome, include_margins = TRUE, replace = NULL)
       })
     
-    completed_welcome_group_summary <- reactive({
+    completed_welcome_group_table <- reactive({
       req(input$grouper_engagement)
       summary_table(selected_data_date_from(), completed_welcome, (!!!rlang::syms(input$grouper_engagement)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     
     # Note: These are the *number* of people that have completed the survey
-    completed_survey_summary <- reactive({
+    completed_survey_table <- reactive({
       df <- selected_data_date_from()
       survey_completed <- NULL
       survey_completed[[1]] <- df %>% summarise(n = sum(comp_survey_w1 == 1, na.rm = TRUE))
@@ -710,7 +741,7 @@ parenttext_shiny <- function(country = "Malaysia"){
     })
     
     # Note: These are the *number* of people that have completed the survey
-    consented_survey_summary <- reactive({
+    consented_survey_table <- reactive({
       df <- selected_data_date_from()
       survey_completed <- NULL
       
@@ -727,7 +758,7 @@ parenttext_shiny <- function(country = "Malaysia"){
       left_join(left_join(left_join(wek1, wek2), wek3), wek4)
     })
     
-    consented_survey_group_summary <- reactive({
+    consented_survey_group_table <- reactive({
       req(input$grouper)
       df <- selected_data_date_from()
       survey_completed <- NULL
@@ -745,7 +776,7 @@ parenttext_shiny <- function(country = "Malaysia"){
       merge(merge(merge(wek1, wek2), wek3), wek4)
     })
     
-    completed_survey_group_summary <- reactive({
+    completed_survey_group_table <- reactive({
       req(input$grouper)
       df <- selected_data_date_from()
       survey_completed <- NULL
@@ -769,7 +800,7 @@ parenttext_shiny <- function(country = "Malaysia"){
     })
     
     # Survey stuff -----------------------------------------------------------------------
-    parenting_survey_summary <- reactive({
+    parenting_survey_table <- reactive({
       req(input$grouper_survey)
       
       selected_survey_data_date_from() %>%
@@ -925,7 +956,7 @@ parenttext_shiny <- function(country = "Malaysia"){
     selected_flow_data_date_from <- reactive({
       valid_IDs <- selected_data_date_from()$ID
       all_flows <- all_flows %>% filter(ID %in% c(valid_IDs))
-      all_flows_df <- flow_data_summary_function(all_flows, Flow) %>% 
+      all_flows_df <- flow_data_table_function(all_flows, Flow) %>% 
         return(all_flows_df)
     })
     
@@ -987,38 +1018,40 @@ parenttext_shiny <- function(country = "Malaysia"){
     #                                   options = list(
     #                                     pageLength = 5)
     #)
-    output$language_summary <- shiny::renderTable({(language_summary())}, striped = TRUE)
-    output$language_summary_group <- shiny::renderTable({(language_summary_group())}, striped = TRUE)
-    output$consent_summary <- shiny::renderTable({(consent_summary())}, striped = TRUE)
-    output$consent_summary_group <- shiny::renderTable({(consent_summary_group())}, striped = TRUE)
-    output$parent_gender_summary <- shiny::renderTable({(parent_gender_summary())}, striped = TRUE)
-    output$parent_gender_group_summary <- shiny::renderTable({(parent_gender_group_summary())}, striped = TRUE)
-    output$parent_age_summary <- shiny::renderTable({(parent_age_summary())}, striped = TRUE)
-    output$parent_age_group_summary <- shiny::renderTable({(parent_age_group_summary())}, striped = TRUE)
-    output$child_gender_summary <- shiny::renderTable({(child_gender_summary())}, striped = TRUE)
-    output$child_gender_group_summary <- shiny::renderTable({(child_gender_group_summary())}, striped = TRUE)
-    output$child_age_summary <- shiny::renderTable({(child_age_summary())}, striped = TRUE)
-    output$child_age_group_summary <- shiny::renderTable({(child_age_group_summary())}, striped = TRUE)
-    output$parent_child_relationship_summary <- shiny::renderTable({(parent_child_relationship_summary())}, caption = "Relationship between the parent and child", striped = TRUE)
-    output$parent_child_relationship_group_summary <- shiny::renderTable({(parent_child_relationship_group_summary())}, caption = "Relationship between the parent and child", striped = TRUE)
-    output$parent_relationship_group_summary <- shiny::renderTable({(parent_relationship_group_summary())}, caption = "Relationship status of the parent", striped = TRUE)
-    output$parent_relationship_summary <- shiny::renderTable({(parent_relationship_summary())}, caption = "Relationship status of the parent", striped = TRUE)
-    output$child_disabilities_summary <- shiny::renderTable({(child_disabilities_summary())}, caption = "Does the child have a disability?", striped = TRUE)
-    output$child_disabilities_group_summary <- shiny::renderTable({(child_disabilities_group_summary())}, caption = "Does the child have a disability?", striped = TRUE)
-    output$active_users_summary <- shiny::renderTable({(active_users_summary())}, striped = TRUE)
-    output$active_users_group_summary <- shiny::renderTable({(active_users_group_summary())}, striped = TRUE)
-    output$active_users_7_days_summary <- shiny::renderTable({(active_users_7_days_summary())}, striped = TRUE)
-    output$active_users_7_days_group_summary <- shiny::renderTable({(active_users_7_days_group_summary())}, striped = TRUE)
-    output$comp_prog_summary <- shiny::renderTable({(comp_prog_summary())}, caption = "Number of skills in toolkit", striped = TRUE)
-    output$comp_prog_group_summary <- shiny::renderTable({(comp_prog_group_summary())}, caption = "Number of skills in toolkit", striped = TRUE)
-    output$completed_welcome_summary <- shiny::renderTable({completed_welcome_summary()}, striped = TRUE, caption = "Number (and percentage) of individuals who have completed the welcome survey")
-    output$completed_welcome_group_summary <- shiny::renderTable({{completed_welcome_group_summary()}}, striped = TRUE, caption = "Number (and percentage) of individuals who have completed the welcome survey")
-    output$completed_survey_summary <- shiny::renderTable({{completed_survey_summary()}}, striped = TRUE, caption = "Number (and percentage) of individuals who have completed different surveys")
-    output$completed_survey_group_summary <- shiny::renderTable({{completed_survey_group_summary()}}, striped = TRUE, caption = "Number (and percentage) of individuals who have completed different surveys")
-    output$consented_survey_summary <- shiny::renderTable({{consented_survey_summary()}}, striped = TRUE, caption = "Number (and percentage) of individuals who have consented to different surveys")
-    output$consented_survey_group_summary <- shiny::renderTable({{consented_survey_group_summary()}}, striped = TRUE, caption = "Number (and percentage) of individuals who have consented to different surveys")
+    output$language_table <- shiny::renderTable({(language_table())}, striped = TRUE)
+    output$language_table_group <- shiny::renderTable({(language_table_group())}, striped = TRUE)
+    output$state_table <- shiny::renderTable({(state_table())}, striped = TRUE)
+    output$state_table_group <- shiny::renderTable({(state_table_group())}, striped = TRUE)
+    output$consent_table <- shiny::renderTable({(consent_table())}, striped = TRUE)
+    output$consent_table_group <- shiny::renderTable({(consent_table_group())}, striped = TRUE)
+    output$parent_gender_table <- shiny::renderTable({(parent_gender_table())}, striped = TRUE)
+    output$parent_gender_group_table <- shiny::renderTable({(parent_gender_group_table())}, striped = TRUE)
+    output$parent_age_table <- shiny::renderTable({(parent_age_table())}, striped = TRUE)
+    output$parent_age_group_table <- shiny::renderTable({(parent_age_group_table())}, striped = TRUE)
+    output$child_gender_table <- shiny::renderTable({(child_gender_table())}, striped = TRUE)
+    output$child_gender_group_table <- shiny::renderTable({(child_gender_group_table())}, striped = TRUE)
+    output$child_age_table <- shiny::renderTable({(child_age_table())}, striped = TRUE)
+    output$child_age_group_table <- shiny::renderTable({(child_age_group_table())}, striped = TRUE)
+    output$parent_child_relationship_table <- shiny::renderTable({(parent_child_relationship_table())}, caption = "Relationship between the parent and child", striped = TRUE)
+    output$parent_child_relationship_group_table <- shiny::renderTable({(parent_child_relationship_group_table())}, caption = "Relationship between the parent and child", striped = TRUE)
+    output$parent_relationship_group_table <- shiny::renderTable({(parent_relationship_group_table())}, caption = "Relationship status of the parent", striped = TRUE)
+    output$parent_relationship_table <- shiny::renderTable({(parent_relationship_table())}, caption = "Relationship status of the parent", striped = TRUE)
+    output$child_disabilities_table <- shiny::renderTable({(child_disabilities_table())}, caption = "Does the child have a disability?", striped = TRUE)
+    output$child_disabilities_group_table <- shiny::renderTable({(child_disabilities_group_table())}, caption = "Does the child have a disability?", striped = TRUE)
+    output$active_users_table <- shiny::renderTable({(active_users_table())}, striped = TRUE)
+    output$active_users_group_table <- shiny::renderTable({(active_users_group_table())}, striped = TRUE)
+    output$active_users_7_days_table <- shiny::renderTable({(active_users_7_days_table())}, striped = TRUE)
+    output$active_users_7_days_group_table <- shiny::renderTable({(active_users_7_days_group_table())}, striped = TRUE)
+    output$comp_prog_table <- shiny::renderTable({(comp_prog_table())}, caption = "Number of skills in toolkit", striped = TRUE)
+    output$comp_prog_group_table <- shiny::renderTable({(comp_prog_group_table())}, caption = "Number of skills in toolkit", striped = TRUE)
+    output$completed_welcome_table <- shiny::renderTable({completed_welcome_table()}, striped = TRUE, caption = "Number (and percentage) of individuals who have completed the welcome survey")
+    output$completed_welcome_group_table <- shiny::renderTable({{completed_welcome_group_table()}}, striped = TRUE, caption = "Number (and percentage) of individuals who have completed the welcome survey")
+    output$completed_survey_table <- shiny::renderTable({{completed_survey_table()}}, striped = TRUE, caption = "Number (and percentage) of individuals who have completed different surveys")
+    output$completed_survey_group_table <- shiny::renderTable({{completed_survey_group_table()}}, striped = TRUE, caption = "Number (and percentage) of individuals who have completed different surveys")
+    output$consented_survey_table <- shiny::renderTable({{consented_survey_table()}}, striped = TRUE, caption = "Number (and percentage) of individuals who have consented to different surveys")
+    output$consented_survey_group_table <- shiny::renderTable({{consented_survey_group_table()}}, striped = TRUE, caption = "Number (and percentage) of individuals who have consented to different surveys")
     output$all_flows_response <- shiny::renderTable({(all_flows_response())}, caption = "Count (%) for each flow", striped = TRUE)
-    output$parenting_survey_summary <- shiny::renderTable({(parenting_survey_summary())}, caption = "How many times in the past week ... \n For Sexual abuse prevention, the timeframe is how many days in the past month.", striped = TRUE)
+    output$parenting_survey_table <- shiny::renderTable({(parenting_survey_table())}, caption = "How many times in the past week ... \n For Sexual abuse prevention, the timeframe is how many days in the past month.", striped = TRUE)
   }
   
   # Create Shiny object
