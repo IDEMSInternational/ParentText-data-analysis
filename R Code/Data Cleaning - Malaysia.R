@@ -1,8 +1,8 @@
 library(httr)
 library(jsonlite)
 library(tidyverse)
-source("Functions.R")
-source("R Shiny Template.R")
+#source("Functions.R")
+#source("R Shiny Template.R")
 # source("Code Book.R")
 #install_github("lilyclements/rapidpror")
 #library(rapidpror)
@@ -521,6 +521,6 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
 }
 
 # retention_exit ---------------------------------------------------------------
-parenttext_shiny(country = "Jamaica")
+#parenttext_shiny(country = "Jamaica")
 #parenttext_shiny(country = "Malaysia")
 
