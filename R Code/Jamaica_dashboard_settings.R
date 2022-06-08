@@ -3,13 +3,13 @@
 # TODO: update key, site to give correct key and site.
 # TODO: default_date_from
 
-key <- read.table("tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
-site <- "https://app.rapidpro.io/api/v2/"
+key <- read.table("tokens/PT_jamaica_key.txt", quote="\"", comment.char="")
+site <- "http://rapidpro.ilhasoft.mobi/api/v2/"
 include_archived_data <- FALSE # for now FALSE
 #if (include_archived_data){
 #  archived_data <- TODO
 #}
-default_date_from <- "2021-10-14"
+default_date_from <- "2022-06-10"
 default_date_to <- NULL
 prefix <- "JM"    #PH #SA
 
