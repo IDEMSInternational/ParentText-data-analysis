@@ -3,7 +3,7 @@
 # TODO: update key, site to give correct key and site.
 # TODO: default_date_from
 
-key <- read.table("tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
+key <- read.table("tokens/PT_philippines_key.txt", quote="\"", comment.char="")
 site <- "https://app.rapidpro.io/api/v2/"
 include_archived_data <- FALSE # for now FALSE
 #if (include_archived_data){
@@ -14,7 +14,7 @@ default_date_to <- NULL
 prefix <- "PH"
 
 # for region/states
-state_title <- "Parish"
+state_title <- "Region"
 state_1 <- "Ilocos Region"
 state_2 <- "Cagayan Valley"
 state_3 <- "Central Luzon"
