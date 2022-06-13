@@ -95,7 +95,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   list_of_ids <- list_of_ids$ID
   
   # demographics -----------------------------------------------------------------------------
-  state_of_origin <- contacts_unflat$fields$state_of_origin
+  state_of_origin <- as.character(contacts_unflat$fields$state_of_origin)
   state_of_origin <- dplyr::recode(state_of_origin, "1" = state_1, "2" = state_2, "3" = state_3, "4" = state_4, "5" = state_5,
                                    "6" = state_6, "7" = state_7, "8" = state_8, "9" = state_9, "10" = state_10, "11" = state_11,
                                    "12" = state_12, "13" = state_13, "14" = state_14, "15" = state_15, "16" = state_16, "17" = state_17)
@@ -440,7 +440,11 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   all_flows <- dplyr::bind_rows(supportive_praise_flow, supportive_calm_flow, supportive_flow_names_flow,
                                 check_in_flow_names_flow, content_tip_flow_names_flow)
   
-  all_flows <- dplyr::full_join(all_flows, df_created_on)
+  if (length(all_flows) == 1){
+    all_flows <- dplyr::full_join(all_flows, df_created_on, by = character())
+  } else {
+    all_flows <- dplyr::full_join(all_flows, df_created_on)
+  }
   
   # Survey Level Data ---------------------------------------------------------------------------------------------------------------------------
     play <- get_survey_data(contacts_unflat$fields$surveytime_datetime) %>% mutate(Group = "Play")
