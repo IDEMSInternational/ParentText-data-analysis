@@ -41,7 +41,7 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
              box( width=NULL,
                   collapsible = FALSE,
                   solidHeader = TRUE,
-                  splitLayout(textInput(inputId = "datefrom_text", label = "Date from:", value = "2021-10-14"),
+                  splitLayout(textInput(inputId = "datefrom_text", label = "Date from:", value = date_from),
                               cellArgs = list(style = "vertical-align: top"),
                               cellWidths = c("80%", "20%")))),
       #,
