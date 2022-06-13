@@ -547,7 +547,7 @@ flow_data_table_function <- function(flow_interaction, flow_name = NULL){
     flow_interaction$interacted <- ifelse(flow_interaction$interacted == TRUE, "Yes", "No")
     flow_interaction$interacted <- forcats::fct_expand(flow_interaction$interacted, c("Yes", "No"))
   } else {
-    flow_interaction$interacted <- 1
+    flow_interaction$interacted <- NA
   }
   flow_interaction_output <- flow_interaction %>%
       group_by({{ flow_name }}, interacted, .drop = FALSE) %>%
