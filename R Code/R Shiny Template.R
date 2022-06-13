@@ -745,17 +745,23 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
       df <- selected_data_date_from()
       survey_completed <- NULL
       
-      wek1 <- summary_table(data = df, factors = consent_survey_w1, include_margins = TRUE, replace = NULL)
-      wek2 <- summary_table(data = df, factors = consent_survey_w2, include_margins = TRUE, replace = NULL)
-      wek3 <- summary_table(data = df, factors = consent_survey_w3, include_margins = TRUE, replace = NULL)
-      wek4 <- summary_table(data = df, factors = consent_survey_w4, include_margins = TRUE, replace = NULL)
+      wek <- NULL
+      for (i in 1:9){
+        c_wek <- paste0("consent_survey_w", i)
+        if (c_wek %in% names(df)){
+          wek[[i]] <- summary_table(data = df, factors = consent_survey_w1, include_margins = TRUE, replace = NULL)
+          names(wek[[i]]) <- c("Consented", paste0("Week ", i))
+          
+        } else {
+          wek[[i]] <- NULL
+        }
+      }
       
-      names(wek1) <- c("Consented", "Baseline")
-      names(wek2) <- c("Consented", "Week 2")
-      names(wek3) <- c("Consented", "Week 3")
-      names(wek4) <- c("Consented", "Week 4")
-      
-      left_join(left_join(left_join(wek1, wek2), wek3), wek4)
+      if (length(wek) == 1){
+        data.frame(wek)
+      } else {
+        Reduce(full_join, wek)
+      }
     })
     
     consented_survey_group_table <- reactive({
