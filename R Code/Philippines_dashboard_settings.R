@@ -33,6 +33,14 @@ state_15 <- "National Capital Region"
 state_16 <- "Cordillera Administrative Region" 
 state_17 <- "Bangsamoro Autonomous Region in Muslim Mindanao"
 
+# for enrollment
+enrollment_variables <- c("CPU or other NGO", "Social media - Facebook", "DSWD or other government agency", "Someone I know", "Other")
+enrollment_recode <- c(`DSWD or other government agency` = "Government",
+                       `CPU or other NGO` = "Ngo",
+                       `Someone I know` = "Someone",
+                       `Social media - Facebook` = "Social",
+                       Other = "Other channel")
+enrollment_order <- c("CPU or other NGO", "Social media - Facebook", "DSWD or other government agency", "Someone I know", "Other")
 
 #shiny template
 skin <- "green"

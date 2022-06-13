@@ -157,16 +157,10 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
                                              c("Yes", "No", "supp_disab"))
   
   
-  recruitment_channel <- factor(contacts_unflat$fields$enrollment)
-  recruitment_channel <- forcats::fct_expand(recruitment_channel, c("LPPKN", "NGO", "Friends/Family", "U-Report", "Social media", "Other"))
-  recruitment_channel <- forcats::fct_recode(recruitment_channel,
-                                             `LPPKN` = "LPPKN",
-                                             `NGO` = "Ngo",
-                                             `Friends/Family` = "Someone",
-                                             `U-Report` = "U-report",
-                                             `Social media` = "Social",
-                                             `Other` = "Other channel")
-  recruitment_channel <- forcats::fct_relevel(recruitment_channel, c("LPPKN", "NGO", "Friends/Family", "U-Report", "Social media", "Other"))
+  recruitment_channel <- contacts_unflat$fields$enrollment
+  recruitment_channel <- forcats::fct_expand(recruitment_channel, enrollment_variables)
+  recruitment_channel <- forcats::fct_recode(recruitment_channel, !!!enrollment_recode)
+  recruitment_channel <- forcats::fct_relevel(recruitment_channel, enrollment_order)
   
   parenting_goal <- factor(as.numeric(contacts_unflat$fields$parenting_goal))
   parenting_goal <- forcats::fct_expand(parenting_goal, c("Relationship","Behaviour", "School", "COVID-19", "Stress", "Finances", "Family conflict", "Safety", "Disabilities", "Other"))

@@ -538,7 +538,7 @@ summary_table <- function(data = plhdata_org_clean, factors = Org, columns_to_su
   return(return_table)
 }
 
-flow_data_summary_function <- function(flow_interaction, flow_name = NULL){
+flow_data_table_function <- function(flow_interaction, flow_name = NULL){
   if (!is.data.frame(flow_interaction)){
     flow_interaction <- plyr::ldply(flow_interaction) 
   }

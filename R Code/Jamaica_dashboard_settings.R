@@ -33,6 +33,21 @@ state_15 <- "NA"
 state_16 <- "NA"
 state_17 <- "NA"
 
+# for enrollment
+enrollment_variables <- c("U-Report", "Government organisation", "NGO, community church, or charity worker", "Social media",
+                          "Someone I know", "Door-to-door survery", "TV", "Radio", "Newspaper", "Other")
+enrollment_recode <- c(`Government organisation` = "Government",
+                       `NGO, community church, or charity worker` = "Ngo",
+                       `Someone I know` = "Someone",
+                       `U-Report` = "U-report",
+                       `Social media` = "Social",
+                       `TV` = "Tv",
+                       `Radio` = "Radio",
+                       `Newspaper` = "Newspaper",
+                       Other = "Other channel")
+enrollment_order <- c("U-Report", "Government organisation", "NGO, community church, or charity worker", "Social media",
+                      "Someone I know", "Door-to-door survery", "TV", "Radio", "Newspaper", "Other")
+
 #shiny template
 skin <- "yellow"
 background <- "yellow" # red, yellow, aqua, blue, light-blue, green, navy, teal, olive, lime, orange, fuchsia, purple, maroon, black.

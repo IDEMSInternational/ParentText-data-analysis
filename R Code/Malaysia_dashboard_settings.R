@@ -31,6 +31,18 @@ state_15 <- "Kuala Lumpur"
 state_16 <- "Putrajaya dan Labuan"
 state_17 <- "NA"
 
+# for enrollment
+enrollment_variables <- c("U-Report", "NGO", "Social media", "National Family & Population Development Board",
+                          "Someone I know", "Other")
+enrollment_recode <- c(`National Family & Population Development Board` = "LPPKN",
+                            `NGO` = "Ngo",
+                            `Someone I know` = "Someone",
+                            `U-Report` = "U-report",
+                            `Social media` = "Social",
+                            Other = "Other channel")
+enrollment_order <- c("U-Report", "NGO", "Social media", "National Family & Population Development Board",
+                      "Someone I know", "Other")
+
 #shiny template
 skin <- "blue"
 background <- "light-blue"

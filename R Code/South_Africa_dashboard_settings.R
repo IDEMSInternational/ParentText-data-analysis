@@ -33,6 +33,17 @@ state_15 <- "NA"
 state_16 <- "NA"
 state_17 <- "NA"
 
+# for enrollment
+enrollment_variables <- c("Government", "NGO", "Someone I know", "U-Report", "Social media", "Zlto", "Other")
+enrollment_recode <- c(`Government` = "Government",
+                       `NGO` = "Ngo",
+                       `Someone I know` = "Someone",
+                       `U-Report` = "U-report",
+                       `Social media` = "Social",
+                       `Zlto` = "Zlto",
+                       Other = "Other channel")
+enrollment_order <- c("U-Report", "NGO", "Social media", "Government", "Someone I know", "Zlto", "Other")
+
 #shiny template
 skin <- "red"
 background <- "red" # red, yellow, aqua, blue, light-blue, green, navy, teal, olive, lime, orange, fuchsia, purple, maroon, black.
