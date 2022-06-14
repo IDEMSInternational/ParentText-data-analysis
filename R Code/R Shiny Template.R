@@ -384,7 +384,7 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     
     observe({
       autoRefresh()
-      updated_data <- update_data(country = country, date_from = date_from, date_to = date_to, include_archived_data = include_archived_data)
+      updated_data <- update_data(country = country, date_to = date_to, include_archived_data = include_archived_data)
       df <- updated_data[[1]]
       df_consent <- updated_data[[2]]
       all_flows <- updated_data[[3]]
@@ -392,7 +392,7 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
       #pp_data_frame <- updated_data[[5]]
     })
     
-    updated_data <- update_data(country = country, date_from = date_from, date_to = date_to, include_archived_data = include_archived_data)
+    updated_data <- update_data(country = country, date_to = date_to, include_archived_data = include_archived_data)
     df <- updated_data[[1]]
     df_consent <- updated_data[[2]]
     all_flows <- updated_data[[3]]
