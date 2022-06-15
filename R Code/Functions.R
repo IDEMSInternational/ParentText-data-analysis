@@ -445,11 +445,11 @@ summary_calculation <- function(data = plhdata_org_clean, factors, columns_to_su
         mutate(across({{ factors }}, ~fct_relevel(.x, "Total", after = Inf))) %>%
         mutate(across({{ columns_to_summarise }}, ~fct_relevel(.x, "Total", after = Inf))) %>%
         select(-c("id"))
-      if (together){
-        summary_output <- summary_output %>%
-          mutate("Count (%)" := str_c(`n`, ' (', round(`perc`, 2), ")")) %>%
-          dplyr::select(-c(n, perc))
-      }
+    }
+    if (together){
+      summary_output <- summary_output %>%
+        mutate("Count (%)" := str_c(`n`, ' (', round(`perc`, 2), ")")) %>%
+        dplyr::select(-c(n, perc))
     }
   } else {
     summary_output <- data %>%
@@ -523,7 +523,9 @@ summary_table <- function(data = plhdata_org_clean, factors = Org, columns_to_su
     #}
   } else {
     if (summaries == "frequencies"){
-      if (wider_table && !missing(columns_to_summarise)){
+      all_factors <- str_split(gsub("^c\\(|\\)$", "", deparse(substitute(factors))), pattern = ", ")
+      all_columns_to_summarise <- str_split(gsub("^c\\(|\\)$", "", deparse(substitute(columns_to_summarise))), pattern = ", ")
+      if (wider_table && !missing(columns_to_summarise) && (any(all_factors[[1]] %in% (all_columns_to_summarise)[[1]]) == FALSE)){
         if (together){
           values_from <- "Count (%)"
         } else {

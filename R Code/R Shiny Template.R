@@ -655,14 +655,14 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     
     child_gender_group_table <- reactive({
       req(input$grouper)
-      summary_table(selected_data_date_from(), child_gender, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
+      summary_table(selected_data_date_from(), child_gender, (!!!rlang::syms(input$grouper)), include_margins = FALSE, wider_table = FALSE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     child_age_table <- reactive({
       summary_table(data = selected_data_date_from(), factors = child_age_group, include_margins = TRUE, replace = NULL)
     })
     child_age_group_table <- reactive({
       req(input$grouper)
-      summary_table(selected_data_date_from(), child_age_group, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
+      summary_table(selected_data_date_from(), child_age_group, (!!!rlang::syms(input$grouper)), include_margins = FALSE, wider_table = FALSE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
     parent_child_relationship_table <- reactive({
       summary_table(data = selected_data_date_from(), factors = parent_child_relationship, include_margins = TRUE, replace = NULL)
