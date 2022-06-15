@@ -695,7 +695,9 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = "Location", y = "Count") +
         theme_classic() +
-        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+        scale_fill_discrete(drop=FALSE) +
+        scale_x_discrete(drop=FALSE)
     })
     
     ###### Engagement ########
