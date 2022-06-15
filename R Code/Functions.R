@@ -543,7 +543,7 @@ flow_data_table_function <- function(flow_interaction, flow_name = NULL){
     flow_interaction <- plyr::ldply(flow_interaction) 
   }
   
-  if (!is.null(all_flows$interacted)){
+  if (!is.null(flow_interaction$interacted)){
     flow_interaction$interacted <- ifelse(flow_interaction$interacted == TRUE, "Yes", "No")
     flow_interaction$interacted <- forcats::fct_expand(flow_interaction$interacted, c("Yes", "No"))
   } else {
