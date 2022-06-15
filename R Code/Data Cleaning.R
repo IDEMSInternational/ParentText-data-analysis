@@ -347,6 +347,23 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   df_consent <- data.frame(df_consent, parent_gender, child_gender, child_age_group)
   
   # for Jamaica Only: Parent Pals data cleaning --------------------
+  if (country == "Jamaica"){
+    women_centre <- contacts_unflat$fields$women_centre
+    womens_centre_location <- as.character(contacts_unflat$fields$women_centre_location)
+    womens_centre_location <- forcats::fct_expand(womens_centre_location, c("Kingston Centre", "Spanish Town Centre", "Denbigh Centre", "Mandeville Centre",
+                                                                            "Junction Outreach", "Savanna-La-Mar Centre", "Montego Bay Centre", "St. Ann’s Bay Centre", "Port Antonio Centre", "Morant Bay Centre",
+                                                                            "St. Margaret’s Outreach", "Jones Town Outreach", "Kellits Outreach", "Santa Cruz Outreach", "Lucea Outreach", "Duncan’s Outreach", "High Gate Outreach", "Ewarton Outreach"))
+    womens_centre_location <- dplyr::recode(womens_centre_location, "1" = "Kingston Centre", "2" = "Spanish Town Centre", "3" = "Denbigh Centre", "4" = "Mandeville Centre",
+                                            "5" = "Junction Outreach", "6" = "Savanna-La-Mar Centre", "7" = "Montego Bay Centre", "8" = "St. Ann’s Bay Centre",
+                                            "9" = "Port Antonio Centre", "10" = "Morant Bay Centre", "11" = "St. Margaret’s Outreach", "12" = "Jones Town Outreach",
+                                            "13" = "Kellits Outreach", "14" = "Santa Cruz Outreach", "15" = "Lucea Outreach", "16" = "Duncan’s Outreach",
+                                            "17" = "High Gate Outreach", "18" = "Ewarton Outreach")
+    womens_centre_data <- data.frame(ID, created_on, womens_centre_location, women_centre) %>%
+      dplyr::filter(women_centre == "yes") %>%
+      dplyr::filter(ID %in% list_of_ids)
+  } else {
+    womens_centre_data <- 1
+  }
 #  pp_n_recruited <- df %>% group_by(child_age_group) %>% # group_by will be "recruited by" in time
 #    mutate(completed_welcome = ifelse(completed_welcome == "Yes", 1, 0)) %>% # reorder welcome survey
 #    summarise(`Number recruited` = n(),
@@ -505,6 +522,6 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   objects_to_return[[2]] <- df_consent
   objects_to_return[[3]] <- all_flows
   objects_to_return[[4]] <- parenting_survey
-  #objects_to_return[[5]] <- NULL #pp_data_frame # for Jamaica only (otherwise NULL?)
+  objects_to_return[[5]] <- womens_centre_data # for Jamaica only (otherwise NULL?)
   return(objects_to_return)
 }

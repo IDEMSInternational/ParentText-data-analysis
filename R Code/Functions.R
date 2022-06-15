@@ -413,21 +413,21 @@ str_wrap_factor <- function(x, ...) {
 
 # same function used in parent text
 summary_calculation <- function(data = plhdata_org_clean, factors, columns_to_summarise = NULL, summaries = c("frequencies", "mean"),
-                                together = FALSE, include_margins = FALSE){
+                                together = FALSE, include_margins = FALSE, drop = FALSE){
   summaries <- match.arg(summaries)
   if (summaries == "frequencies"){
     summary_output <- data %>%
       mutate(across(c({{ columns_to_summarise }}), ~ as.character(.x))) %>%
-      group_by(across(c({{ columns_to_summarise }}, {{ factors }})), .drop = FALSE) %>%
+      group_by(across(c({{ columns_to_summarise }}, {{ factors }})), .drop = drop) %>%
       summarise(n = n(),
                 perc = n()/nrow(.) * 100)
     if (include_margins){
       cts_margin <- data %>%
-        group_by(across(c({{ columns_to_summarise }})), .drop = FALSE) %>%
+        group_by(across(c({{ columns_to_summarise }})), .drop = drop) %>%
         summarise(n = n(),
                   perc = n()/nrow(.) * 100)      
       ftr_margin <- data %>%
-        group_by(across(c({{ factors }})), .drop = FALSE) %>%
+        group_by(across(c({{ factors }})), .drop = drop) %>%
         summarise(n = n(),
                   perc = n()/nrow(.) * 100)      
       corner_margin <- data %>%
@@ -453,7 +453,7 @@ summary_calculation <- function(data = plhdata_org_clean, factors, columns_to_su
     }
   } else {
     summary_output <- data %>%
-      group_by(across({{ factors }}), .drop = FALSE) %>%
+      group_by(across({{ factors }}), .drop = drop) %>%
       #mutate(across({{ columns_to_summarise }}, ~as.numeric(.))) %>%
       summarise(across({{ columns_to_summarise }}, ~mean(.x, na.rm = TRUE)))
     
@@ -480,7 +480,7 @@ summary_calculation <- function(data = plhdata_org_clean, factors, columns_to_su
 summary_table <- function(data = plhdata_org_clean, factors = Org, columns_to_summarise = NULL, summaries = c("frequencies", "mean"),
                           replace = "rp.contact.field.", include_margins = FALSE, wider_table = TRUE,
                           display_table = FALSE, naming_convention = TRUE, include_percentages = FALSE,
-                          together = TRUE){
+                          together = TRUE, drop = FALSE){
   
   summaries <- match.arg(summaries)
   
@@ -489,7 +489,8 @@ summary_table <- function(data = plhdata_org_clean, factors = Org, columns_to_su
                                       columns_to_summarise = c({{ columns_to_summarise }}),
                                       include_margins = include_margins,
                                       summaries = summaries,
-                                      together = together)
+                                      together = together,
+                                      drop = drop)
   return_table_names <- naming_conventions(colnames(return_table), replace = replace)
   if (summaries == "mean"){
     if (naming_convention){

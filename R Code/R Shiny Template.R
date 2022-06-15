@@ -13,20 +13,20 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     skin = skin,
     
     sidebar = dashboardSidebar(
-      #if (country == "Jamaica"){
-      #  sidebarMenu(
-      #    menuItem("Demographics", tabName = "demographics", icon = icon("users")),
-      #    menuItem("Parentpals", tabName = "parentpals", icon = icon("users")),
-      #    menuItem("Engagement", tabName = "engagement", icon = icon("clipboard")),
-      #    menuItem("Behaviours", tabName = "behaviours", icon = icon("brain"))
-      #  )
-      #} else {
+      if (country == "Jamaica"){
+        sidebarMenu(
+          menuItem("Demographics", tabName = "demographics", icon = icon("users")),
+          menuItem("Women's Centre", tabName = "womenscentre", icon = icon("venus")),
+          menuItem("Engagement", tabName = "engagement", icon = icon("clipboard")),
+          menuItem("Behaviours", tabName = "behaviours", icon = icon("brain"))
+        )
+      } else {
         sidebarMenu(
           menuItem("Demographics", tabName = "demographics", icon = icon("users")),
           menuItem("Engagement", tabName = "engagement", icon = icon("clipboard")),
           menuItem("Behaviours", tabName = "behaviours", icon = icon("brain"))
         )
-      #}
+      }
     ),
     
     dashboardBody(
@@ -268,24 +268,33 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
                 ) # close tab type
         ), # close engagement tab
         
-        # tabItem(tabname = "parentpals",
-        #          fluidRow(
-        #            column(10, align = "center",
-        #                   box(splitLayout(h2("Parentpals"), icon("user", "fa-6x"),
-        #                                   cellArgs = list(style = "vertical-align: top"),
-        ##                                   cellWidths = c("80%", "20%")),
-        #                       width = 10,
-        ##                       title = NULL,
-        #                       collapsible = FALSE,
-        #                       solidHeader = TRUE,
-        #                       background = "light-blue",
-        #                       height = "95px")))
-        #  ),
+        # tabItem(tabName = "parentpals",
+        #         fluidRow(
+        #           column(10, align = "center",
+        #                  box(splitLayout(h2("Parent Pals"), icon("user", "fa-6x"),
+        #                                  cellArgs = list(style = "vertical-align:top"),
+        #                                  cellWidths = c("80%", "20%")),
+        #                      width = 10,
+        #                      status = status,
+        #                      title = NULL,
+        #                      collapsible = FALSE,
+        #                      solidHeader = TRUE,
+        #                      background = background,
+        #                      height = "95px"))),
+        #         fluidRow(
+        #           box(dataTableOutput('pp_table'),
+        #               width = 10,
+        #               title = NULL,
+        #               collapsible = FALSE,
+        #               solidHeader = TRUE
+        #           )
+        #         )
+        # ),
         
-        tabItem(tabName = "parentpals",
+        tabItem(tabName = "womenscentre",
                 fluidRow(
                   column(10, align = "center",
-                         box(splitLayout(h2("Parent Pals"), icon("user", "fa-6x"),
+                         box(splitLayout(h2("Women's Centre"), icon("venus", "fa-6x"),
                                          cellArgs = list(style = "vertical-align:top"),
                                          cellWidths = c("80%", "20%")),
                              width = 10,
@@ -295,16 +304,24 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
                              solidHeader = TRUE,
                              background = background,
                              height = "95px"))),
-                fluidRow(
-                  box(dataTableOutput('pp_table'),
-                      width = 10,
-                      title = NULL,
-                      collapsible = FALSE,
-                      solidHeader = TRUE
-                  )
-                )
+                
+                fluidRow(box(width=NULL,
+                             title = "Centre Location",
+                             status = status,
+                             solidHeader = TRUE,
+                             collapsible = FALSE,
+                             plotlyOutput(outputId = "womens_centre_plot", height = "240", width = "100%"),
+                             shiny::tableOutput("womens_centre_table")))
+                
+                #fluidRow(
+                #  box(datatableoutput('pp_table'),
+                #      width = 10,
+                #      title = null,
+                #      collapsible = false,
+                #      solidheader = true
+                #  )
+                #)
         ),
-        
         tabItem(tabName = "behaviours",
                 fluidRow(
                   column(10, align = "center",
@@ -389,7 +406,7 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
       df_consent <- updated_data[[2]]
       all_flows <- updated_data[[3]]
       parenting_survey <- updated_data[[4]]
-      #pp_data_frame <- updated_data[[5]]
+      womens_centre_data <- updated_data[[5]]
     })
     
     updated_data <- update_data(country = country, date_to = date_to, include_archived_data = include_archived_data)
@@ -397,6 +414,7 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     df_consent <- updated_data[[2]]
     all_flows <- updated_data[[3]]
     parenting_survey <- updated_data[[4]]
+    womens_centre_data <- updated_data[[5]]
     #pp_data_frame <- updated_data[[5]]
     
     # Subset data
@@ -420,6 +438,12 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
       parenting_survey <- parenting_survey %>%
         filter(created_on >= as.Date(input$datefrom_text))
       return(parenting_survey)
+    })
+    
+    selected_womens_centre_date_from <- reactive({
+      womens_centre_data <- womens_centre_data %>%
+        filter(created_on >= as.Date(input$datefrom_text))
+      return(womens_centre_data)
     })
 
     output$groups <- renderUI({
@@ -660,6 +684,21 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     parent_relationship_group_table <-  reactive({
       summary_table(selected_data_date_from(), parent_relationship, (!!!rlang::syms(input$grouper)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
+    
+    ####### Womens Centre ###########
+    womens_centre_table <- reactive({
+      summary_table(data = selected_womens_centre_date_from(), factors = womens_centre_location, include_margins = TRUE, replace = NULL)
+    })
+    output$womens_centre_plot <- renderPlotly({
+      ggplot(selected_womens_centre_date_from(), aes(x = womens_centre_location)) +
+        geom_histogram(stat = "count") +
+        viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
+        labs(x = "Location", y = "Count") +
+        theme_classic() +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+    })
+    
+    ###### Engagement ########
     active_users_group_table <- reactive({
       req(input$grouper_engagement)
       summary_table(selected_data_date_from(), active_users, (!!!rlang::syms(input$grouper_engagement)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
@@ -717,6 +756,7 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
       req(input$grouper_engagement)
       summary_table(selected_data_date_from(), completed_welcome, (!!!rlang::syms(input$grouper_engagement)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
+    
     
     # Note: These are the *number* of people that have completed the survey
     completed_survey_table <- reactive({
@@ -867,95 +907,125 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     output$behaviour_baby_plot <- renderPlotly({
       df_baby <- selected_data_date_from() %>% filter(child_age_group == "Baby")
       
-      ggplot(df_baby, aes(x = challenge_behav_wrap)) +
+      behaviour_plot <- ggplot(df_baby, aes(x = challenge_behav_wrap)) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = NULL, y = NULL) +
-        facet_grid(cols = vars(child_age_group)) +
         theme_classic()
+      
+      if (nrow(df_baby) > 0){
+        behaviour_plot <- behaviour_plot + facet_grid(cols = vars(child_age_group))
+      }
+      behaviour_plot
     })
     
     output$behaviour_child_plot <- renderPlotly({
       df_child <- selected_data_date_from() %>% filter(child_age_group == "Child")
       
-      ggplot(df_child, aes(x = challenge_behav_wrap)) +
+      behaviour_plot <- ggplot(df_child, aes(x = challenge_behav_wrap)) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = NULL, y = NULL) +
-        facet_grid(cols = vars(child_age_group)) +
         theme_classic()
+      
+      if (nrow(df_child) > 0){
+        behaviour_plot <- behaviour_plot + facet_grid(cols = vars(child_age_group))
+      }
+      behaviour_plot
     })
     
     output$behaviour_teen_plot <- renderPlotly({
       df_teen <- selected_data_date_from() %>% filter(child_age_group == "Teen")
       
-      ggplot(df_teen, aes(x = challenge_behav_wrap)) +
+      behaviour_plot <- ggplot(df_teen, aes(x = challenge_behav_wrap)) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = NULL, y = NULL) +
-        facet_grid(cols = vars(child_age_group)) +
         theme_classic()
+      
+      if (nrow(df_teen) > 0){
+        behaviour_plot <- behaviour_plot + facet_grid(cols = vars(child_age_group))
+      }
+      behaviour_plot
     })
     
     output$behaviour_default_plot <- renderPlotly({
       df_default <- selected_data_date_from() %>% filter(child_age_group == "Default")
       
-      ggplot(df_default, aes(x = challenge_behav_wrap)) +
+      behaviour_plot <- ggplot(df_default, aes(x = challenge_behav_wrap)) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = NULL, y = NULL) +
-        facet_grid(cols = vars(child_age_group)) +
         theme_classic()
+      
+      if (nrow(df_default) > 0){
+        behaviour_plot <- behaviour_plot + facet_grid(cols = vars(child_age_group))
+      }
+      behaviour_plot
     })
     
     output$behaviour_baby_group_plot <- renderPlotly({
       req(input$grouper_behaviour)
       df_baby <- selected_data_date_from() %>% filter(child_age_group == "Baby")
       
-      ggplot(df_baby, aes(x = challenge_behav_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
+      behaviour_plot <- ggplot(df_baby, aes(x = challenge_behav_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = NULL, y = NULL) +
-        facet_grid(cols = vars(child_age_group)) +
         theme_classic()
+      
+      if (nrow(df_baby) > 0){
+        behaviour_plot <- behaviour_plot + facet_grid(cols = vars(child_age_group))
+      }
+      behaviour_plot
     })
     
     output$behaviour_child_group_plot <- renderPlotly({
       req(input$grouper_behaviour)
       df_child <- selected_data_date_from() %>% filter(child_age_group == "Child")
       
-      ggplot(df_child, aes(x = challenge_behav_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
+      behaviour_plot <- ggplot(df_child, aes(x = challenge_behav_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = NULL, y = NULL) +
-        facet_grid(cols = vars(child_age_group)) +
         theme_classic()
       
+      if (nrow(df_child) > 0){
+        behaviour_plot <- behaviour_plot + facet_grid(cols = vars(child_age_group))
+      }
+      behaviour_plot
     })
     
     output$behaviour_teen_group_plot <- renderPlotly({
       req(input$grouper_behaviour)
       df_teen <- selected_data_date_from() %>% filter(child_age_group == "Teen")
       
-      ggplot(df_teen, aes(x = challenge_behav_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
+      behaviour_plot <- ggplot(df_teen, aes(x = challenge_behav_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = NULL, y = NULL) +
-        facet_grid(cols = vars(child_age_group)) +
         theme_classic()
       
+      if (nrow(df_teen) > 0){
+        behaviour_plot <- behaviour_plot + facet_grid(cols = vars(child_age_group))
+      }
+      behaviour_plot
     })
     
     output$behaviour_default_group_plot <- renderPlotly({
       req(input$grouper_behaviour)
       df_default <- selected_data_date_from() %>% filter(child_age_group == "Default")
       
-      ggplot(df_default, aes(x = challenge_behav_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
+      behaviour_plot <- ggplot(df_default, aes(x = challenge_behav_wrap, fill = (!!!rlang::syms(input$grouper_behaviour)))) +
         geom_histogram(stat = "count") +
         viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +
         labs(x = NULL, y = NULL) +
-        facet_grid(cols = vars(child_age_group)) +
         theme_classic()
+      
+      if (nrow(df_default) > 0){
+        behaviour_plot <- behaviour_plot + facet_grid(cols = vars(child_age_group))
+      }
+      behaviour_plot
     })
     
     # Flow Tab ------------------------------------------------------------
@@ -1044,6 +1114,7 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     output$parent_relationship_table <- shiny::renderTable({(parent_relationship_table())}, caption = "Relationship status of the parent", striped = TRUE)
     output$child_disabilities_table <- shiny::renderTable({(child_disabilities_table())}, caption = "Does the child have a disability?", striped = TRUE)
     output$child_disabilities_group_table <- shiny::renderTable({(child_disabilities_group_table())}, caption = "Does the child have a disability?", striped = TRUE)
+    output$womens_centre_table <- shiny::renderTable({(womens_centre_table())}, striped = TRUE)
     output$active_users_table <- shiny::renderTable({(active_users_table())}, striped = TRUE)
     output$active_users_group_table <- shiny::renderTable({(active_users_group_table())}, striped = TRUE)
     output$active_users_7_days_table <- shiny::renderTable({(active_users_7_days_table())}, striped = TRUE)
