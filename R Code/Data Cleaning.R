@@ -56,13 +56,14 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   true_consent <- forcats::fct_relevel(true_consent, c("Yes", "No"))
   program <- forcats::fct_relevel(program, c("Yes", "No"))
   
-  language <- factor(contacts_unflat$language)
-  language <- fct_expand(language, "Did not respond", "MSA", "ENG")
+  language <- as.character(contacts_unflat$language)
+  #language <- fct_expand(language, "Did not respond", language_setting)
   language <- forcats::fct_recode(language,
                                   MSA = "msa",
-                                  ENG = "eng")
+                                  ENG = "eng",
+                                  FIL = "fil")
   language[is.na(language)] <- "Did not respond"
-  language <- forcats::fct_relevel(language, c("ENG", "MSA", "Did not respond"))
+  language <- forcats::fct_relevel(language, c("ENG", "MSA", "FIL", "Did not respond"))
   df_consent <- data.frame(ID, created_on, program, enrolled, true_consent, language)
   df_consent <- df_consent %>%
     mutate(consent = ifelse(is.na(true_consent) &  is.na(language), "Did not interact",

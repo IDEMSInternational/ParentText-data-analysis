@@ -5,6 +5,46 @@ library(shinyjs)
 library(plotly)
 library(shinydashboard)
 
+demographics_top_box <- function(country){
+  consent_box <- box(width=NULL,
+                     collapsible = FALSE,
+                     title = "Consent Frequency",
+                     status = status, # primary, success, info, warning, danger
+                     solidHeader = TRUE,
+                     plotlyOutput(outputId = "plot_consent", height = "240"),
+                     shiny::tableOutput("consent_table"))
+  language_box <- box(width=NULL,
+                      title = "Language",
+                      status = status,
+                      solidHeader = TRUE,
+                      collapsible = FALSE,
+                      plotlyOutput(outputId = "plot_language", height = "240"),
+                      shiny::tableOutput("language_table"))
+  state_box <- box(width=NULL,
+                   title = paste(state_title, "the parent is from"),
+                   status = status,
+                   solidHeader = TRUE,
+                   collapsible = FALSE,
+                   plotlyOutput(outputId = "plot_state", height = "240"),
+                   shiny::tableOutput("state_table"))
+  if (country == "Jamaica"){
+    splitLayout(
+      consent_box,
+      state_box,
+      cellWidths = c("50%", "50%"),
+      cellArgs = list(style = "vertical-align: top")
+    )
+  } else {
+    splitLayout(
+      consent_box,
+      language_box,
+      state_box,
+      cellWidths = c("33.3%", "33.3%", "33.3%"),
+      cellArgs = list(style = "vertical-align: top")
+    )
+  }
+}
+
 parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_archived_data = FALSE){
   # Define UI
   ui <- dashboardPage(
@@ -68,30 +108,8 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
                 tabsetPanel(type = "tabs",
                             tabPanel("Overall",
                                      fluidRow(column(12, align = "center",
-                                                     splitLayout(
-                                                       box( width=NULL,
-                                                            collapsible = FALSE,
-                                                            title = "Consent Frequency",
-                                                            status = status, # primary, success, info, warning, danger
-                                                            solidHeader = TRUE,
-                                                            plotlyOutput(outputId = "plot_consent", height = "240"),
-                                                            shiny::tableOutput("consent_table")),
-                                                       box( width=NULL,
-                                                            title = "Language",
-                                                            status = status,
-                                                            solidHeader = TRUE,
-                                                            collapsible = FALSE,
-                                                            plotlyOutput(outputId = "plot_language", height = "240"),
-                                                            shiny::tableOutput("language_table")),
-                                                       box(width=NULL,
-                                                           title = paste(state_title, "the parent is from"),
-                                                           status = status,
-                                                           solidHeader = TRUE,
-                                                           collapsible = FALSE,
-                                                           plotlyOutput(outputId = "plot_state", height = "240"),
-                                                           shiny::tableOutput("state_table")),
-                                                       cellWidths = c("33.3%", "33.3%", "33.3%"),
-                                                       cellArgs = list(style = "vertical-align: top")))),
+                                                     demographics_top_box(country = country)
+                                                     )),
                                      fluidRow(column(12, align = "center",
                                                      splitLayout(
                                                        box(width=NULL,
