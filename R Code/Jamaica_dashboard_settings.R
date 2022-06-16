@@ -12,6 +12,7 @@ include_archived_data <- FALSE # for now FALSE
 default_date_from <- "2022-06-10"
 default_date_to <- NULL
 prefix <- "JM"    #PH #SA
+pt_name <- "ParentText"
 
 # for region/states
 state_title <- "Parish"
