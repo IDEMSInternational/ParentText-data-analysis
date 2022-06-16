@@ -10,6 +10,7 @@ if (include_archived_data){
 default_date_from <- "2021-10-14"
 default_date_to <- NULL
 prefix <- "MY"
+pt_name <- "ParentText"
 
 # for region/states
 state_title <- "State/territory"

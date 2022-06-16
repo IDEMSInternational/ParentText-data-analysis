@@ -48,7 +48,7 @@ demographics_top_box <- function(country){
 parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_archived_data = FALSE){
   # Define UI
   ui <- dashboardPage(
-    header = dashboardHeader(title = paste(country, "ParentText Dashboard")),
+    header = dashboardHeader(title = paste(country, pt_name, "Dashboard")),
     
     skin = skin,
     

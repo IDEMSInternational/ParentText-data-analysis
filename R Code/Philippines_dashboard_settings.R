@@ -12,6 +12,7 @@ include_archived_data <- FALSE # for now FALSE
 default_date_from <- "2021-10-14"
 default_date_to <- NULL
 prefix <- "PH"
+pt_name <- "MaPaText"
 
 # for region/states
 state_title <- "Region"
