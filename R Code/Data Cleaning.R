@@ -324,7 +324,10 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   df <- df %>%
     mutate(length_in_programme = as.numeric(as.Date(last_online) - as.Date(created_on)) + 1)
 
-  not_interacted_in_7_days <- nrow(df %>% filter(program == "Yes") %>% filter(active_users_7_days != "Yes"))
+  df <- df %>% 
+    mutate(not_active_7_days = ifelse(program == "Yes" & active_users_7_days != "No",
+                                      "Yes",
+                                      "No"))
   
   if (length(survey_consented_wk2_plus_data_wider) > 0){
     df <- merge(df, survey_consented_wk2_plus_data_wider, by = "ID")

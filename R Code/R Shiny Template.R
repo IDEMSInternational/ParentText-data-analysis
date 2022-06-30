@@ -239,7 +239,7 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
                                                          splitLayout(
                                                            shiny::tableOutput("active_users_table"),
                                                            shiny::tableOutput("active_users_7_days_table"),
-                                                           cellWidths = c("50%", "50%"),
+                                                           shiny::tableOutput("not_active_users_7_days_table"),
                                                            cellArgs = list(style = "vertical-align: top")),
                                                          br(),
                                                          plotlyOutput(outputId = "last_online_plot"),
@@ -272,7 +272,7 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
                                                   splitLayout(
                                                     shiny::tableOutput("active_users_group_table"),
                                                     shiny::tableOutput("active_users_7_days_group_table"),
-                                                    cellWidths = c("50%", "50%"),
+                                                    shiny::tableOutput("not_active_users_7_days_group_table"),
                                                     cellArgs = list(style = "vertical-align: top")), # split layout close
                                                   br(),
                                                   plotlyOutput(outputId = "last_online_group_plot"),
@@ -733,6 +733,13 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
       req(input$grouper_engagement)
       summary_table(selected_data_date_from(), active_users_7_days, (!!!rlang::syms(input$grouper_engagement)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
     })
+    not_active_users_7_days_table <- reactive({
+      summary_table(data = selected_data_date_from(), factors = not_active_7_days, include_margins = TRUE, replace = NULL)
+    })
+    not_active_users_7_days_group_table <- reactive({
+      req(input$grouper_engagement)
+      summary_table(selected_data_date_from(), not_active_7_days, (!!!rlang::syms(input$grouper_engagement)), include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = TRUE)
+    })
     
     comp_prog_table <- reactive({
       comp_prog_df <- selected_data_date_from() %>% 
@@ -1139,6 +1146,8 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     output$active_users_group_table <- shiny::renderTable({(active_users_group_table())}, striped = TRUE)
     output$active_users_7_days_table <- shiny::renderTable({(active_users_7_days_table())}, striped = TRUE)
     output$active_users_7_days_group_table <- shiny::renderTable({(active_users_7_days_group_table())}, striped = TRUE)
+    output$not_active_users_7_days_table <- shiny::renderTable({(not_active_users_7_days_table())}, striped = TRUE)
+    output$not_active_users_7_days_group_table <- shiny::renderTable({(not_active_users_7_days_group_table())}, striped = TRUE)
     output$comp_prog_table <- shiny::renderTable({(comp_prog_table())}, caption = "Number of skills in toolkit", striped = TRUE)
     output$comp_prog_group_table <- shiny::renderTable({(comp_prog_group_table())}, caption = "Number of skills in toolkit", striped = TRUE)
     output$completed_welcome_table <- shiny::renderTable({completed_welcome_table()}, striped = TRUE, caption = "Number (and percentage) of individuals who have completed the welcome survey")
