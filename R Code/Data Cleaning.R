@@ -325,7 +325,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
     mutate(length_in_programme = as.numeric(as.Date(last_online) - as.Date(created_on)) + 1)
 
   df <- df %>% 
-    mutate(not_active_7_days = ifelse(program == "Yes" & active_users_7_days != "Yes",
+    mutate(not_active_7_days = ifelse(program == "Yes" & active_users_7_days == "No",
                                       "Yes",
                                       "No"))
   
