@@ -75,8 +75,9 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
         shinydashboard::valueBoxOutput("myvaluebox2", width=2),
         shinydashboard::valueBoxOutput("myvaluebox3", width=2),
         shinydashboard::valueBoxOutput("myvaluebox4", width=2),
-        shinydashboard::valueBoxOutput("myvaluebox5", width=2)),
-      
+        shinydashboard::valueBoxOutput("myvaluebox5", width=2),
+        shinydashboard::valueBoxOutput("myvaluebox6", width=2)),
+    
       column(6, align = "center",
              box( width=NULL,
                   collapsible = FALSE,
@@ -1115,6 +1116,13 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
       df_active_7d <- (df_active_7d %>% filter(active_users_7_days == "Yes"))$n
       shinydashboard::valueBox(df_active_7d, subtitle = "Active in last 7 days", icon = icon("signal"),
                                color = "fuchsia"
+      )
+    })
+    output$myvaluebox6 <- shinydashboard::renderValueBox({
+      df_not_active_7d <- summary_table(data = selected_data_date_from(), factors = not_active_7_days, include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = FALSE)
+      df_not_active_7d <- (df_not_active_7d %>% filter(not_active_7_days == "Yes"))$n
+      shinydashboard::valueBox(df_not_active_7d, subtitle = "Not active in last 7 days", icon = icon("signal"),
+                               color = "red"
       )
     })
     #output$pp_table <- renderDataTable(pp_data_frame,
