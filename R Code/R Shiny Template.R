@@ -787,7 +787,8 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
       survey_completed[[1]]$perc <- survey_completed[[1]]$n/nrow(df) * 100
       survey_completed[[1]]$Week <- "Week 1"
       for (i in 2:9){
-        survey_completed[[i]] <- df %>% summarise(n = sum(comp_survey_w2 == i, na.rm = TRUE))
+        j = i - 1
+        survey_completed[[i]] <- df %>% summarise(n = sum(comp_survey_w2 == j, na.rm = TRUE))
         survey_completed[[i]]$perc <- survey_completed[[i]]$n/nrow(df) * 100
         survey_completed[[i]]$Week <- paste("Week ", i, sep = "")
       }
@@ -810,7 +811,8 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
       for (i in 1:9){
         c_wek <- paste0("consent_survey_w", i)
         if (c_wek %in% names(df)){
-          wek[[i]] <- summary_table(data = df, factors = consent_survey_w1, include_margins = TRUE, replace = NULL)
+          var <- paste0("consent_survey_w", i)
+          wek[[i]] <- summary_table(data = df, factors = {{ var }}, include_margins = TRUE, replace = NULL)
           names(wek[[i]]) <- c("Consented", paste0("Week ", i))
           
         } else {
@@ -1053,21 +1055,20 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     selected_flow_data_date_from <- reactive({
       valid_IDs <- selected_data_date_from()$ID
       all_flows <- all_flows %>% filter(ID %in% c(valid_IDs))
-      all_flows_df <- flow_data_table_function(all_flows, Flow) %>% 
+      all_flows_df <- all_flows %>% filter(!is.na(interacted))
+      all_flows_df <- flow_data_table_function(all_flows_df, Flow) %>% 
         return(all_flows_df)
     })
     
     all_flows_response <- reactive({
       selected_flow_data_date_from() %>%
-        #filter(!is.na(Flow)) %>%
-        pivot_wider(id_cols = interacted, names_from = Flow, values_from = `Count (%)`) %>%
-        dplyr::select(-c(`NA`))
+        pivot_wider(id_cols = interacted, names_from = Flow, values_from = `Count`)
     })
     
     output$plot_flow <- renderPlotly({
-      all_flows_df <- selected_flow_data_date_from() %>%
-        separate(`Count (%)`, into = "Count") %>%
-        mutate(Count = as.numeric(as.character(Count)))
+      all_flows_df <- selected_flow_data_date_from()# %>%
+        #separate(`Count (%)`, into = "Count") %>%
+        #mutate(Count = as.numeric(as.character(Count)))
       
       ggplot(all_flows_df, aes(x = interacted, y = Count, fill = `Flow`)) +
         geom_bar(stat = "identity") +
@@ -1085,14 +1086,14 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
       )
     })
     output$myvaluebox2 <- shinydashboard::renderValueBox({
-      df_consented <- summary_table(data = selected_data_date_from(), factors = consent, include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = FALSE)
+      df_consented <- summary_table(data = selected_consented_data_date_from(), factors = consent, include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = FALSE)
       df_consented <- df_consented %>% mutate(group = consent, count = n) %>% dplyr::select(c(group, count))
       shinydashboard::valueBox(df_consented$count[1],subtitle = "Consented",icon = icon("check"),
                                color = "green"
       )
     })
     output$myvaluebox3 <- shinydashboard::renderValueBox({
-      df_program <- summary_table(data = selected_data_date_from(), factors = program, include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = FALSE)
+      df_program <- summary_table(data = selected_consented_data_date_from(), factors = program, include_margins = TRUE, wider_table = TRUE, replace = NULL, together = FALSE, naming_convention = FALSE)
       df_program <- df_program %>% mutate(group =  program, count = n) %>% dplyr::select(c(group, count))
       shinydashboard::valueBox(df_program$count[1],subtitle = "In Program",icon = icon("clipboard"),
                                color = "yellow"

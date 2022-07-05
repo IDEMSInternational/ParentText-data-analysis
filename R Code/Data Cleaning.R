@@ -30,6 +30,9 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   enrolled <- NULL
   true_consent <- NULL
   program <- NULL
+  gamification <- NULL
+  personalisation <- NULL
+  n_messages <- NULL
   
   if (length(contacts_unflat$groups) > 0){
     for (i in 1:length(contacts_unflat$groups)){
@@ -38,10 +41,28 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
         enrolled[i] <- NA
         true_consent[i] <- NA
         program[i] <- NA
+        gamification[i] <- NA
+        personalisation[i] <- NA
+        n_messages[i] <- NA
       } else{
         enrolled[i] <- ifelse(any(contact_name$name %in% "joined"), "Yes", "No")
         true_consent[i] <- ifelse(any(contact_name$name %in% "consent"), "Yes", "No")
         program[i] <- ifelse(any(contact_name$name %in% "in program"), "Yes", "No")
+        gamification[i] <- ifelse(any(contact_name$name %in% "ABTest_test-gamification_Default"),
+                                  "default",
+                                  ifelse(any(contact_name$name %in% "ABTest_test-gamification_alternative"),
+                                         "alternative",
+                                         "none"))
+        personalisation[i] <- ifelse(any(contact_name$name %in% "ABTest_test-personalisation_Default"),
+                                     "default",
+                                     ifelse(any(contact_name$name %in% "ABTest_test-personalisation_alternative"),
+                                            "alternative",
+                                            "none"))
+        n_messages[i] <- ifelse(any(contact_name$name %in% "ABTest_test-n-messages-per-day_Default"),
+                                "default",
+                                ifelse(any(contact_name$name %in% "ABTest_test-n-messages-per-day_alternative"),
+                                       "alternative",
+                                       "none"))
       }
     }
   }
@@ -49,6 +70,9 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   enrolled <- factor(enrolled)
   true_consent <- factor(true_consent)
   program <- factor(program)
+  gamification <- factor(gamification)
+  personalisation <- factor(personalisation)
+  n_messages <- factor(n_messages)
   enrolled <- forcats::fct_expand(enrolled, c("Yes", "No"))
   true_consent <- forcats::fct_expand(true_consent, c("Yes", "No"))
   program <- forcats::fct_expand(program, c("Yes", "No"))
@@ -82,7 +106,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
     row <- NULL
     row <- factor(row)
   }
-  df_created_on <- data.frame(ID, created_on, consent, row = row)
+  df_created_on <- data.frame(ID, created_on, consent, program, row = row)
   if (!is.null(date_from)){
     df_created_on <- df_created_on %>%
       filter(created_on >= as.Date(date_from))
@@ -92,7 +116,8 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
       filter(created_on >= as.Date(date_to))
   }
   list_of_ids <- df_created_on %>%
-    filter(consent == "Yes")
+    filter(consent == "Yes") %>%
+    filter(program == "Yes")
   list_of_ids <- list_of_ids$ID
   
   # demographics -----------------------------------------------------------------------------
@@ -264,7 +289,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
       all_split_data[[j]] <- split_data
     }
   }
-
+  
   survey_consented_wk2_plus_data <- plyr::ldply(all_split_data)
   survey_consented_wk2_plus_data$survey_response <- as.numeric(as.factor(survey_consented_wk2_plus_data$V1))
   survey_consented_wk2_plus_data$survey_number <- survey_consented_wk2_plus_data$V2
@@ -286,7 +311,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   } else {
     survey_consented_wk2_plus_data_wider <- NULL
   }
-
+  
   challenge_behav <- contacts_unflat$fields$survey_behave_most_challenging
   challenge_behav <- dplyr::case_when(
     child_age_group == "Baby" & challenge_behav == "1" ~ "Crying",
@@ -320,10 +345,11 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
                    state_of_origin, 
                    parent_relationship, child_disabilities, recruitment_channel, parenting_goal, parenting_goal_wrap,
                    active_users, active_users_7_days, comp_prog_overall, next_tip_main, next_tip_morning, next_tip_evening, parent_age, completed_welcome, comp_survey_w1, comp_survey_w2, consent_survey_w1,
-                   challenge_behav, challenge_behav_wrap)
+                   challenge_behav, challenge_behav_wrap,
+                   gamification, personalisation, n_messages)
   df <- df %>%
     mutate(length_in_programme = as.numeric(as.Date(last_online) - as.Date(created_on)) + 1)
-
+  
   df <- df %>% 
     mutate(not_active_7_days = ifelse(program == "Yes" & active_users_7_days == "No",
                                       "Yes",
@@ -370,23 +396,23 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   } else {
     womens_centre_data <- 1
   }
-#  pp_n_recruited <- df %>% group_by(child_age_group) %>% # group_by will be "recruited by" in time
-#    mutate(completed_welcome = ifelse(completed_welcome == "Yes", 1, 0)) %>% # reorder welcome survey
-#    summarise(`Number recruited` = n(),
-#              `Toolkit skills` = sum(comp_prog_overall, na.rm = TRUE),
-#              `Welcome survey completed` = sum(completed_welcome, na.rm = TRUE),
-#              `Week1 survey completed` = sum((consent_survey_w1 == "Yes"), na.rm = TRUE))
-#  pp_n_consent <- df %>% group_by(child_age_group, .drop = FALSE) %>% # group_by will be "recruited by" in time
-#    filter(consent == "Yes") %>%
-#    summarise(`Number consented` = n())
-#  pp_data_frame <- merge(pp_n_recruited, pp_n_consent)
-#  pp_data_frame <- pp_data_frame %>%
-#    mutate(`Recruited by` = 1:nrow(.)) %>%
-#    dplyr::select(`Recruited by`, `Number recruited`, `Number consented`, `Welcome survey completed`, `Week1 survey completed`,
-#                  `Toolkit skills`) %>%
-#    mutate(Total = `Number recruited` + `Number consented` + `Welcome survey completed` + `Week1 survey completed` + `Toolkit skills`) %>%
-#    arrange(desc(Total))
-#  
+  #  pp_n_recruited <- df %>% group_by(child_age_group) %>% # group_by will be "recruited by" in time
+  #    mutate(completed_welcome = ifelse(completed_welcome == "Yes", 1, 0)) %>% # reorder welcome survey
+  #    summarise(`Number recruited` = n(),
+  #              `Toolkit skills` = sum(comp_prog_overall, na.rm = TRUE),
+  #              `Welcome survey completed` = sum(completed_welcome, na.rm = TRUE),
+  #              `Week1 survey completed` = sum((consent_survey_w1 == "Yes"), na.rm = TRUE))
+  #  pp_n_consent <- df %>% group_by(child_age_group, .drop = FALSE) %>% # group_by will be "recruited by" in time
+  #    filter(consent == "Yes") %>%
+  #    summarise(`Number consented` = n())
+  #  pp_data_frame <- merge(pp_n_recruited, pp_n_consent)
+  #  pp_data_frame <- pp_data_frame %>%
+  #    mutate(`Recruited by` = 1:nrow(.)) %>%
+  #    dplyr::select(`Recruited by`, `Number recruited`, `Number consented`, `Welcome survey completed`, `Week1 survey completed`,
+  #                  `Toolkit skills`) %>%
+  #    mutate(Total = `Number recruited` + `Number consented` + `Welcome survey completed` + `Week1 survey completed` + `Toolkit skills`) %>%
+  #    arrange(desc(Total))
+  #  
   # flow level data --------------------------------
   # sum of response to content, calm, check in, supportive, praise messages
   supportive_flow_names <- c("PLH - Supportive - Family", "PLH - Supportive - Help reminder", "PLH - Supportive - Share", "PLH - Supportive - Share - Enrollment",
@@ -407,7 +433,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
                               "PLH - Content - Extra - COVID", "PLH - Content - Extra - Disability", "PLH - Content - Positive - Family", 
                               "PLH - Content - Time - One on one time child - Timed intro", "PLH - Content - Time - One on one time teen - Timed intro", "PLH - Content - Positive - introduction", "PLH - Content - Positive - Positive instructions", "PLH - Content - Relax - Quick Pause", "PLH - Content - Relax - Anger management", "PLH - Content - Relax - Anger management 2", "PLH - Content - Positive - IPV", "PLH - Content - Positive - Community safety")
   df_created_on$row <- NULL
-
+  
   
   if (!country %in% c("Malaysia", "Philippines", "Jamaica")){
     supportive_praise_flow <- get_flow_data(flow_name = supportive_praise, flow_type = "praise", include_archived_data = include_archived_data, date_to = "1970-01-01")
@@ -439,7 +465,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   
   supportive_flow_names_flow$ID <- supportive_flow_names_flow$uuid
   supportive_flow_names_flow$uuid <- NULL
-  supportive_flow_names_flow <- supportive_flow_names_flow %>% mutate(Flow = "Supportive Flow Names")
+  supportive_flow_names_flow <- supportive_flow_names_flow %>% mutate(Flow = "Supportive Other")
   
   check_in_flow_names_flow$ID <- check_in_flow_names_flow$uuid
   check_in_flow_names_flow$uuid <- NULL
@@ -470,59 +496,59 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   }
   
   # Survey Level Data ---------------------------------------------------------------------------------------------------------------------------
-    play <- get_survey_data(contacts_unflat$fields$surveytime_datetime) %>% mutate(Group = "Play")
-    praise <- get_survey_data(contacts_unflat$fields$surveypraise_datetime) %>% mutate(Group = "Praise")
-    stress <- get_survey_data(contacts_unflat$fields$surveystress_datetime) %>% mutate(Group = "Stress")
-    physical_abuse <- get_survey_data(contacts_unflat$fields$surveydiscipline_datetime) %>% mutate(Group = "Physical abuse")
-    food_insecurity <- get_survey_data(contacts_unflat$fields$surveymoneymonth_datetime) %>% mutate(Group = "Food insecurity")
-    psychological_abuse <- get_survey_data(contacts_unflat$fields$surveyshout_datetime) %>% mutate(Group = "Psychological abuse")
-    financial_stress <- get_survey_data(contacts_unflat$fields$surveymoneyweek_datetime) %>% mutate(Group = "Financial stress")
-    parenting_efficacy <- get_survey_data(contacts_unflat$fields$surveypositive_datetime) %>% mutate(Group = "Parenting efficacy")
-    sex_prevention <- get_survey_data(contacts_unflat$fields$surveysexualabuse_datetime) %>% mutate(Group = "Sexual abuse prevention")
-    child_behave <- get_survey_data(contacts_unflat$fields$surveybehave_rate_datetime) %>% mutate(Group = "Child Behaviour")
-    # using datetime not just _rate because in _rate it doesn't state which survey the score is corresponding to
-    # e.g. see contacts_unflat$fields$surveybehave_rate_datetime[[1]]
+  play <- get_survey_data(contacts_unflat$fields$surveytime_datetime) %>% mutate(Group = "Play")
+  praise <- get_survey_data(contacts_unflat$fields$surveypraise_datetime) %>% mutate(Group = "Praise")
+  stress <- get_survey_data(contacts_unflat$fields$surveystress_datetime) %>% mutate(Group = "Stress")
+  physical_abuse <- get_survey_data(contacts_unflat$fields$surveydiscipline_datetime) %>% mutate(Group = "Physical abuse")
+  food_insecurity <- get_survey_data(contacts_unflat$fields$surveymoneymonth_datetime) %>% mutate(Group = "Food insecurity")
+  psychological_abuse <- get_survey_data(contacts_unflat$fields$surveyshout_datetime) %>% mutate(Group = "Psychological abuse")
+  financial_stress <- get_survey_data(contacts_unflat$fields$surveymoneyweek_datetime) %>% mutate(Group = "Financial stress")
+  parenting_efficacy <- get_survey_data(contacts_unflat$fields$surveypositive_datetime) %>% mutate(Group = "Parenting efficacy")
+  sex_prevention <- get_survey_data(contacts_unflat$fields$surveysexualabuse_datetime) %>% mutate(Group = "Sexual abuse prevention")
+  child_behave <- get_survey_data(contacts_unflat$fields$surveybehave_rate_datetime) %>% mutate(Group = "Child Behaviour")
+  # using datetime not just _rate because in _rate it doesn't state which survey the score is corresponding to
+  # e.g. see contacts_unflat$fields$surveybehave_rate_datetime[[1]]
+  
+  pos_par <- merge(play, praise) #, by = c("row", "week"))
+  child_mal <- merge(physical_abuse, psychological_abuse)#, by = c("row", "week"))
+  positive_parenting <- pos_par
+  child_maltreatment <- child_mal
+  if (nrow(pos_par) > 0){
+    positive_parenting <- pos_par %>%
+      mutate(Group = "Positive parenting") %>%
+      mutate(dt = NA) %>%
+      mutate(vals = ifelse(is.na(vals.x), vals.y,
+                           ifelse(is.na(vals.y), vals.x,
+                                  vals.x + vals.y))) %>%
+      dplyr::select(c(vals, row, week, dt, Group))
     
-    pos_par <- merge(play, praise) #, by = c("row", "week"))
-    child_mal <- merge(physical_abuse, psychological_abuse)#, by = c("row", "week"))
-    positive_parenting <- pos_par
-    child_maltreatment <- child_mal
-    if (nrow(pos_par) > 0){
-      positive_parenting <- pos_par %>%
-        mutate(Group = "Positive parenting") %>%
-        mutate(dt = NA) %>%
-        mutate(vals = ifelse(is.na(vals.x), vals.y,
-                             ifelse(is.na(vals.y), vals.x,
-                                    vals.x + vals.y))) %>%
-        dplyr::select(c(vals, row, week, dt, Group))
-      
-    }
-    if (nrow(child_mal) > 0){
-      child_maltreatment <- child_mal %>%
-        mutate(Group = "Child maltreatment") %>%
-        mutate(dt = NA) %>%
-        mutate(vals = ifelse(is.na(vals.x), vals.y,
-                             ifelse(is.na(vals.y), vals.x,
-                                    vals.x + vals.y))) %>%
-        dplyr::select(c(vals, row, week, dt, Group))
-    }
-
-    parenting_survey <- rbind(positive_parenting, child_maltreatment, play, praise, stress, physical_abuse, psychological_abuse, financial_stress, food_insecurity, parenting_efficacy, sex_prevention, child_behave)
-    parenting_survey <- parenting_survey %>% mutate(week = fct_relevel(as.character(week), c("Baseline", "2", "3", "4", "5", "6", "7", "8", "9")))
-    parenting_survey <- parenting_survey %>% mutate(Group = fct_expand(Group, c("Positive parenting", "Child maltreatment", "Play", "Praise", "Stress", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
-    parenting_survey <- parenting_survey %>% mutate(Group = fct_relevel(Group, c("Positive parenting", "Child maltreatment", "Play", "Praise", "Stress", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
-    
-    contacts_unflat_ID_merge <- df_created_on %>% mutate(row = row)
-    parenting_survey <- merge(parenting_survey, contacts_unflat_ID_merge)
-    parenting_survey <- parenting_survey %>% filter(consent == "Yes")
-    if (!is.null(date_from)){
-      parenting_survey <- parenting_survey %>%
-        dplyr::filter(as.POSIXct(date_from, format="%Y-%m-%d", tz = "UTC") < as.POSIXct(parenting_survey$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
-    }
-    if (!is.null(date_to)){
-      parenting_survey <- parenting_survey %>%
-        dplyr::filter(as.POSIXct(date_to, format="%Y-%m-%d", tz = "UTC") > as.POSIXct(parenting_survey$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
-    }
+  }
+  if (nrow(child_mal) > 0){
+    child_maltreatment <- child_mal %>%
+      mutate(Group = "Child maltreatment") %>%
+      mutate(dt = NA) %>%
+      mutate(vals = ifelse(is.na(vals.x), vals.y,
+                           ifelse(is.na(vals.y), vals.x,
+                                  vals.x + vals.y))) %>%
+      dplyr::select(c(vals, row, week, dt, Group))
+  }
+  
+  parenting_survey <- rbind(positive_parenting, child_maltreatment, play, praise, stress, physical_abuse, psychological_abuse, financial_stress, food_insecurity, parenting_efficacy, sex_prevention, child_behave)
+  parenting_survey <- parenting_survey %>% mutate(week = fct_relevel(as.character(week), c("Baseline", "2", "3", "4", "5", "6", "7", "8", "9")))
+  parenting_survey <- parenting_survey %>% mutate(Group = fct_expand(Group, c("Positive parenting", "Child maltreatment", "Play", "Praise", "Stress", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
+  parenting_survey <- parenting_survey %>% mutate(Group = fct_relevel(Group, c("Positive parenting", "Child maltreatment", "Play", "Praise", "Stress", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
+  
+  contacts_unflat_ID_merge <- df_created_on %>% mutate(row = row)
+  parenting_survey <- merge(parenting_survey, contacts_unflat_ID_merge)
+  parenting_survey <- parenting_survey %>% filter(consent == "Yes") %>% filter(program == "Yes")
+  if (!is.null(date_from)){
+    parenting_survey <- parenting_survey %>%
+      dplyr::filter(as.POSIXct(date_from, format="%Y-%m-%d", tz = "UTC") < as.POSIXct(parenting_survey$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+  }
+  if (!is.null(date_to)){
+    parenting_survey <- parenting_survey %>%
+      dplyr::filter(as.POSIXct(date_to, format="%Y-%m-%d", tz = "UTC") > as.POSIXct(parenting_survey$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+  }
   objects_to_return <- NULL
   objects_to_return[[1]] <- df
   objects_to_return[[2]] <- df_consent

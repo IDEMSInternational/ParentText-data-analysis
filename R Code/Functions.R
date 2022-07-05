@@ -554,9 +554,10 @@ flow_data_table_function <- function(flow_interaction, flow_name = NULL){
   }
   flow_interaction_output <- flow_interaction %>%
       group_by({{ flow_name }}, interacted, .drop = FALSE) %>%
-      summarise(count = n(), perc = round(n()/nrow(.)*100,2)) %>%
-      mutate("Count (%)" := str_c(`count`, ' (', round(`perc`, 1), ")")) %>%
-      dplyr::select(-c(count, perc)) %>% map_df(rev)
+      summarise(Count = n()) %>% #, perc = round(n()/nrow(.)*100,2)) %>%
+      #mutate("Count (%)" := str_c(`Count`, ' (', round(`perc`, 1), ")")) %>%
+      #dplyr::select(-c(count, perc)) %>%
+    map_df(rev)
   return(flow_interaction_output)
 }
 
