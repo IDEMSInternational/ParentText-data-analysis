@@ -260,7 +260,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   comp_survey_w1 <- str_count(contacts_unflat$fields$surveyparenting_completion, fixed("|"))
   if (length(comp_survey_w1) == 0){comp_survey_w1 <- rep(NA, length(enrolled))}
   
-  comp_survey_w2 <- str_count(contacts_unflat$fields$surveyparentingbehave_completion, fixed("|"))
+  comp_survey_w2 <- str_count(contacts_unflat$fields$surveyparentingbehave_completion, fixed("|")) + 1
   if (length(comp_survey_w2) == 0){comp_survey_w2 <- rep(NA, length(enrolled))}
   
   consent_survey_w1 <- c(data.frame(str_split(contacts_unflat$fields$surveyparenting_datestamps, ",", n = 2, simplify = TRUE))[1])$X1

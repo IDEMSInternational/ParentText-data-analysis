@@ -787,8 +787,7 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
       survey_completed[[1]]$perc <- survey_completed[[1]]$n/nrow(df) * 100
       survey_completed[[1]]$Week <- "Week 1"
       for (i in 2:9){
-        j = i - 1
-        survey_completed[[i]] <- df %>% summarise(n = sum(comp_survey_w2 == j, na.rm = TRUE))
+        survey_completed[[i]] <- df %>% summarise(n = sum(comp_survey_w2 == i, na.rm = TRUE))
         survey_completed[[i]]$perc <- survey_completed[[i]]$n/nrow(df) * 100
         survey_completed[[i]]$Week <- paste("Week ", i, sep = "")
       }
