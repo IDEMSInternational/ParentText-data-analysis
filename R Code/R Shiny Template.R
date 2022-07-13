@@ -283,7 +283,13 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
                                                   shiny::tableOutput("consented_survey_group_table")),
                                        shinydashboard::valueBoxOutput("comp_prog_group_table", width = 12),
                                        cellArgs = list(style = "vertical-align: top")
-                                     )))) # close col, fr, by group tab
+                                     )))), # close col, fr, by group tab
+                            tabPanel("AB Testing",
+                                     fluidRow(
+                                       column(12, align = "center",
+                                              box())
+                                       )) # close col, fr, AB
+                            
                 ) # close tab type
         ), # close engagement tab
         

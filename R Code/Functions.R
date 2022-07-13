@@ -161,7 +161,7 @@ days_active_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, c
 
 get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call_type = "runs.json?flow=", rapidpro_site = get_rapidpro_site(),
                           token = get_rapidpro_key(), flatten = FALSE, checks = FALSE, flow_type = "none", include_archived_data = FALSE,
-                          get_by = "gotit", data_from_archived = archived_data,
+                          get_by = "gotit", data_from_archived = archived_data, created_on = FALSE,
                           download_archived_data = FALSE, read_archived_data_from = "archived_data_monthly.RDS", archive_call_type = "archives.json",
                           archive_period = "monthly", date_from = NULL, date_to = NULL,
                           format_date = "%Y-%m-%d", tzone_date = "UTC"){
@@ -217,7 +217,7 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call
       flow_data[[j]] <- NULL
     } else {
       flow_data[[j]] <- flow_data_calculation(result_flow = result_flow, flatten = flatten, flow_type = flow_type, date_from = date_from, date_to = date_to,
-                                              format_date = format_date, tzone_date = tzone_date) %>%
+                                              format_date = format_date, tzone_date = tzone_date, created_on = created_on) %>%
         dplyr::mutate(flow_type = uuid_flow[1,1]) 
     }
   }
@@ -269,7 +269,7 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call
 # flow_type.uuid - todo.
 
 flow_data_calculation <- function(result_flow, flatten = FALSE, flow_type = "none", date_from = NULL, date_to = NULL,
-                                  format_date = "%Y-%m-%d", tzone_date = "UTC"){
+                                  format_date = "%Y-%m-%d", tzone_date = "UTC", created_on = FALSE){
   if (length(result_flow) == 0){
     flow_interaction <- NULL
   } else {
@@ -319,7 +319,11 @@ flow_data_calculation <- function(result_flow, flatten = FALSE, flow_type = "non
       }
       flow_interaction <- tibble::tibble(uuid, interacted, category)
     } else {
-      flow_interaction <- tibble::tibble(uuid, interacted)
+      if (created_on){
+        flow_interaction <- tibble::tibble(uuid, interacted, created_run_on)
+      } else {
+        flow_interaction <- tibble::tibble(uuid, interacted)
+      }
       ##flow_interaction <- tibble::tibble(uuid, interacted, exit_type, created_on, modified_on, exited_on)
     }
     #result <- na.omit(unique(flatten(result_flow$values)$name))[1]
@@ -417,10 +421,11 @@ summary_calculation <- function(data = plhdata_org_clean, factors, columns_to_su
   summaries <- match.arg(summaries)
   if (summaries == "frequencies"){
     summary_output <- data %>%
-      mutate(across(c({{ columns_to_summarise }}), ~ as.character(.x))) %>%
+      mutate(across(c({{ columns_to_summarise }}), ~ (as.character(.x)))) %>%
       group_by(across(c({{ columns_to_summarise }}, {{ factors }})), .drop = drop) %>%
       summarise(n = n(),
-                perc = n()/nrow(.) * 100)
+                perc = n()/nrow(.) * 100) %>%
+      ungroup()
     if (include_margins){
       cts_margin <- data %>%
         group_by(across(c({{ columns_to_summarise }})), .drop = drop) %>%
@@ -436,7 +441,7 @@ summary_calculation <- function(data = plhdata_org_clean, factors, columns_to_su
       summary_output <- bind_rows(summary_output, cts_margin, ftr_margin, corner_margin, .id = "id")
       
       summary_output <- summary_output %>%
-        ungroup() %>%
+        #ungroup() %>%
         mutate(across({{ factors }}, as.character)) %>%
         mutate(across({{ factors }}, ~ifelse(id %in% c(2, 4), "Total", .x))) %>%
         mutate(across({{ columns_to_summarise }}, ~ifelse(id %in% c(3, 4), "Total", .x)))
@@ -474,6 +479,28 @@ summary_calculation <- function(data = plhdata_org_clean, factors, columns_to_su
     }
     
   }
+  if (length(data %>% dplyr::select({{ factors }})) == 1){
+    cell_values_levels <- data %>% pull({{ factors }}) %>% levels()
+    if (include_margins){ cell_values_levels <- c(cell_values_levels, "Total") }
+    
+    summary_output <- summary_output %>%
+      dplyr::mutate(dplyr::across({{ factors }},
+                                  ~ factor(.x))) %>%
+      dplyr::mutate(dplyr::across({{ factors }},
+                                  ~ forcats::fct_relevel(.x, cell_values_levels)))
+    summary_output <- summary_output %>% dplyr::arrange({{ factors }})
+  }
+  if (length(data %>% dplyr::select({{ columns_to_summarise }})) == 1){
+    cell_values_levels <- data %>% pull({{ columns_to_summarise }}) %>% levels()
+    if (include_margins){ cell_values_levels <- c(cell_values_levels, "Total") }
+    
+    summary_output <- summary_output %>%
+      dplyr::mutate(dplyr::across({{ columns_to_summarise }},
+                                  ~ factor(.x))) %>%
+      dplyr::mutate(dplyr::across({{ columns_to_summarise }},
+                                  ~ forcats::fct_relevel(.x, cell_values_levels)))
+    summary_output <- summary_output %>% dplyr::arrange({{ columns_to_summarise }})
+  }
   return(unique(summary_output))
 }
 
@@ -501,7 +528,7 @@ summary_table <- function(data = plhdata_org_clean, factors = Org, columns_to_su
     if (summaries == "frequencies"){
       return_table <- return_table %>% pivot_wider(id_cols = {{ factors }}, names_from =  {{ columns_to_summarise }}, values_from = n)
     }
-    
+
     return_table <- gt(as_tibble(return_table)) %>%
       tab_header(
         title = paste(return_table_names[1], "by", return_table_names[2])  # fix up. 
@@ -537,6 +564,10 @@ summary_table <- function(data = plhdata_org_clean, factors = Org, columns_to_su
         colnames(return_table) <- naming_conventions(colnames(return_table), replace = replace)
       }
     }
+  }
+  if (include_margins){
+    return_table <- return_table %>%
+      relocate(Total, .after = last_col())
   }
   return(return_table)
 }
