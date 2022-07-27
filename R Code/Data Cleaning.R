@@ -373,7 +373,36 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
                                                                  `Other_Man` = "Other (M)", `Prefer not to say_Man` = "Prefer not to say (M)",
                                                                  `Parent_NA` =  "Parent", `Grandparent_NA` = "Grandparent", `Aunt/Uncle_NA` = "Aunt/Uncle", `Foster Parent_NA` = "Foster Parent",
                                                                  `Other_NA` = "Other (unknown)", `Prefer not to say_NA` = "Prefer not to say (unknown)")))
-
+  # Hook messages
+  hook_messages <- contacts_unflat$fields$hook_message
+  hook_data_all <- NULL
+  for (i in 1:length(hook_messages)){
+    hook_messages_all <- hook_messages[[i]]
+    ID_hook_all <- ID[i]
+    hook_data_all[[i]] <- data.frame(hook_message_time_all = hook_messages_all, ID = ID_hook_all)
+  }
+  hook_message_all <- data.frame(plyr::ldply(hook_data_all))
+  hook_message_all <- hook_message_all %>%
+    mutate(hook_message_time_all = ifelse(stringi::stri_sub(hook_message_time_all,-1) == "|",
+                                          NA,
+                                          hook_message_time_all))
+  hook_message_all$hook_message_time_all <- as.POSIXct(gsub(".*,","",hook_message_all$hook_message_time_all), format="%Y-%m-%dT%H:%M:%OS", tz = "EST") - lubridate::hm("6, 0")
+  df <- full_join(df, hook_message_all)
+  df$created_on <- as.POSIXct(gsub(".*,","",df$created_on), format="%Y-%m-%dT%H:%M:%OS", tz = "EST") - lubridate::hm("6, 0")
+  df$time_in_study <- df$hook_message_time_all - df$created_on
+  mid_date <- mean(c(min(as.Date(df$created_on)), as.Date(Sys.Date())))
+  df <- df %>%
+    mutate(joined = ifelse(created_on > mid_date, paste("after", mid_date), paste("before", mid_date)))
+  df <- df %>%
+    group_by(joined) %>%
+    mutate(time_in_study = ifelse(is.na(time_in_study),
+                                  max(time_in_study, na.rm = TRUE) + 24,
+                                  time_in_study),
+           cens = ifelse(time_in_study == max(time_in_study, na.rm = TRUE),
+                         0,
+                         1)) %>%
+    ungroup()
+  
   if (consent){
     df <- df %>%
       filter(ID %in% list_of_ids) 

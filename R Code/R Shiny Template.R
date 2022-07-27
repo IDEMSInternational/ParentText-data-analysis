@@ -4,6 +4,8 @@ library(shinyjs)
 #library(rpivotTable)
 library(plotly)
 library(shinydashboard)
+library(survival)
+library(survminer)
 
 demographics_top_box <- function(country){
   consent_box <- box(width=NULL,
@@ -250,7 +252,13 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
                                                          shiny::tableOutput("completed_survey_table"),
                                                          shiny::tableOutput("consented_survey_table"),
                                                          shiny::tableOutput("all_flows_response")), # close box
-                                                     
+                                                     box(height="300px",
+                                                         width=12,
+                                                         collapsible = FALSE,
+                                                         title = "Drop out rates in study",
+                                                         status = status, # primary, success, info, warning, danger
+                                                         solidHeader = TRUE,
+                                                         plotOutput(outputId = "drop_out_plot", height = "240", width = "100%")),
                                                      box(height="300px",
                                                          width=12,
                                                          collapsible = FALSE,
@@ -1068,6 +1076,13 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     all_flows_response <- reactive({
       selected_flow_data_date_from() %>%
         pivot_wider(id_cols = interacted, names_from = Flow, values_from = `Count`)
+    })
+    
+    output$drop_out_plot <- renderPlot({
+      df <- selected_data_date_from()
+      fit_dist <- survfit(Surv(time_in_study, cens) ~ joined, data = df)
+      ggsurvplot(fit_dist, data = df) +
+        labs(y = "Proportion", x = "Time (hours)")
     })
     
     output$plot_flow <- renderPlotly({
