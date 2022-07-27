@@ -1,4 +1,4 @@
-country <- "Jamaica" # Jamaica, Philippines, South_Africa
+country <- "Jamaica" # Jamaica, Philippines, South_Africa Malaysia
 source("Functions.R")
 source(paste0(country, "_dashboard_settings.R"))
 source("R Shiny Template.R")
