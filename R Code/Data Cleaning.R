@@ -8,7 +8,7 @@ library(tidyverse)
 #library(rapidpror)
 
 # RapidPro set up --------------------------------------------------------------
-update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to = NULL, include_archived_data = FALSE) {
+update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to = NULL, include_archived_data = FALSE, consent = TRUE) {
   
   set_rapidpro_site(site = site)
   set_rapidpro_key(key = key[[1]])
@@ -297,7 +297,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   survey_consented_wk2_plus_data$V2 <- NULL
   survey_consented_wk2_plus_data$V3 <- NULL
   if (nrow(survey_consented_wk2_plus_data) > 0){
-    survey_consented_wk2_plus_data <- merge(survey_consented_wk2_plus_data, df_created_on, by = "row")
+    survey_consented_wk2_plus_data <- merge(survey_consented_wk2_plus_data, df_created_on, by = "row") %>% arrange(row)
     survey_consented_wk2_plus_data_wider <- pivot_wider(survey_consented_wk2_plus_data, id_cols = ID, names_from = survey_number,
                                                         values_from = survey_response, names_prefix = "consent_survey_w",
                                                         values_fn = mean) # there are several responses for some. So find mean. If they ever consented they we say they did consent
@@ -354,9 +354,10 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
     mutate(not_active_7_days = ifelse(program == "Yes" & active_users_7_days == "No",
                                       "Yes",
                                       "No"))
+  df <- df %>% mutate(order = 1:nrow(df))
   
   if (length(survey_consented_wk2_plus_data_wider) > 0){
-    df <- merge(df, survey_consented_wk2_plus_data_wider, by = "ID")
+    df <- merge(df, survey_consented_wk2_plus_data_wider, by = "ID") %>% arrange(order)
   }
   #df <- df %>%
   #  mutate(across(starts_with("consent_survey_"), ~replace_na(., 0)))
@@ -372,9 +373,11 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
                                                                  `Other_Man` = "Other (M)", `Prefer not to say_Man` = "Prefer not to say (M)",
                                                                  `Parent_NA` =  "Parent", `Grandparent_NA` = "Grandparent", `Aunt/Uncle_NA` = "Aunt/Uncle", `Foster Parent_NA` = "Foster Parent",
                                                                  `Other_NA` = "Other (unknown)", `Prefer not to say_NA` = "Prefer not to say (unknown)")))
-  
-  df <- df %>%
-    filter(ID %in% list_of_ids)
+
+  if (consent){
+    df <- df %>%
+      filter(ID %in% list_of_ids) 
+  }
   
   df_consent <- data.frame(df_consent, parent_gender, child_gender, child_age_group)
   
@@ -539,7 +542,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   parenting_survey <- parenting_survey %>% mutate(Group = fct_relevel(Group, c("Positive parenting", "Child maltreatment", "Play", "Praise", "Stress", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
   
   contacts_unflat_ID_merge <- df_created_on %>% mutate(row = row)
-  parenting_survey <- merge(parenting_survey, contacts_unflat_ID_merge)
+  parenting_survey <- merge(parenting_survey, contacts_unflat_ID_merge) %>% arrange(row)
   parenting_survey <- parenting_survey %>% filter(consent == "Yes") %>% filter(program == "Yes")
   if (!is.null(date_from)){
     parenting_survey <- parenting_survey %>%
