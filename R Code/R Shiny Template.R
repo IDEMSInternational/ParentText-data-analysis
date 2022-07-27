@@ -1080,6 +1080,18 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     
     output$drop_out_plot <- renderPlot({
       df <- selected_data_date_from()
+      mid_date <- mean(c(min(as.Date(df$created_on)), as.Date(Sys.Date())))
+      df <- df %>%
+        mutate(joined = ifelse(created_on > mid_date, paste("after", mid_date), paste("before", mid_date)))
+      df <- df %>%
+        group_by(joined) %>%
+        mutate(time_in_study = ifelse(is.na(time_in_study),
+                                      max(time_in_study, na.rm = TRUE) + 24,
+                                      time_in_study),
+               cens = ifelse(time_in_study == max(time_in_study, na.rm = TRUE),
+                             0,
+                             1)) %>%
+        ungroup()
       fit_dist <- survfit(Surv(time_in_study, cens) ~ joined, data = df)
       ggsurvplot(fit_dist, data = df) +
         labs(y = "Proportion", x = "Time (hours)")

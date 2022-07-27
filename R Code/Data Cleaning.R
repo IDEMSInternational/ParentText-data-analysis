@@ -387,21 +387,9 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
                                           NA,
                                           hook_message_time_all))
   hook_message_all$hook_message_time_all <- as.POSIXct(gsub(".*,","",hook_message_all$hook_message_time_all), format="%Y-%m-%dT%H:%M:%OS", tz = "EST") - lubridate::hm("6, 0")
-  df <- full_join(df, hook_message_all)
+  df <- dplyr::left_join(df, hook_message_all)
   df$created_on <- as.POSIXct(gsub(".*,","",df$created_on), format="%Y-%m-%dT%H:%M:%OS", tz = "EST") - lubridate::hm("6, 0")
   df$time_in_study <- df$hook_message_time_all - df$created_on
-  mid_date <- mean(c(min(as.Date(df$created_on)), as.Date(Sys.Date())))
-  df <- df %>%
-    mutate(joined = ifelse(created_on > mid_date, paste("after", mid_date), paste("before", mid_date)))
-  df <- df %>%
-    group_by(joined) %>%
-    mutate(time_in_study = ifelse(is.na(time_in_study),
-                                  max(time_in_study, na.rm = TRUE) + 24,
-                                  time_in_study),
-           cens = ifelse(time_in_study == max(time_in_study, na.rm = TRUE),
-                         0,
-                         1)) %>%
-    ungroup()
   
   if (consent){
     df <- df %>%
