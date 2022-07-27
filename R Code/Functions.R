@@ -477,7 +477,6 @@ summary_calculation <- function(data = plhdata_org_clean, factors, columns_to_su
         mutate(across({{ factors }}, ~fct_relevel(.x, "Total", after = Inf))) %>%
         select(-c("id"))
     }
-    
   }
   if (length(data %>% dplyr::select({{ factors }})) == 1){
     cell_values_levels <- data %>% pull({{ factors }}) %>% levels()
@@ -565,7 +564,7 @@ summary_table <- function(data = plhdata_org_clean, factors = Org, columns_to_su
       }
     }
   }
-  if (include_margins){
+  if ("Total" %in% colnames(return_table)){
     return_table <- return_table %>%
       relocate(Total, .after = last_col())
   }
