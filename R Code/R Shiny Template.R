@@ -430,17 +430,17 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
   
   # Define server function
   server <- function(input, output) {
-    autoRefresh <- reactiveTimer(6 * 60 * 60 * 1000)
-    
-    observe({
-      autoRefresh()
-      updated_data <- update_data(country = country, date_to = date_to, include_archived_data = include_archived_data)
-      df <- updated_data[[1]]
-      df_consent <- updated_data[[2]]
-      all_flows <- updated_data[[3]]
-      parenting_survey <- updated_data[[4]]
-      womens_centre_data <- updated_data[[5]]
-    })
+#    autoRefresh <- reactiveTimer(6 * 60 * 60 * 1000)
+#    
+#    observe({
+#      autoRefresh()
+#      updated_data <- update_data(country = country, date_to = date_to, include_archived_data = include_archived_data)
+#      df <- updated_data[[1]]
+#      df_consent <- updated_data[[2]]
+#      all_flows <- updated_data[[3]]
+#      parenting_survey <- updated_data[[4]]
+#      womens_centre_data <- updated_data[[5]]
+#    })
     
     updated_data <- update_data(country = country, date_to = date_to, include_archived_data = include_archived_data)
     df <- updated_data[[1]]
@@ -1080,21 +1080,9 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     
     output$drop_out_plot <- renderPlot({
       df <- selected_data_date_from()
-      mid_date <- mean(c(min(as.Date(df$created_on)), as.Date(Sys.Date())))
-      df <- df %>%
-        mutate(joined = ifelse(created_on > mid_date, paste("after", mid_date), paste("before", mid_date)))
-      df <- df %>%
-        group_by(joined) %>%
-        mutate(time_in_study = ifelse(is.na(time_in_study),
-                                      max(time_in_study, na.rm = TRUE) + 24,
-                                      time_in_study),
-               cens = ifelse(time_in_study == max(time_in_study, na.rm = TRUE),
-                             0,
-                             1)) %>%
-        ungroup()
-      fit_dist <- survfit(Surv(time_in_study, cens) ~ joined, data = df)
-      ggsurvplot(fit_dist, data = df) +
-        labs(y = "Proportion", x = "Time (hours)")
+      fit_dist <- survfit(Surv(time_in_study, cens) ~ 1, data = df)
+      ggsurvplot(fit_dist, data = df1,  conf.int = FALSE, ggtheme = theme_bw()) +
+        labs(y = "Proportion", x = "Time (hours)", caption = "+ denotes individuals not dropped out", title = "Proportion of Individuals Dropped Out")
     })
     
     output$plot_flow <- renderPlotly({

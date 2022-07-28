@@ -390,7 +390,14 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   df <- dplyr::left_join(df, hook_message_all)
   df$created_on <- as.POSIXct(gsub(".*,","",df$created_on), format="%Y-%m-%dT%H:%M:%OS", tz = "EST") - lubridate::hm("6, 0")
   df$time_in_study <- df$hook_message_time_all - df$created_on
-  
+  df <- df %>%
+    mutate(cens = ifelse(is.na(time_in_study),
+                         0,
+                         1),
+           time_in_study = ifelse(is.na(time_in_study),
+                                  difftime(Sys.time(), created_on, units = "hours"),
+                                  time_in_study))
+
   if (consent){
     df <- df %>%
       filter(ID %in% list_of_ids) 
