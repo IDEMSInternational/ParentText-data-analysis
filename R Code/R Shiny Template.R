@@ -1081,7 +1081,7 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     output$drop_out_plot <- renderPlot({
       df <- selected_data_date_from()
       fit_dist <- survfit(Surv(time_in_study, cens) ~ 1, data = df)
-      ggsurvplot(fit_dist, data = df1,  conf.int = FALSE, ggtheme = theme_bw()) +
+      ggsurvplot(fit_dist, data = df,  conf.int = FALSE, ggtheme = theme_bw()) +
         labs(y = "Proportion", x = "Time (hours)", caption = "+ denotes individuals not dropped out", title = "Proportion of Individuals Dropped Out")
     })
     
