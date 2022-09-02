@@ -42,7 +42,24 @@ get_rapidpro_uuid_names = function(){
 }
 
 get_user_data <- function(rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, date_from = NULL, date_to = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
-  get_data_from_rapidpro_api(call_type = "contacts.json?group=joined", rapidpro_site = rapidpro_site, token = token, flatten = flatten, date_from = date_from, date_to = date_to, format_date = format_date, tzone_date = tzone_date)
+  user_data <- get_data_from_rapidpro_api(call_type = "contacts.json?group=joined", rapidpro_site = rapidpro_site, token = token, flatten = flatten, date_from = date_from, date_to = date_to, format_date = format_date, tzone_date = tzone_date)
+
+  if (!flatten){
+    if (!is.null(date_from)){
+      user_data <- user_data %>% dplyr::filter(as.POSIXct(date_from, format=format_date, tzone = tzone_date) < as.POSIXct(user_data$fields$starting_date, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+    }
+    if (!is.null(date_to)){
+      user_data <- user_data %>% dplyr::filter(as.POSIXct(date_to, format=format_date, tzone = tzone_date) > as.POSIXct(user_data$fields$starting_date, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+    }
+  } else {
+    if (!is.null(date_from)){
+      user_data <- user_data %>% dplyr::filter(as.POSIXct(date_from, format=format_date, tzone = tzone_date) < as.POSIXct(user_data$fields.starting_date, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+    }
+    if (!is.null(date_to)){
+      user_data <- user_data %>% dplyr::filter(as.POSIXct(date_to, format=format_date, tzone = tzone_date) > as.POSIXct(user_data$fields.starting_date, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+    }
+  }
+  return(user_data)
 }
 
 get_archived_data <- function(rapidpro_site = get_rapidpro_site(), call_type = "archives.json", token = get_rapidpro_key(), period = "monthly", flatten = FALSE, date_from = NULL, date_to = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){

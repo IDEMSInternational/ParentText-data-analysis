@@ -9,7 +9,7 @@ include_archived_data <- FALSE # for now FALSE
 #if (include_archived_data){
 #  archived_data <- TODO
 #}
-default_date_from <- "2022-01-10"
+default_date_from <- "2022-06-28"
 default_date_to <- NULL
 prefix <- "PH"
 pt_name <- "MaPaText"

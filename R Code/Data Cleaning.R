@@ -22,7 +22,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
     contacts_unflat <- get_user_data(flatten = FALSE, date_from = date_from, date_to = date_to)
   }
 
-  created_on <- contacts_unflat$created_on
+  created_on <- contacts_unflat$fields$starting_date
   did_not_consent <- contacts_unflat$fields$did_not_consent
   ID <- contacts_unflat$uuid
   last_online <- as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%d", tz = "UTC")
