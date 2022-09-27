@@ -462,7 +462,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   df_created_on$row <- NULL
   
   
-  if (!country %in% c("Malaysia", "Philippines", "Jamaica")){
+  if (!country %in% c("Malaysia", "Philippines", "Jamaica", "South Africa", "South_Africa")){
     supportive_praise_flow <- get_flow_data(flow_name = supportive_praise, flow_type = "praise", include_archived_data = include_archived_data, date_to = "1970-01-01")
     supportive_calm_flow <- get_flow_data(flow_name = supportive_calm, flow_type = "calm", include_archived_data = include_archived_data, date_to = "1970-01-01")
     supportive_activities_flow <- get_flow_data(flow_name = supportive_activities, include_archived_data = include_archived_data, date_to = "1970-01-01")
