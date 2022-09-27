@@ -16,7 +16,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   
   
   # temp code to account for 
-  if (!country %in% c("Malaysia", "Philippines", "Jamaica")){
+  if (!country %in% c("Malaysia", "Philippines", "Jamaica", "South Africa")){
     contacts_unflat <- get_user_data(flatten = FALSE, date_from = NULL, date_to = "1970-01-01")
   } else {
     contacts_unflat <- get_user_data(flatten = FALSE, date_from = date_from, date_to = date_to)
