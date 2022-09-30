@@ -14,7 +14,6 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   set_rapidpro_key(key = key[[1]])
   set_rapidpro_uuid_names()
   
-  
   # temp code to account for 
   if (!country %in% c("Malaysia", "Philippines", "Jamaica", "South Africa")){
     contacts_unflat <- get_user_data(flatten = FALSE, date_from = NULL, date_to = "1970-01-01")
@@ -354,7 +353,9 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
     mutate(not_active_7_days = ifelse(program == "Yes" & active_users_7_days == "No",
                                       "Yes",
                                       "No"))
-  df <- df %>% mutate(order = 1:nrow(df))
+  if (nrow(df) > 0){
+    df <- df %>% mutate(order = 1:nrow(df))
+  }
   
   if (length(survey_consented_wk2_plus_data_wider) > 0){
     df <- merge(df, survey_consented_wk2_plus_data_wider, by = "ID") %>% arrange(order)
@@ -376,33 +377,37 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   # Hook messages
   hook_messages <- contacts_unflat$fields$hook_message
   hook_data_all <- NULL
-  for (i in 1:length(hook_messages)){
-    hook_messages_all <- hook_messages[[i]]
-    ID_hook_all <- ID[i]
-    hook_data_all[[i]] <- data.frame(hook_message_time_all = hook_messages_all, ID = ID_hook_all)
-  }
-  hook_message_all <- data.frame(plyr::ldply(hook_data_all))
-  hook_message_all <- hook_message_all %>%
-    mutate(hook_message_time_all = ifelse(stringi::stri_sub(hook_message_time_all,-1) == "|",
-                                          NA,
-                                          hook_message_time_all))
-  hook_message_all$hook_message_time_all <- as.POSIXct(gsub(".*,","",hook_message_all$hook_message_time_all), format="%Y-%m-%dT%H:%M:%OS", tz = "EST") - lubridate::hm("6, 0")
-  df <- dplyr::left_join(df, hook_message_all)
-  df$created_on <- as.POSIXct(gsub(".*,","",df$created_on), format="%Y-%m-%dT%H:%M:%OS", tz = "EST") - lubridate::hm("6, 0")
-  df$time_in_study <- df$hook_message_time_all - df$created_on
-  df <- df %>%
-    mutate(cens = ifelse(is.na(time_in_study),
-                         0,
-                         1),
-           time_in_study = ifelse(is.na(time_in_study),
-                                  difftime(Sys.time(), created_on, units = "hours"),
-                                  time_in_study))
-
-  if (consent){
+  if (length(hook_messages) > 0){
+    for (i in 1:length(hook_messages)){
+      hook_messages_all <- hook_messages[[i]]
+      ID_hook_all <- ID[i]
+      hook_data_all[[i]] <- data.frame(hook_message_time_all = hook_messages_all, ID = ID_hook_all)
+    }
+    hook_message_all <- data.frame(plyr::ldply(hook_data_all))
+    hook_message_all <- hook_message_all %>%
+      mutate(hook_message_time_all = ifelse(stringi::stri_sub(hook_message_time_all,-1) == "|",
+                                            NA,
+                                            hook_message_time_all))
+    hook_message_all$hook_message_time_all <- as.POSIXct(gsub(".*,","",hook_message_all$hook_message_time_all), format="%Y-%m-%dT%H:%M:%OS", tz = "EST") - lubridate::hm("6, 0")
+    df <- dplyr::left_join(df, hook_message_all)
+    df$created_on <- as.POSIXct(gsub(".*,","",df$created_on), format="%Y-%m-%dT%H:%M:%OS", tz = "EST") - lubridate::hm("6, 0")
+    df$time_in_study <- df$hook_message_time_all - df$created_on
     df <- df %>%
-      filter(ID %in% list_of_ids) 
+      mutate(cens = ifelse(is.na(time_in_study),
+                           0,
+                           1),
+             time_in_study = ifelse(is.na(time_in_study),
+                                    difftime(Sys.time(), created_on, units = "hours"),
+                                    time_in_study))
   }
-  
+
+  if (length(list_of_ids) > 0){
+    if (consent){
+      df <- df %>%
+        filter(ID %in% list_of_ids) 
+    }
+  }
+
   df_consent <- data.frame(df_consent, parent_gender, child_gender, child_age_group)
   
   # for Jamaica Only: Parent Pals data cleaning --------------------
