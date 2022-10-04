@@ -9,7 +9,7 @@ include_archived_data <- FALSE # for now FALSE
 #if (include_archived_data){
 #  archived_data <- TODO
 #}
-default_date_from <- "2022-08-10"
+default_date_from <- "2022-09-29"
 default_date_to <- NULL
 prefix <- "SA"
 pt_name <- "ParentText"
