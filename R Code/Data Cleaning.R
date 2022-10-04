@@ -88,6 +88,10 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   language[is.na(language)] <- "Did not respond"
   language <- forcats::fct_relevel(language, c("ENG", "MSA", "FIL", "Did not respond"))
   df_consent <- data.frame(ID, created_on, program, enrolled, true_consent, language)
+  if (country %in% c("South Africa", "South_Africa")){
+    ipv_version <- contacts_unflat$fields$ipv_version
+    df_consent <- data.frame(df_consent, ipv_version)
+  }
   df_consent <- df_consent %>%
     mutate(consent = ifelse(is.na(true_consent) &  is.na(language), "Did not interact",
                             ifelse(is.na(true_consent) & !is.na(language), "Did not respond",
@@ -106,6 +110,9 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
     row <- factor(row)
   }
   df_created_on <- data.frame(ID, created_on, consent, program, row = row)
+  if (country %in% c("South Africa", "South_Africa")){
+    df_created_on <- data.frame(df_created_on, ipv_version)
+  }
   if (!is.null(date_from)){
     df_created_on <- df_created_on %>%
       filter(created_on >= as.Date(date_from))
@@ -346,6 +353,11 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
                    active_users, active_users_7_days, comp_prog_overall, next_tip_main, next_tip_morning, next_tip_evening, parent_age, completed_welcome, comp_survey_w1, comp_survey_w2, consent_survey_w1,
                    challenge_behav, challenge_behav_wrap,
                    gamification, personalisation, n_messages)
+  
+  if (country %in% c("South Africa", "South_Africa")){
+    df <- data.frame(df, ipv_version)
+  }
+  
   df <- df %>%
     mutate(length_in_programme = as.numeric(as.Date(last_online) - as.Date(created_on)) + 1)
   
@@ -412,6 +424,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   
   # for Jamaica Only: Parent Pals data cleaning --------------------
   if (country == "Jamaica"){
+    # TODO: Add ipv variable here when it is in jamaica data
     women_centre <- contacts_unflat$fields$women_centre
     womens_centre_location <- as.character(contacts_unflat$fields$women_centre_location)
     womens_centre_location <- forcats::fct_expand(womens_centre_location, c("Kingston Centre", "Spanish Town Centre", "Denbigh Centre", "Mandeville Centre",
