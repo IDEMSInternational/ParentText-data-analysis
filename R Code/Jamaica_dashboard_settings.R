@@ -1,8 +1,5 @@
 # Jamaica Configuration
-
-# TODO: update key, site to give correct key and site.
-# TODO: default_date_from
-
+set_rapidpro_key(file_path = "tokens/PT_jamaica_key.txt")
 key <- read.table("tokens/PT_jamaica_key.txt", quote="\"", comment.char="")
 site <- "http://rapidpro.ilhasoft.mobi/api/v2/"
 include_archived_data <- FALSE # for now FALSE
@@ -13,6 +10,7 @@ default_date_from <- "2022-06-10"
 default_date_to <- NULL
 prefix <- "JM"    #PH #SA
 pt_name <- "ParentText"
+country_name <- "Jamaica"
 
 # for region/states
 state_title <- "Parish"

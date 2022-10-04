@@ -13,6 +13,7 @@ default_date_from <- "2022-06-28"
 default_date_to <- NULL
 prefix <- "PH"
 pt_name <- "MaPaText"
+country_name <- "Philippines"
 
 # for region/states
 state_title <- "Region"

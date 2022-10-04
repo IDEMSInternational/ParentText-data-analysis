@@ -1,8 +1,4 @@
 # South Africa Configuration
-
-# TODO: update key, site to give correct key and site.
-# TODO: default_date_from
-
 key <- read.table("tokens/PT_south_africa_key.txt", quote="\"", comment.char="")
 site <- "https://rapidpro.ona.io/api/v2/"
 include_archived_data <- FALSE # for now FALSE
@@ -11,8 +7,10 @@ include_archived_data <- FALSE # for now FALSE
 #}
 default_date_from <- "2022-09-29"
 default_date_to <- NULL
+date_to <- default_date_to
 prefix <- "SA"
 pt_name <- "ParentText"
+country_name<- "South Africa"
 
 # for region/states
 state_title <- "Province"

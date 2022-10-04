@@ -9,12 +9,11 @@ library(survminer)
 
 checkbox_IPV <- function(country){
   if (country %in% c("South Africa", "South_Africa")) {
+    
     return(box(width = 6,
-               checkboxGroupInput(inputId = "IPV_checkbox",
-                                  label = "Display Options",
-                                  choices = c("IPV only" = "yes"),
-                                  selected = c("")
-               )))
+               checkboxInput(inputId = "IPV_checkbox",
+                  label = "Display IPV only",
+                  value = FALSE))) # todo: for jamaica we then have a new set of checkboxes appear with the different IPV options if this is checked.
   } else {
   }
 }
@@ -62,7 +61,7 @@ demographics_top_box <- function(country){
 parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_archived_data = FALSE){
   # Define UI
   ui <- dashboardPage(
-    header = dashboardHeader(title = paste(country, pt_name, "Dashboard")),
+    header = dashboardHeader(title = paste(country_name, pt_name, "Dashboard")),
     
     skin = skin,
     
@@ -457,48 +456,43 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
 #    })
     
     updated_data <- update_data(country = country, date_to = date_to, include_archived_data = include_archived_data)
-    df <- updated_data[[1]]
-    df_consent <- updated_data[[2]]
+    df_original <- updated_data[[1]]
+    df_consent_original <- updated_data[[2]]
     all_flows <- updated_data[[3]]
-    parenting_survey <- updated_data[[4]]
+    parenting_survey_original <- updated_data[[4]]
     womens_centre_data <- updated_data[[5]]
     #pp_data_frame <- updated_data[[5]]
     
     # Subset data
-    selected_data <- reactive({
-      if (country %in% c("South Africa", "South_Africa")){
-        df <- df %>% dplyr::filter(ipv_version == input$IPV_checkbox)
-      }
-      return(df)
-    })
-    
     selected_data_date_from <- reactive({
-      df <- df %>%
+      df <- df_original %>%
         filter(created_on >= as.Date(input$datefrom_text))
-      if (country %in% c("South Africa", "South_Africa")){
-        df <- df %>% dplyr::filter(ipv_version == input$IPV_checkbox)
+      if (input$IPV_checkbox){
+        df <- df %>% dplyr::filter(ipv_version == "yes")
+      } else {
+        df <- df
       }
       return(df)
     })
     
     selected_consented_data_date_from <- reactive({
-      df_consent <- df_consent %>%
+      df_consent <- df_consent_original %>%
         filter(created_on >= as.Date(input$datefrom_text))
-      if (country %in% c("South Africa", "South_Africa")){
-        df_consent <- df_consent %>% dplyr::filter(ipv_version == input$IPV_checkbox)
+      if (input$IPV_checkbox){
+        df_consent <- df_consent %>% dplyr::filter(ipv_version == "yes")
       } else {
-        df_consent
+        df_consent <- df_consent
       }
       return(df_consent)
     })
     
     selected_survey_data_date_from <- reactive({
-      parenting_survey <- parenting_survey %>%
+      parenting_survey <- parenting_survey_original %>%
         filter(created_on >= as.Date(input$datefrom_text))
-      if (country %in% c("South Africa", "South_Africa")){
-        parenting_survey <- parenting_survey %>% dplyr::filter(ipv_version == input$IPV_checkbox)
+      if (input$IPV_checkbox){
+        parenting_survey <- parenting_survey %>% dplyr::filter(ipv_version == "yes")
       } else {
-        df_consent
+        parenting_survey <- parenting_survey
       }
       return(parenting_survey)
     })
@@ -506,11 +500,6 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     selected_womens_centre_date_from <- reactive({
       womens_centre_data <- womens_centre_data %>%
         filter(created_on >= as.Date(input$datefrom_text))
-      if (country %in% c("South Africa", "South_Africa")){
-        womens_centre_data <- womens_centre_data %>% dplyr::filter(ipv_version == input$IPV_checkbox)
-      } else {
-        womens_centre_data
-      }
       return(womens_centre_data)
     })
 

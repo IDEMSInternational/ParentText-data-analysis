@@ -1,4 +1,7 @@
 # Malaysia Configuration
+set_rapidpro_key(key="tokens/PT_malaysia_key.txt", file = TRUE)
+set_rapidpro_site(site="https://app.rapidpro.io/api/v2/")
+Malaysia_data <- get_user_data(rapidpro_site=get_rapidpro_site(), token=get_rapidpro_key())
 
 #"tokens/PT_malaysia_key.txt"
 key <- read.table("tokens/PT_malaysia_key.txt", quote="\"", comment.char="")
@@ -11,6 +14,7 @@ default_date_from <- "2021-10-14"
 default_date_to <- NULL
 prefix <- "MY"
 pt_name <- "ParentText"
+country_name<- "Malaysia"
 
 # for region/states
 state_title <- "State/territory"
