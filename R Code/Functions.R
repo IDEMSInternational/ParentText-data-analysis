@@ -393,7 +393,7 @@ get_survey_data <- function(parenting_variable){
   if (length(split_parenting) > 0) {
     for (j in 1:length(split_parenting)){
       if (is.na(split_parenting[[j]])){
-        split_data <- data.frame(V1 = NA, row = j, V2 = NA, V3 = NA)
+        split_data <- data.frame(V1 = NA, V2 = NA, V3 = NA, row = j)
       } else {
         split_parenting_2 <- stringr::str_split(split_parenting[[j]], ",")
         split_data <- plyr::ldply(split_parenting_2[1:(length(split_parenting_2)-1)])
@@ -403,7 +403,7 @@ get_survey_data <- function(parenting_variable){
     }
   }
   all_split_data <- plyr::ldply(all_split_data)
-  if (length(split_parenting) > 0) { names(all_split_data) <- c("vals", "row", "week", "dt") }
+  if (length(split_parenting) > 0) { names(all_split_data) <- c("vals", "week", "dt", "row") }
   all_split_data$week <- as.numeric(as.character(all_split_data$week))
   all_split_data$vals <- as.numeric(as.character(all_split_data$vals))
   all_split_data$week <- ifelse(all_split_data$week == "1", "Baseline", all_split_data$week)
