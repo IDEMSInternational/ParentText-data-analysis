@@ -8,7 +8,7 @@ library(survival)
 library(survminer)
 
 checkbox_IPV <- function(country){
-  if (country %in% c("South Africa", "South_Africa")) {
+  if (country %in% c("South Africa", "South_Africa", "Jamaica")) {
     
     return(box(width = 6,
                checkboxInput(inputId = "IPV_checkbox",

@@ -1,5 +1,5 @@
 # Jamaica Configuration
-set_rapidpro_key(file_path = "tokens/PT_jamaica_key.txt")
+#set_rapidpro_key(file_path = "tokens/PT_jamaica_key.txt")
 key <- read.table("tokens/PT_jamaica_key.txt", quote="\"", comment.char="")
 site <- "http://rapidpro.ilhasoft.mobi/api/v2/"
 include_archived_data <- FALSE # for now FALSE

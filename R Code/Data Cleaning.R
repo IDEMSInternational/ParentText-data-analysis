@@ -88,7 +88,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   language[is.na(language)] <- "Did not respond"
   language <- forcats::fct_relevel(language, c("ENG", "MSA", "FIL", "Did not respond"))
   df_consent <- data.frame(ID, created_on, program, enrolled, true_consent, language)
-  if (country %in% c("South Africa", "South_Africa")){
+  if (country %in% c("South Africa", "South_Africa", "Jamaica")){
     ipv_version <- contacts_unflat$fields$ipv_version
     df_consent <- data.frame(df_consent, ipv_version)
   }
@@ -110,7 +110,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
     row <- factor(row)
   }
   df_created_on <- data.frame(ID, created_on, consent, program, row = row)
-  if (country %in% c("South Africa", "South_Africa")){
+  if (country %in% c("South Africa", "South_Africa", "Jamaica")){
     df_created_on <- data.frame(df_created_on, ipv_version)
   }
   if (!is.null(date_from)){
@@ -354,7 +354,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
                    challenge_behav, challenge_behav_wrap,
                    gamification, personalisation, n_messages)
   
-  if (country %in% c("South Africa", "South_Africa")){
+  if (country %in% c("South Africa", "South_Africa", "Jamaica")){
     df <- data.frame(df, ipv_version)
   }
   
@@ -424,7 +424,6 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   
   # for Jamaica Only: Parent Pals data cleaning --------------------
   if (country == "Jamaica"){
-    # TODO: Add ipv variable here when it is in jamaica data
     women_centre <- contacts_unflat$fields$women_centre
     womens_centre_location <- as.character(contacts_unflat$fields$women_centre_location)
     womens_centre_location <- forcats::fct_expand(womens_centre_location, c("Kingston Centre", "Spanish Town Centre", "Denbigh Centre", "Mandeville Centre",
