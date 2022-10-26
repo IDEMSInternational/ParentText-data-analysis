@@ -8,12 +8,20 @@ library(survival)
 library(survminer)
 
 checkbox_IPV <- function(country){
-  if (country %in% c("South Africa", "South_Africa", "Jamaica")) {
-    
+  if (country %in% c("South Africa", "South_Africa")) {
     return(box(width = 6,
                checkboxInput(inputId = "IPV_checkbox",
                   label = "Display IPV only",
-                  value = FALSE))) # todo: for jamaica we then have a new set of checkboxes appear with the different IPV options if this is checked.
+                  value = FALSE)))
+  } else if (country == "Jamaica") {
+    
+    return(box(checkboxInput(inputId = "IPV_checkbox",
+                             label = "Display IPV only",
+                             value = FALSE),
+               uiOutput("IPV_groups")))
+               
+            #   width = 6,
+
   } else {
   }
 }
@@ -60,7 +68,10 @@ demographics_top_box <- function(country){
 
 parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_archived_data = FALSE){
   # Define UI
-  ui <- dashboardPage(
+  ui <- fluidPage(
+    useShinyjs(),
+    dashboardPage(
+    
     header = dashboardHeader(title = paste(country_name, pt_name, "Dashboard")),
     
     skin = skin,
@@ -439,6 +450,7 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
         ) # close behaviour tab
       ) # close items
     ) # close body
+    ) # close fluid page
   ) # close function
   
   # Define server function
@@ -455,6 +467,26 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
 #      womens_centre_data <- updated_data[[5]]
 #    })
     
+    # Want the initial state of this button to be disabled?
+    #shinyjs::disable(id="IPV_chk_groups")
+
+    if (country == "Jamaica"){
+      output$IPV_groups <- renderUI({
+        shinyjs::disabled(checkboxGroupInput(inputId = "IPV_chk_groups",
+                           label = "Display IPV group",
+                           c("WC Rural" = "ParentText_IPV_WC_rural",
+                             "WC Urban" = "ParentText_IPV_WC_urban",
+                             "School CC" = "ParentText_IPV_school_CC",
+                             "School PB" = "ParentText_IPV_school_PB"),
+                           selected = c("ParentText_IPV_WC_rural", "ParentText_IPV_WC_urban",
+                                        "ParentText_IPV_school_CC", "ParentText_IPV_school_PB")))
+      }) 
+      observeEvent(input$IPV_checkbox,{
+        if (input$IPV_checkbox) shinyjs::enable(id="IPV_chk_groups")  
+        else shinyjs::disable(id="IPV_chk_groups") 
+      })
+    }
+    
     updated_data <- update_data(country = country, date_to = date_to, include_archived_data = include_archived_data)
     df_original <- updated_data[[1]]
     df_consent_original <- updated_data[[2]]
@@ -468,7 +500,11 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
       df <- df_original %>%
         filter(created_on >= as.Date(input$datefrom_text))
       if (input$IPV_checkbox){
-        df <- df %>% dplyr::filter(ipv_version == "yes")
+        if (country == "Jamaica"){
+          df <- df %>% dplyr::filter(group %in% c(input$IPV_chk_groups))
+        } else {
+          df <- df %>% dplyr::filter(ipv_version == "yes")
+        }
       } else {
         df <- df
       }
@@ -479,7 +515,11 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
       df_consent <- df_consent_original %>%
         filter(created_on >= as.Date(input$datefrom_text))
       if (input$IPV_checkbox){
-        df_consent <- df_consent %>% dplyr::filter(ipv_version == "yes")
+        if (country == "Jamaica"){
+          df_consent <- df_consent %>% dplyr::filter(group %in% c(input$IPV_chk_groups))
+        } else {
+          df_consent <- df_consent %>% dplyr::filter(ipv_version == "yes")
+        }
       } else {
         df_consent <- df_consent
       }
@@ -489,8 +529,13 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     selected_survey_data_date_from <- reactive({
       parenting_survey <- parenting_survey_original %>%
         filter(created_on >= as.Date(input$datefrom_text))
+      
       if (input$IPV_checkbox){
-        parenting_survey <- parenting_survey %>% dplyr::filter(ipv_version == "yes")
+        if (country == "Jamaica"){
+          parenting_survey <- parenting_survey %>% dplyr::filter(group %in% c(input$IPV_chk_groups))
+        } else {
+          parenting_survey <- parenting_survey %>% dplyr::filter(ipv_version == "yes")
+        }
       } else {
         parenting_survey <- parenting_survey
       }
@@ -500,6 +545,8 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     selected_womens_centre_date_from <- reactive({
       womens_centre_data <- womens_centre_data %>%
         filter(created_on >= as.Date(input$datefrom_text))
+      
+      # TODO: add ipv stuff
       return(womens_centre_data)
     })
 

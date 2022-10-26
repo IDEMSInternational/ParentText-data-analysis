@@ -65,6 +65,24 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
       }
     }
   }
+  group <- NULL
+  if (country == "Jamaica"){
+    for (i in 1:length(contacts_unflat$groups)){
+      contact_name <- contacts_unflat$groups[[i]]
+      if (length(contact_name)==0) {
+        group[i] <- NA
+      } else{
+        group[i] <- ifelse(any(contact_name$name %in% "ParentText_IPV_WC_urban"),
+                                  "ParentText_IPV_WC_urban",
+                                  ifelse(any(contact_name$name %in% "ParentText_IPV_WC_rural"),
+                                         "ParentText_IPV_WC_rural",
+                                         ifelse(any(contact_name$name %in% "ParentText_IPV_school_CC"),
+                                                "ParentText_IPV_school_CC",
+                                                ifelse(any(contact_name$name %in% "ParentText_IPV_school_PB"),
+                                                       "ParentText_IPV_school_PB", "none"))))
+      }
+    }
+  }
   
   enrolled <- factor(enrolled)
   true_consent <- factor(true_consent)
@@ -72,6 +90,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   gamification <- factor(gamification)
   personalisation <- factor(personalisation)
   n_messages <- factor(n_messages)
+  group <- factor(group)
   enrolled <- forcats::fct_expand(enrolled, c("Yes", "No"))
   true_consent <- forcats::fct_expand(true_consent, c("Yes", "No"))
   program <- forcats::fct_expand(program, c("Yes", "No"))
@@ -90,7 +109,11 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   df_consent <- data.frame(ID, created_on, program, enrolled, true_consent, language)
   if (country %in% c("South Africa", "South_Africa", "Jamaica")){
     ipv_version <- contacts_unflat$fields$ipv_version
-    df_consent <- data.frame(df_consent, ipv_version)
+    if (country == "Jamaica"){
+      df_consent <- data.frame(df_consent, ipv_version, group)
+    } else {
+      df_consent <- data.frame(df_consent, ipv_version)
+    }
   }
   df_consent <- df_consent %>%
     mutate(consent = ifelse(is.na(true_consent) &  is.na(language), "Did not interact",
@@ -110,8 +133,11 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
     row <- factor(row)
   }
   df_created_on <- data.frame(ID, created_on, consent, program, row = row)
-  if (country %in% c("South Africa", "South_Africa", "Jamaica")){
+  if (country %in% c("South Africa", "South_Africa")){
     df_created_on <- data.frame(df_created_on, ipv_version)
+  }
+  if (country %in% c("Jamaica")){
+    df_created_on <- data.frame(df_created_on, ipv_version, group)
   }
   if (!is.null(date_from)){
     df_created_on <- df_created_on %>%
@@ -354,8 +380,11 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
                    challenge_behav, challenge_behav_wrap,
                    gamification, personalisation, n_messages)
   
-  if (country %in% c("South Africa", "South_Africa", "Jamaica")){
+  if (country %in% c("South Africa", "South_Africa")){
     df <- data.frame(df, ipv_version)
+  }
+  if (country %in% c("Jamaica")){
+    df <- data.frame(df, ipv_version, group)
   }
   
   df <- df %>%
