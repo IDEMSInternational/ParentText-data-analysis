@@ -88,17 +88,21 @@ get_archived_data <- function(rapidpro_site = get_rapidpro_site(), call_type = "
   }
   result_flow <- result_flow %>% filter(archive_type == "run")
   archived_data_bank <- NULL
-  for (i in 1:nrow(result_flow)){
-    if (result_flow$download_url[i] == ""){
-      archived_data_bank[[i]] <- ""
-    } else {
-      archived_data_bank[[i]] <- jsonlite::stream_in(
-        gzcon(url(result_flow$download_url[i])), flatten = FALSE
-      )
+  if (nrow(result_flow) == 0){
+    return(archived_data_bank)
+  } else {
+    for (i in 1:nrow(result_flow)){
+      if (result_flow$download_url[i] == ""){
+        archived_data_bank[[i]] <- ""
+      } else {
+        archived_data_bank[[i]] <- jsonlite::stream_in(
+          gzcon(url(result_flow$download_url[i])), flatten = FALSE
+        )
+      }
     }
+    names(archived_data_bank) <- (result_flow$start_date)
+    return(archived_data_bank)
   }
-  names(archived_data_bank) <- (result_flow$start_date)
-  return(archived_data_bank)
 }
 #archived_data <- get_archived_data()
 #getwd()
@@ -108,12 +112,12 @@ get_archived_data <- function(rapidpro_site = get_rapidpro_site(), call_type = "
 # read in current archived data, and update it
 update_archived_data <- function(curr_data, period = "none", date_to = NULL){
   date_from_update <- max(as.Date(names(curr_data))) +1
-  archived_data_2 <- get_archived_data(call_type = "archives.json",
-                                       period = period,
-                                       date_from = date_from_update,
-                                       date_to = date_to)
-  archived_data <- c(curr_data, archived_data_2)
-  return(archived_data)
+    archived_data_2 <- get_archived_data(call_type = "archives.json",
+                                         period = period,
+                                         date_from = date_from_update,
+                                         date_to = date_to)
+    archived_data <- c(curr_data, archived_data_2)
+    return(archived_data)
 }
 # e.g
 # archived_data_1 <- get_archived_data(call_type = "archives.json", period = "none",
@@ -276,11 +280,7 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call
     flow_data_bank <- flow_data
   } else {
     flow_data_bank[[1]] <- flow_data
-    if (get_by == "download"){
-      archived_data <- get_archived_data(rapidpro_site = rapidpro_site, call_type = archive_call_type, token = token,
-                                         period = archive_period, flatten = flatten, date_from = date_from, date_to = date_to,
-                                         format_date = format_date, tzone_date = tzone_date)
-    } else if (get_by == "read"){
+    if (get_by == "read"){
       archived_data <- readRDS(read_archived_data_from)
     } else {
       archived_data <- data_from_archived

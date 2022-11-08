@@ -506,8 +506,11 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
                               "PLH - Content - Extra - COVID", "PLH - Content - Extra - Disability", "PLH - Content - Positive - Family", 
                               "PLH - Content - Time - One on one time child - Timed intro", "PLH - Content - Time - One on one time teen - Timed intro", "PLH - Content - Positive - introduction", "PLH - Content - Positive - Positive instructions", "PLH - Content - Relax - Quick Pause", "PLH - Content - Relax - Anger management", "PLH - Content - Relax - Anger management 2", "PLH - Content - Positive - IPV", "PLH - Content - Positive - Community safety")
   df_created_on$row <- NULL
-  
-  
+  if (country %in% c("Malaysia", "Philippines") && include_archived_data){
+    archived_data <- readRDS(file = paste0(country, "_archived.RDS"))
+    archived_data <- update_archived_data(curr_data = archived_data,
+                                          date_to = date_to)}
+
   if (!country %in% c("Malaysia", "Philippines", "Jamaica", "South Africa", "South_Africa")){
     supportive_praise_flow <- get_flow_data(flow_name = supportive_praise, flow_type = "praise", include_archived_data = include_archived_data, date_to = "1970-01-01")
     supportive_calm_flow <- get_flow_data(flow_name = supportive_calm, flow_type = "calm", include_archived_data = include_archived_data, date_to = "1970-01-01")
