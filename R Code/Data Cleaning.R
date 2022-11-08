@@ -148,8 +148,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
       filter(created_on >= as.Date(date_to))
   }
   list_of_ids <- df_created_on %>%
-    filter(consent == "Yes") %>%
-    filter(program == "Yes")
+    filter(consent == "Yes")
   list_of_ids <- list_of_ids$ID
   
   # demographics -----------------------------------------------------------------------------
@@ -161,9 +160,9 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   next_tip_morning <- as.numeric(as.character(contacts_unflat$fields$next_tip_morning))
   next_tip_evening <- as.numeric(as.character(contacts_unflat$fields$next_tip_evening))
   parent_gender <- contacts_unflat$fields$gender
-  parent_gender <- factor(ifelse(parent_gender %in% c("female", "f", "woman", "Woman"), "Woman",
-                                 ifelse(parent_gender %in% c("male", "m", "man", "Man"), "Man",
-                                        ifelse(parent_gender %in% "no", NA, parent_gender))))
+  parent_gender <- factor(ifelse(parent_gender %in% c("female", "f", "Female", "woman", "Woman"), "Woman",
+                                 ifelse(parent_gender %in% c("male", "m", "Male", "man", "Man"), "Man",
+                                        ifelse(parent_gender %in% c("no", "B"), NA, parent_gender))))
   parent_gender <- fct_expand(parent_gender, "Woman", "Man")
   parent_gender <- forcats::fct_relevel(parent_gender, c("Woman", "Man"))
   
@@ -301,7 +300,8 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   consent_survey_w1 <- forcats::fct_expand(consent_survey_w1, c("Yes", "No"))
   consent_survey_w1 <- forcats::fct_recode(consent_survey_w1,
                                            "No" = "no",
-                                           "Yes" = "yes")
+                                           "Yes" = "yes",
+                                           `NA` = "goback")
   #consent_survey_w1[is.na(consent_survey_w1)] <- "Did not interact"
   
   #consent_survey_w1[is.na(consent_survey_w1)] <- "Did not interact"
@@ -516,12 +516,12 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
     check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names, flow_type = "check_in", include_archived_data = include_archived_data, date_to = "1970-01-01")
     content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names, flow_type = "tips", include_archived_data = include_archived_data, date_to = "1970-01-01")
   } else {
-    supportive_praise_flow <- get_flow_data(flow_name = supportive_praise, flow_type = "praise", include_archived_data = include_archived_data)
-    supportive_calm_flow <- get_flow_data(flow_name = supportive_calm, flow_type = "calm", include_archived_data = include_archived_data)
-    supportive_activities_flow <- get_flow_data(flow_name = supportive_activities, include_archived_data = include_archived_data)
-    supportive_flow_names_flow <- get_flow_data(flow_name = supportive_flow_names, include_archived_data = include_archived_data)
-    check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names, flow_type = "check_in", include_archived_data = include_archived_data)
-    content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names, flow_type = "tips", include_archived_data = include_archived_data)
+    supportive_praise_flow <- get_flow_data(flow_name = supportive_praise, flow_type = "praise", include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
+    supportive_calm_flow <- get_flow_data(flow_name = supportive_calm, flow_type = "calm", include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
+    supportive_activities_flow <- get_flow_data(flow_name = supportive_activities, include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
+    supportive_flow_names_flow <- get_flow_data(flow_name = supportive_flow_names, include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
+    check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names, flow_type = "check_in", include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
+    content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names, flow_type = "tips", include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
   }
   supportive_praise_flow$ID <- supportive_praise_flow$uuid
   supportive_praise_flow$uuid <- NULL
@@ -613,7 +613,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   
   contacts_unflat_ID_merge <- df_created_on %>% mutate(row = row)
   parenting_survey <- merge(parenting_survey, contacts_unflat_ID_merge) %>% arrange(row)
-  parenting_survey <- parenting_survey %>% filter(consent == "Yes") %>% filter(program == "Yes")
+  parenting_survey <- parenting_survey %>% filter(consent == "Yes") #%>% filter(program == "Yes")
   if (!is.null(date_from)){
     parenting_survey <- parenting_survey %>%
       dplyr::filter(as.POSIXct(date_from, format="%Y-%m-%d", tz = "UTC") < as.POSIXct(parenting_survey$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))

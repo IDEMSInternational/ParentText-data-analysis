@@ -64,7 +64,21 @@ get_user_data <- function(rapidpro_site = get_rapidpro_site(), token = get_rapid
 
 get_archived_data <- function(rapidpro_site = get_rapidpro_site(), call_type = "archives.json", token = get_rapidpro_key(), period = "monthly", flatten = FALSE, date_from = NULL, date_to = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
   get_command <- paste(rapidpro_site, call_type, sep = "")
-  result_flow <- httr_get_call(get_command = get_command, token = token)
+  result_flow <- httr_get_call(get_command = get_command, token = token) 
+  
+  if (!is.null(date_from)){
+    if (format_date != "%Y-%m-%d"){
+      date_from <- format(as.Date(date_from, format_date), '%Y-%m-%d')
+    }
+    result_flow <- result_flow %>% dplyr::filter(start_date >= date_from)
+  }
+  if (!is.null(date_to)){
+    if (format_date != "%Y-%m-%d"){
+      date_to <- format(as.Date(date_to, format_date), '%Y-%m-%d')
+    }
+    result_flow <- result_flow %>% dplyr::filter(start_date <= date_to)
+  }
+  
   if (period == "daily"){
     result_flow <- result_flow %>% dplyr::filter(period == "daily")
   } else if (period == "monthly"){
@@ -75,9 +89,13 @@ get_archived_data <- function(rapidpro_site = get_rapidpro_site(), call_type = "
   result_flow <- result_flow %>% filter(archive_type == "run")
   archived_data_bank <- NULL
   for (i in 1:nrow(result_flow)){
-    archived_data_bank[[i]] <- jsonlite::stream_in(
-      gzcon(url(result_flow$download_url[i])), flatten = FALSE
-    )
+    if (result_flow$download_url[i] == ""){
+      archived_data_bank[[i]] <- ""
+    } else {
+      archived_data_bank[[i]] <- jsonlite::stream_in(
+        gzcon(url(result_flow$download_url[i])), flatten = FALSE
+      )
+    }
   }
   names(archived_data_bank) <- (result_flow$start_date)
   return(archived_data_bank)
@@ -86,6 +104,21 @@ get_archived_data <- function(rapidpro_site = get_rapidpro_site(), call_type = "
 #getwd()
 #saveRDS(archived_data, file = "archived_data_monthly.RDS")
 #saveRDS(archived_data, file = "archived_data.RDS")
+
+# read in current archived data, and update it
+update_archived_data <- function(curr_data, period = "none", date_to = NULL){
+  date_from_update <- max(as.Date(names(curr_data))) +1
+  archived_data_2 <- get_archived_data(call_type = "archives.json",
+                                       period = period,
+                                       date_from = date_from_update,
+                                       date_to = date_to)
+  archived_data <- c(curr_data, archived_data_2)
+  return(archived_data)
+}
+# e.g
+# archived_data_1 <- get_archived_data(call_type = "archives.json", period = "none",
+# date_from = "2021-11-01", date_to = "2021-11-05")
+# update_archived_data(curr_data = archived_data_1)
 
 get_flow_names <- function(rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, date_from = NULL, date_to = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
   get_data_from_rapidpro_api(call_type = "flows.json", rapidpro_site = rapidpro_site, token = token, flatten = flatten, date_from = date_from, date_to = date_to, format_date = format_date, tzone_date = tzone_date)
@@ -112,8 +145,8 @@ httr_get_call <- function(get_command, token = get_rapidpro_key()){
 days_active_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call_type = "runs.json", rapidpro_site = get_rapidpro_site(),
                              token = get_rapidpro_key(), flatten = FALSE, include_archived_data = FALSE, runs_data = "result_flow_runs.RDS", read_runs = FALSE,
                              get_by = "gotit", data_from_archived = archived_data,
-                             download_archived_data = FALSE, read_archived_data_from = "archived_data_monthly.RDS", archive_call_type = "archives.json",
-                             archive_period = "monthly"){
+                             read_archived_data_from = "archived_data_monthly.RDS", archive_call_type = "archives.json",
+                             archive_period = "none"){
   
   
   if(read_runs){
@@ -135,16 +168,12 @@ days_active_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, c
   day_created <- unique(day_created)
   active_days_nonarch <- day_created
   
-  # # for archives data
+  # for archived data
   if (!include_archived_data){
     active_days_data <- active_days_nonarch
   } else {
     flow_data_bank[[1]] <- flow_data
-    if (get_by == "download"){
-      archived_data <- get_archived_data(rapidpro_site = rapidpro_site, call_type = archive_call_type, token = token,
-                                         period = archive_period, flatten = flatten, date_from = date_from, date_to = date_to,
-                                         format_date = format_date, tzone_date = tzone_date)
-    } else if (get_by == "read"){
+    if (get_by == "read"){
       archived_data <- readRDS(read_archived_data_from)
     } else {
       archived_data <- data_from_archived
