@@ -499,11 +499,15 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     selected_data_date_from <- reactive({
       df <- df_original %>%
         filter(created_on >= as.Date(input$datefrom_text))
-      if (input$IPV_checkbox){
-        if (country == "Jamaica"){
-          df <- df %>% dplyr::filter(group %in% c(input$IPV_chk_groups))
+      if (!is.null(input$IPV_checkbox)){
+        if (input$IPV_checkbox){
+          if (country == "Jamaica"){
+            df <- df %>% dplyr::filter(group %in% c(input$IPV_chk_groups))
+          } else {
+            df <- df %>% dplyr::filter(ipv_version == "yes")
+          }
         } else {
-          df <- df %>% dplyr::filter(ipv_version == "yes")
+          df <- df
         }
       } else {
         df <- df
@@ -514,11 +518,15 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     selected_consented_data_date_from <- reactive({
       df_consent <- df_consent_original %>%
         filter(created_on >= as.Date(input$datefrom_text))
-      if (input$IPV_checkbox){
-        if (country == "Jamaica"){
-          df_consent <- df_consent %>% dplyr::filter(group %in% c(input$IPV_chk_groups))
+      if (!is.null(input$IPV_checkbox)){
+        if (input$IPV_checkbox){
+          if (country == "Jamaica"){
+            df_consent <- df_consent %>% dplyr::filter(group %in% c(input$IPV_chk_groups))
+          } else {
+            df_consent <- df_consent %>% dplyr::filter(ipv_version == "yes")
+          }
         } else {
-          df_consent <- df_consent %>% dplyr::filter(ipv_version == "yes")
+          df_consent <- df_consent
         }
       } else {
         df_consent <- df_consent
@@ -529,12 +537,15 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     selected_survey_data_date_from <- reactive({
       parenting_survey <- parenting_survey_original %>%
         filter(created_on >= as.Date(input$datefrom_text))
-      
-      if (input$IPV_checkbox){
-        if (country == "Jamaica"){
-          parenting_survey <- parenting_survey %>% dplyr::filter(group %in% c(input$IPV_chk_groups))
+      if (!is.null(input$IPV_checkbox)){
+        if (input$IPV_checkbox){
+          if (country == "Jamaica"){
+            parenting_survey <- parenting_survey %>% dplyr::filter(group %in% c(input$IPV_chk_groups))
+          } else {
+            parenting_survey <- parenting_survey %>% dplyr::filter(ipv_version == "yes")
+          }
         } else {
-          parenting_survey <- parenting_survey %>% dplyr::filter(ipv_version == "yes")
+          parenting_survey <- parenting_survey
         }
       } else {
         parenting_survey <- parenting_survey
