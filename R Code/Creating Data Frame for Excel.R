@@ -1,5 +1,6 @@
 library(rapidpror)
 library(tidyverse)
+just_ipv <- FALSE
 
 set_rapidpro_site(site = site)
 set_rapidpro_key(key = key[[1]])
@@ -10,9 +11,8 @@ date_to = default_date_to
 
 contacts_unflat <- get_user_data(flatten = FALSE, date_from = date_from, date_to = date_to)
 
-
 # base data -----------------------------------------------------
-created_on <- contacts_unflat$fields$starting_date
+created_on <- contacts_unflat$fields$starting_date # TODO: talk to Chiara why are there starting_date as today.
 did_not_consent <- contacts_unflat$fields$did_not_consent
 ID <- contacts_unflat$uuid
 last_online <- as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%d", tz = "UTC")
@@ -56,6 +56,24 @@ if (length(contacts_unflat$groups) > 0){
     }
   }
 }
+group <- NULL
+if (country == "Jamaica"){
+  for (i in 1:length(contacts_unflat$groups)){
+    contact_name <- contacts_unflat$groups[[i]]
+    if (length(contact_name)==0) {
+      group[i] <- NA
+    } else{
+      group[i] <- ifelse(any(contact_name$name %in% "ParentText_IPV_WC_urban"),
+                         "ParentText_IPV_WC_urban",
+                         ifelse(any(contact_name$name %in% "ParentText_IPV_WC_rural"),
+                                "ParentText_IPV_WC_rural",
+                                ifelse(any(contact_name$name %in% "ParentText_IPV_school_CC"),
+                                       "ParentText_IPV_school_CC",
+                                       ifelse(any(contact_name$name %in% "ParentText_IPV_school_PB"),
+                                              "ParentText_IPV_school_PB", "none"))))
+    }
+  }
+}
 
 enrolled <- factor(enrolled)
 true_consent <- factor(true_consent)
@@ -63,6 +81,7 @@ program <- factor(program)
 gamification <- factor(gamification)
 personalisation <- factor(personalisation)
 n_messages <- factor(n_messages)
+group <- factor(group)
 enrolled <- forcats::fct_expand(enrolled, c("Yes", "No"))
 true_consent <- forcats::fct_expand(true_consent, c("Yes", "No"))
 program <- forcats::fct_expand(program, c("Yes", "No"))
@@ -80,9 +99,13 @@ language[is.na(language)] <- "Did not respond"
 language <- forcats::fct_relevel(language, c("ENG", "MSA", "FIL", "Did not respond"))
 
 df_consent <- data.frame(ID, created_on, program, enrolled, true_consent, language)
-if (country %in% c("South Africa", "South_Africa")){
+if (country %in% c("South Africa", "South_Africa", "Jamaica")){
   ipv_version <- contacts_unflat$fields$ipv_version
-  df_consent <- data.frame(df_consent, ipv_version)
+  if (country == "Jamaica"){
+    df_consent <- data.frame(df_consent, ipv_version, group)
+  } else {
+    df_consent <- data.frame(df_consent, ipv_version)
+  }
 }
 df_consent <- df_consent %>%
   mutate(consent = ifelse(is.na(true_consent) &  is.na(language), "Did not interact",
@@ -104,6 +127,9 @@ if (length(contacts_unflat$groups) > 0){
 df_created_on <- data.frame(ID, created_on, consent, program, row = row)
 if (country %in% c("South Africa", "South_Africa")){
   df_created_on <- data.frame(df_created_on, ipv_version)
+}
+if (country %in% c("Jamaica")){
+  df_created_on <- data.frame(df_created_on, ipv_version, group)
 }
 if (!is.null(date_from)){
   df_created_on <- df_created_on %>%
@@ -348,6 +374,9 @@ df <- data.frame(ID, created_on, last_online, enrolled, consent, program,
 if (country %in% c("South Africa", "South_Africa")){
   df <- data.frame(df, ipv_version)
 }
+if (country %in% c("Jamaica")){
+  df <- data.frame(df, ipv_version, group)
+}
 
 df <- df %>%
   mutate(length_in_programme = as.numeric(as.Date(last_online) - as.Date(created_on)) + 1)
@@ -412,7 +441,6 @@ df_consent <- data.frame(df_consent, parent_gender, child_gender, child_age_grou
 
 # for Jamaica Only: Parent Pals data cleaning --------------------
 if (country == "Jamaica"){
-  # TODO: Add ipv variable here when it is in jamaica data
   women_centre <- contacts_unflat$fields$women_centre
   womens_centre_location <- as.character(contacts_unflat$fields$women_centre_location)
   womens_centre_location <- forcats::fct_expand(womens_centre_location, c("Kingston Centre", "Spanish Town Centre", "Denbigh Centre", "Mandeville Centre",
@@ -839,6 +867,13 @@ contacts_group$values <- group_values[,2]
 contacts_group <- contacts_group %>% pivot_wider(id_cols = c(ID, created_on, consent), names_from = group, values_from = values)
 contacts_group$"NA" <- NULL
 
+# Just IPV for SA:
+if (just_ipv){
+  if (country %in% c("South Africa", "South_Africa", "Jamaica")){
+    df_consent_ipv <- (df_consent %>% filter(ipv_version != "yes"))$ID
+  }
+}
+
 df <- df %>% dplyr::select(-c(order, consent_survey_wNA))
 super_list_of_datasets <- list("Demographics" = df, "Contacts Groups" = contacts_group, "Parenting Survey" = parenting_survey_wider, "Parenting Survey (Wide)" = parenting_survey_even_wider,
                                "Toolkit Skills" = toolkit_skills, "Calm flow" = supportive_calm_flow, "Praise flow" = supportive_praise_flow,
@@ -847,7 +882,12 @@ super_list_of_datasets <- list("Demographics" = df, "Contacts Groups" = contacts
                                "Content tip flow" = content_tip_flow_names_flow, "Full list of flows" = full_list_of_flows,
                                "Full data" = full_data, "Engagement Data" = engagement_data)
 for (i in 1:length(super_list_of_datasets)){
-  if (i %in% c(6:12)){
+  
+  if (just_ipv){
+    super_list_of_datasets[[i]] <- super_list_of_datasets[[i]] %>% filter(ID %in% df_consent_ipv)
+  }
+  
+  if (i %in% c(6:11)){
     super_list_of_datasets[[i]] <- super_list_of_datasets[[i]] %>% mutate(interacted = ifelse(interacted == TRUE, "Yes", "No"))
   }
   super_list_of_datasets[[i]] <- super_list_of_datasets[[i]] %>% filter(consent == "Yes")
@@ -858,5 +898,34 @@ for (i in 1:length(super_list_of_datasets)){
   #list_of_datasets[[i]] <- list_of_datasets[[i]] %>% select(-c("row"))
 }
 
+write_xlsx(super_list_of_datasets, path = "Jamaica_not_IPV_data_20221214.xlsx")
 
-write_xlsx(super_list_of_datasets, "jamaica_data_20223011.xlsx")
+# Additional IPV info for Moa:
+rapidpro_site = get_rapidpro_site()
+token = get_rapidpro_key()
+uuid_data = get_rapidpro_uuid_names()
+call_type = "runs.json?flow="
+uuid_flow <- uuid_data[which(uuid_data$name == "PLH - Content - Positive - IPV"),]
+get_command <- paste(rapidpro_site, call_type, uuid_flow[1], sep = "")
+result_flow <- httr_get_call(get_command = get_command, token = token)
+
+ID <- result_flow$contact$uuid
+tip_no_ipv <- result_flow$values$list_of_tips$value
+
+df_ipv <- data.frame(flow_name = "PLH - Content - Positive - IPV", ID, tip_no_ipv)
+head(df_ipv)
+
+ipv_flow <- dplyr::left_join(df_ipv, df_created_on, by = "ID")
+ipv_flow <- ipv_flow
+ipv_flow$row <- NULL
+
+ipv_flow <- ipv_flow %>% filter(ID %in% df_consent_ipv)
+ipv_flow <- ipv_flow %>% filter(consent == "Yes")
+ipv_flow <- ipv_flow %>% dplyr::filter(as.POSIXct(date_from, format="%Y-%m-%d", tzone = "UTC") < as.POSIXct(ipv_flow$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+if (!is.null(date_to)) {
+  ipv_flow <- ipv_flow %>% dplyr::filter(as.POSIXct(date_to, format="%Y-%m-%d", tzone = "UTC") > as.POSIXct(ipv_flow$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+}
+#list_of_datasets[[i]] <- list_of_datasets[[i]] %>% select(-c("row"))
+
+
+write_xlsx(ipv_flow, path = "Jamaica_not_IPV_bonus_data_20221214.xlsx")

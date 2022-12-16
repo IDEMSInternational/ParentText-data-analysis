@@ -978,7 +978,7 @@ parenttext_shiny <- function(country, date_from = NULL, date_to = NULL, include_
     })
     
     output$parenting_survey_plot <- renderPlotly({
-      parenting_survey1 <- selected_survey_data_date_from() %>% mutate(week = as.numeric(week)) %>% filter(Group %in% c("Positive parenting", "Child maltreatment", "Stress", "Child Behaviour"))
+      parenting_survey1 <- selected_survey_data_date_from() %>% mutate(week = as.numeric(week)) #%>% filter(Group %in% c("Positive parenting", "Child maltreatment", "Stress", "Child Behaviour"))
       parenting_survey_plot <- summarySE(parenting_survey1, groups = c(week, Group), var = vals, na.rm = TRUE)
       ggplot(parenting_survey_plot, aes(x=week, y=mean, colour=Group, group = Group), width = 2) + 
         geom_line() +

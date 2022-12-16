@@ -5,10 +5,7 @@
 
 key <- read.table("tokens/PT_philippines_key.txt", quote="\"", comment.char="")
 site <- "https://app.rapidpro.io/api/v2/"
-include_archived_data <- FALSE # for now FALSE
-#if (include_archived_data){
-#  archived_data <- TODO
-#}
+include_archived_data <- TRUE
 default_date_from <- "2022-06-28"
 default_date_to <- NULL
 prefix <- "PH"

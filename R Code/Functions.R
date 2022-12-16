@@ -271,6 +271,7 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call
         dplyr::mutate(flow_type = uuid_flow[1,1]) 
     }
   }
+  print(flow_data)
   if (!is.null(flow_data)){
     names(flow_data) <- flow_name[1:length(flow_data)]
   }
@@ -336,15 +337,15 @@ flow_data_calculation <- function(result_flow, flatten = FALSE, flow_type = "non
     if (flow_type == "praise" && nrow(result_flow$values) > 0){
       response <- result_flow$values$praise_interaction$category 
       if (!is.null(response)){
-        flow_interaction <- tibble::tibble(uuid, interacted, response)
+        flow_interaction <- tibble::tibble(uuid, interacted, response, created_run_on)
         response <- replace_na(response, "No response")
       } else {
-        flow_interaction <- tibble::tibble(uuid, interacted, response = "No response") 
+        flow_interaction <- tibble::tibble(uuid, interacted, response = "No response", created_run_on) 
       }
     } else if (flow_type == "calm" && !is.null(result_flow$values$calm_interaction)){
       response <- result_flow$values$calm_interaction$category
       response <- replace_na(response, "No response")
-      flow_interaction <- tibble::tibble(uuid, interacted, response)
+      flow_interaction <- tibble::tibble(uuid, interacted, response, created_run_on)
     } else if (flow_type == "check_in" && nrow(result_flow$values) > 0){
       if (is.null(result_flow$values$checkin_managed$category)){
         managed_to_do_something <- "No response"
@@ -356,20 +357,20 @@ flow_data_calculation <- function(result_flow, flatten = FALSE, flow_type = "non
       } else {
         response <- result_flow$values$checkin_how$category
       }
-      flow_interaction <- tibble::tibble(uuid, interacted, managed_to_do_something, response)
+      flow_interaction <- tibble::tibble(uuid, interacted, managed_to_do_something, response, created_run_on)
     } else if (flow_type == "tips" && nrow(result_flow$values) > 0){
       if (is.null(result_flow$values$know_more$category)){
         category <- "No response"
       } else {
         category <- result_flow$values$know_more$category
       }
-      flow_interaction <- tibble::tibble(uuid, interacted, category)
+      flow_interaction <- tibble::tibble(uuid, interacted, category, created_run_on)
     } else {
-      if (created_on){
+      #if (created_on){
         flow_interaction <- tibble::tibble(uuid, interacted, created_run_on)
-      } else {
-        flow_interaction <- tibble::tibble(uuid, interacted)
-      }
+      #} else {
+      #  flow_interaction <- tibble::tibble(uuid, interacted)
+      #}
       ##flow_interaction <- tibble::tibble(uuid, interacted, exit_type, created_on, modified_on, exited_on)
     }
     #result <- na.omit(unique(flatten(result_flow$values)$name))[1]
