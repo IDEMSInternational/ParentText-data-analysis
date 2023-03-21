@@ -41,23 +41,25 @@ get_rapidpro_uuid_names = function(){
   get("rapidpro_uuid_names", envir = pkg_env)
 }
 
-get_user_data <- function(rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE, date_from = NULL, date_to = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
-  user_data <- get_data_from_rapidpro_api(call_type = "contacts.json?group=joined", rapidpro_site = rapidpro_site, token = token, flatten = flatten, date_from = NULL, date_to = NULL, format_date = format_date, tzone_date = tzone_date)
-
-  if (!flatten){
-    if (!is.null(date_from)){
-      user_data <- user_data %>% dplyr::filter(as.POSIXct(date_from, format=format_date, tzone = tzone_date) < as.POSIXct(user_data$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
-    }
-    if (!is.null(date_to)){
-      user_data <- user_data %>% dplyr::filter(as.POSIXct(date_to, format=format_date, tzone = tzone_date) > as.POSIXct(user_data$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
-    }
-  } else {
-    if (!is.null(date_from)){
-      user_data <- user_data %>% dplyr::filter(as.POSIXct(date_from, format=format_date, tzone = tzone_date) < as.POSIXct(user_data$fields.starting_date, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
-    }
-    if (!is.null(date_to)){
-      user_data <- user_data %>% dplyr::filter(as.POSIXct(date_to, format=format_date, tzone = tzone_date) > as.POSIXct(user_data$fields.starting_date, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
-    }
+get_user_data <- function(rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), call_type = "contacts.json?group=joined", flatten = FALSE, date_from = NULL, date_to = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC", type = "parenttext"){
+  user_data <- get_data_from_rapidpro_api(call_type = call_type, rapidpro_site = rapidpro_site, token = token, flatten = flatten, date_from = NULL, date_to = NULL, format_date = format_date, tzone_date = tzone_date)
+  
+  if(type != "srh_user"){
+    if (!flatten){
+      if (!is.null(date_from)){
+        user_data <- user_data %>% dplyr::filter(as.POSIXct(date_from, format=format_date, tzone = tzone_date) < as.POSIXct(user_data$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+      }
+      if (!is.null(date_to)){
+        user_data <- user_data %>% dplyr::filter(as.POSIXct(date_to, format=format_date, tzone = tzone_date) > as.POSIXct(user_data$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+      }
+    } else {
+      if (!is.null(date_from)){
+        user_data <- user_data %>% dplyr::filter(as.POSIXct(date_from, format=format_date, tzone = tzone_date) < as.POSIXct(user_data$fields.starting_date, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+      }
+      if (!is.null(date_to)){
+        user_data <- user_data %>% dplyr::filter(as.POSIXct(date_to, format=format_date, tzone = tzone_date) > as.POSIXct(user_data$fields.starting_date, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+      }
+    } 
   }
   return(user_data)
 }
@@ -112,12 +114,12 @@ get_archived_data <- function(rapidpro_site = get_rapidpro_site(), call_type = "
 # read in current archived data, and update it
 update_archived_data <- function(curr_data, period = "none", date_to = NULL){
   date_from_update <- max(as.Date(names(curr_data))) +1
-    archived_data_2 <- get_archived_data(call_type = "archives.json",
-                                         period = period,
-                                         date_from = date_from_update,
-                                         date_to = date_to)
-    archived_data <- c(curr_data, archived_data_2)
-    return(archived_data)
+  archived_data_2 <- get_archived_data(call_type = "archives.json",
+                                       period = period,
+                                       date_from = date_from_update,
+                                       date_to = date_to)
+  archived_data <- c(curr_data, archived_data_2)
+  return(archived_data)
 }
 # e.g
 # archived_data_1 <- get_archived_data(call_type = "archives.json", period = "none",
@@ -271,7 +273,6 @@ get_flow_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call
         dplyr::mutate(flow_type = uuid_flow[1,1]) 
     }
   }
-  print(flow_data)
   if (!is.null(flow_data)){
     names(flow_data) <- flow_name[1:length(flow_data)]
   }
@@ -367,7 +368,7 @@ flow_data_calculation <- function(result_flow, flatten = FALSE, flow_type = "non
       flow_interaction <- tibble::tibble(uuid, interacted, category, created_run_on)
     } else {
       #if (created_on){
-        flow_interaction <- tibble::tibble(uuid, interacted, created_run_on)
+      flow_interaction <- tibble::tibble(uuid, interacted, created_run_on)
       #} else {
       #  flow_interaction <- tibble::tibble(uuid, interacted)
       #}
@@ -422,7 +423,7 @@ get_survey_data <- function(parenting_variable){
   split_parenting <- stringr::str_split(parenting_variable, pattern = stringr::fixed("|"))
   if (length(split_parenting) > 0) {
     for (j in 1:length(split_parenting)){
-      if (is.na(split_parenting[[j]])){
+      if (any(is.na(split_parenting[[j]]))){
         split_data <- data.frame(V1 = NA, V2 = NA, V3 = NA, row = j)
       } else {
         split_parenting_2 <- stringr::str_split(split_parenting[[j]], ",")
@@ -505,9 +506,13 @@ summary_calculation <- function(data = plhdata_org_clean, factors, columns_to_su
     }
   } else {
     summary_output <- data %>%
-      group_by(across({{ factors }}), .drop = drop) %>%
-      #mutate(across({{ columns_to_summarise }}, ~as.numeric(.))) %>%
-      summarise(across({{ columns_to_summarise }}, ~mean(.x, na.rm = TRUE)))
+      group_by(across({{ factors }})) %>%
+      #summarise(across({{ columns_to_summarise }}, ~mean(.x, na.rm = TRUE)))
+      summarise(across({{ columns_to_summarise }},
+                       list(mean = ~ mean(.x, na.rm = TRUE),
+                            min = ~ min(.x, na.rm = TRUE),
+                            max = ~ max(.x, na.rm = TRUE)),
+                       .names = "{.col}_{.fn}"))
     
     if (include_margins){
       corner_margin <- data %>%
@@ -540,12 +545,14 @@ summary_calculation <- function(data = plhdata_org_clean, factors, columns_to_su
     cell_values_levels <- data %>% pull({{ columns_to_summarise }}) %>% levels()
     if (include_margins){ cell_values_levels <- c(cell_values_levels, "Total") }
     
-    summary_output <- summary_output %>%
-      dplyr::mutate(dplyr::across({{ columns_to_summarise }},
-                                  ~ factor(.x))) %>%
-      dplyr::mutate(dplyr::across({{ columns_to_summarise }},
-                                  ~ forcats::fct_relevel(.x, cell_values_levels)))
-    summary_output <- summary_output %>% dplyr::arrange({{ columns_to_summarise }})
+    if (summaries != "mean"){ # doesn't work for mean because we have multiple columns and rename them
+      summary_output <- summary_output %>%
+        dplyr::mutate(dplyr::across({{ columns_to_summarise }},
+                                    ~ factor(.x))) %>%
+        dplyr::mutate(dplyr::across({{ columns_to_summarise }},
+                                    ~ forcats::fct_relevel(.x, cell_values_levels)))
+      summary_output <- summary_output %>% dplyr::arrange({{ columns_to_summarise }})
+    }
   }
   return(unique(summary_output))
 }
@@ -574,7 +581,7 @@ summary_table <- function(data = plhdata_org_clean, factors = Org, columns_to_su
     if (summaries == "frequencies"){
       return_table <- return_table %>% pivot_wider(id_cols = {{ factors }}, names_from =  {{ columns_to_summarise }}, values_from = n)
     }
-
+    
     return_table <- gt(as_tibble(return_table)) %>%
       tab_header(
         title = paste(return_table_names[1], "by", return_table_names[2])  # fix up. 
@@ -630,10 +637,10 @@ flow_data_table_function <- function(flow_interaction, flow_name = NULL){
     flow_interaction$interacted <- NA
   }
   flow_interaction_output <- flow_interaction %>%
-      group_by({{ flow_name }}, interacted, .drop = FALSE) %>%
-      summarise(Count = n()) %>% #, perc = round(n()/nrow(.)*100,2)) %>%
-      #mutate("Count (%)" := str_c(`Count`, ' (', round(`perc`, 1), ")")) %>%
-      #dplyr::select(-c(count, perc)) %>%
+    group_by({{ flow_name }}, interacted, .drop = FALSE) %>%
+    summarise(Count = n()) %>% #, perc = round(n()/nrow(.)*100,2)) %>%
+    #mutate("Count (%)" := str_c(`Count`, ' (', round(`perc`, 1), ")")) %>%
+    #dplyr::select(-c(count, perc)) %>%
     map_df(rev)
   return(flow_interaction_output)
 }
@@ -672,8 +679,8 @@ summarySE <- function(data=NULL, var, groups=NULL, na.rm=FALSE,
 
 # General level - number of responses, category answers
 response_rate_graphs<-function(flow_interaction, flow_name){
-  print(flow_interaction %>% group_by(response) %>% summarise(n())) 
-  print(flow_interaction %>% group_by(category) %>% summarise(n())) 
+  #print(flow_interaction %>% group_by(response) %>% summarise(n())) 
+  #print(flow_interaction %>% group_by(category) %>% summarise(n())) 
   #  ggplot(flow_interaction, aes(x = response)) +
   #    geom_bar() +
   #    labs(x = "Response", y = "Frequency", title = paste(flow_name ," - Response"))
@@ -687,4 +694,79 @@ response_rate_graphs<-function(flow_interaction, flow_name){
 create_user_dataframe <- function(flow_interaction){
   temp<-flow_interaction %>% group_by(uuid,response) %>% summarise(n=n()) %>% mutate(freq=100*n/sum(n))
   temp2<-flow_interaction %>% filter(response == TRUE) %>% group_by(uuid,category) %>% summarise(n=n()) %>% mutate(freq=100*n/sum(n))
+}
+
+
+# SRH data
+srh_table_output <- function(flow_names = SRH_flow_names){
+  srh_table <- NULL
+  all_flow_names <- get_flow_names() %>% dplyr::select((name))
+  for (i in flow_names){
+    i_flow_names <- (all_flow_names %>% filter(grepl(i, name)))$name
+    if (length(i_flow_names) != 0){
+      i_flow <- get_flow_data(flow_name = i_flow_names)
+      srh_table[[which(flow_names == i)]] <- i_flow
+      names(srh_table)[[which(flow_names == i)]] <- i
+    }
+  }
+  return(srh_table)
+}
+
+flow_cat_frequency <- function(table = srh_data){
+  freq_table <- NULL
+  for (i in 1:length(table)){
+    if (!is.null(table[[i]]) && nrow(table[[i]]) > 0){
+      i_flow_n <- table[[i]] %>% group_by(`.id`) %>% summarise(n())
+      i_flow_n$`.id` <- gsub(".*- ","", i_flow_n$`.id`)
+      freq_table[[i]] <- i_flow_n
+      names(freq_table)[[i]] <- names(table)[[i]]
+    }
+    #    } else {
+    #      print("no")
+  }
+  return(freq_table)
+}
+
+summary_plot <- function(data = plhdata_org_clean, columns_to_summarise, naming_convention = TRUE, replace = "rp.contact.field.",
+                         replace_after = NULL,
+                         plot_type = c("histogram", "boxplot")) {	
+  plot_type <- match.arg(plot_type)
+  x_axis_label = naming_conventions(colnames(data%>%select(.data[[columns_to_summarise]])), replace = replace, replace_after = replace_after)	
+  
+  return_plot <- ggplot(data) +	
+    viridis::scale_fill_viridis(discrete = TRUE, na.value = "navy") +	
+    labs(x = x_axis_label, y = "Count") +	
+    theme_classic()	
+  
+  if(plot_type == "histogram"){
+    return_plot <- return_plot + geom_histogram(data = data, aes(x = .data[[columns_to_summarise]]), stat = "count")
+  } else {
+    return_plot <- return_plot + geom_boxplot(data = data, aes(y = .data[[columns_to_summarise]]))
+  }
+  
+  return(return_plot)	
+}
+
+naming_conventions <- function(x, replace, replace_after) {
+  if (!missing(replace)){
+    x <- gsub(paste("^.*?", replace, ".*", sep = ""), "", x)
+  }
+  if (!missing(replace_after)){
+    x <- gsub(paste(replace_after, "$", sep = ""), "", x)
+  }
+  substr(x, 1, 1) <- toupper(substr(x, 1, 1))
+  x <- gsub("_", " ", x)
+  x
+}
+
+numeric_summary <- function(data, factors, columns_to_summarise, summaries){
+  summary_output <- data %>%
+    group_by(across({{ factors }}), .drop = drop) %>%
+    #mutate(across({{ columns_to_summarise }}, ~as.numeric(.))) %>%
+    summarise(across({{ columns_to_summarise }},
+                     list(mean = ~ mean(.x, na.rm = TRUE),
+                          min = ~ min(.x, na.rm = TRUE),
+                          max = ~ max(.x, na.rm = TRUE)),
+                     .names = "{.col}_{.fn}"))
+  return(summary_output)
 }

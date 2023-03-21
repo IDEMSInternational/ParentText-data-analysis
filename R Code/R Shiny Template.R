@@ -5,7 +5,7 @@ library(shinyjs)
 library(plotly)
 library(shinydashboard)
 library(survival)
-library(survminer)
+#library(survminer)
 
 checkbox_IPV <- function(country){
   if (country %in% c("South Africa", "South_Africa")) {

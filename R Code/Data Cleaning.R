@@ -6,9 +6,9 @@ library(tidyverse)
 # source("Code Book.R")
 #install_github("lilyclements/rapidpror")
 #library(rapidpror)
-
+consent_only <- TRUE
 # RapidPro set up --------------------------------------------------------------
-update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to = NULL, include_archived_data = FALSE, consent = TRUE) {
+update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to = NULL, include_archived_data = FALSE, consent_only = TRUE) {
   
   set_rapidpro_site(site = site)
   set_rapidpro_key(key = key[[1]])
@@ -311,7 +311,7 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   all_split_data <- NULL
   if (length(survey_consented_wk2_plus) > 0){
     for (j in 1:length(survey_consented_wk2_plus)){
-      if (is.na(survey_consented_wk2_plus[[j]])){
+      if (any(is.na(survey_consented_wk2_plus[[j]]))){
         split_data <- data.frame(V1 = NA, V2 = NA, V3 = NA, row = j)
       } else {
         split_parenting_2 <- stringr::str_split(survey_consented_wk2_plus[[j]], ",")
@@ -443,9 +443,8 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
   }
 
   if (length(list_of_ids) > 0){
-    if (consent){
-      df <- df %>%
-        filter(ID %in% list_of_ids) 
+    if (consent_only){
+      df <- df %>% filter(ID %in% list_of_ids) 
     }
   }
 
