@@ -378,96 +378,88 @@ srh_shiny <- function(country = "Jamaica", study = "SRH"){
     # Engagement Tab ---------------------------------------------------
     table_Menstruation <- reactive({ srh_flow_freq_df$`SRH - Answer - Menstruation` }) 
     plot_Menstruation  <- reactive({
-      summary_plot(data = srh_flow_df$`SRH - Answer - Menstruation`, columns_to_summarise = ".id",
-                   replace = "SRH - Answer - ", plot_type = "histogram") + labs(x = "Answer")
-    }) 
-    output$table_Menstruation <- shiny::renderTable({(table_Menstruation())}, striped = TRUE)
-    output$plot_Menstruation <- renderPlotly({plot_Menstruation()})
-    
-    table_Menstruation <- reactive({ srh_flow_freq_df$`SRH - Answer - Menstruation` }) 
-    plot_Menstruation  <- reactive({
-      summary_plot(data = srh_flow_df$`SRH - Answer - Menstruation`, columns_to_summarise = ".id",
-                   replace = "SRH - Answer - ", plot_type = "histogram") + labs(x = "Answer")
+      summary_plot(data = srh_flow_df$`SRH - Answer - Menstruation`, columns_to_summarise = "flow",
+                   replace = "SRH - Answer - Menstruation - ", plot_type = "histogram") + labs(x = "Answer")
     }) 
     output$table_Menstruation <- shiny::renderTable({(table_Menstruation())}, striped = TRUE)
     output$plot_Menstruation <- renderPlotly({plot_Menstruation()})
     
     table_Pregnancy <- reactive({ srh_flow_freq_df$`SRH - Answer - Pregnancy` }) 
     plot_Pregnancy  <- reactive({
-      summary_plot(data = srh_flow_df$`SRH - Answer - Pregnancy`, columns_to_summarise = ".id",
-                   replace = "SRH - Answer - ", plot_type = "histogram") + labs(x = "Answer")
+      summary_plot(data = srh_flow_df$`SRH - Answer - Pregnancy`, columns_to_summarise = "flow",
+                   replace = "SRH - Answer - Pregnancy - ", plot_type = "histogram") + labs(x = "Answer")
     }) 
     output$table_Pregnancy <- shiny::renderTable({(table_Pregnancy())}, striped = TRUE)
     output$plot_Pregnancy <- renderPlotly({plot_Pregnancy()})
     
     table_Puberty <- reactive({ srh_flow_freq_df$`SRH - Answer - Puberty` }) 
     plot_Puberty  <- reactive({
-      summary_plot(data = srh_flow_df$`SRH - Answer - Puberty`, columns_to_summarise = ".id",
-                   replace = "SRH - Answer - ", plot_type = "histogram") + labs(x = "Answer")
+      summary_plot(data = srh_flow_df$`SRH - Answer - Puberty`, columns_to_summarise = "flow",
+                   replace = "SRH - Answer - Puberty - ", plot_type = "histogram") + labs(x = "Answer")
     }) 
     output$table_Puberty <- shiny::renderTable({(table_Puberty())}, striped = TRUE)
     output$plot_Puberty <- renderPlotly({plot_Puberty()})
     
     table_STIs <- reactive({ srh_flow_freq_df$`SRH - Answer - STIs` }) 
     plot_STIs  <- reactive({
-      summary_plot(data = srh_flow_df$`SRH - Answer - STIs`, columns_to_summarise = ".id",
-                   replace = "SRH - Answer - ", plot_type = "histogram") + labs(x = "Answer")
+      summary_plot(data = srh_flow_df$`SRH - Answer - STIs`, columns_to_summarise = "flow",
+                   replace = "SRH - Answer - STIs - ", plot_type = "histogram") + labs(x = "Answer")
     }) 
     output$table_STIs <- shiny::renderTable({(table_STIs())}, striped = TRUE)
     output$plot_STIs <- renderPlotly({plot_STIs()})
     
     table_Gender <- reactive({ srh_flow_freq_df$`SRH - Answer - Gender` }) 
     plot_Gender  <- reactive({
-      summary_plot(data = srh_flow_df$`SRH - Answer - Gender`, columns_to_summarise = ".id",
-                   replace = "SRH - Answer - ", plot_type = "histogram") + labs(x = "Answer")
+      summary_plot(data = srh_flow_df$`SRH - Answer - Gender`, columns_to_summarise = "flow",
+                   replace = "SRH - Answer - Gender - ", plot_type = "histogram") + labs(x = "Answer")
     }) 
     output$table_Gender <- shiny::renderTable({(table_Gender())}, striped = TRUE)
     output$plot_Gender <- renderPlotly({plot_Gender()})
     
     table_Sexuality <- reactive({ srh_flow_freq_df$`SRH - Answer - Sexuality` }) 
     plot_Sexuality  <- reactive({
-      summary_plot(data = srh_flow_df$`SRH - Answer - Sexuality`, columns_to_summarise = ".id",
-                   replace = "SRH - Answer - ", plot_type = "histogram") + labs(x = "Answer")
+      summary_plot(data = srh_flow_df$`SRH - Answer - Sexuality`, columns_to_summarise = "flow",
+                   replace = "SRH - Answer - Sexuality - ", plot_type = "histogram") + labs(x = "Answer")
     }) 
     output$table_Sexuality <- shiny::renderTable({(table_Sexuality())}, striped = TRUE)
     output$plot_Sexuality <- renderPlotly({plot_Sexuality()})
     
     table_Abstinence <- reactive({ srh_flow_freq_df$`SRH - Answer - Abstinence` }) 
     plot_Abstinence  <- reactive({
-      summary_plot(data = srh_flow_df$`SRH - Answer - Abstinence`, columns_to_summarise = ".id",
-                   replace = "SRH - Answer - ", plot_type = "histogram") + labs(x = "Answer")
+      summary_plot(data = srh_flow_df$`SRH - Answer - Abstinence`, columns_to_summarise = "flow",
+                   replace = "SRH - Answer - Abstinence - ", plot_type = "histogram") + labs(x = "Answer")
     }) 
     output$table_Abstinence <- shiny::renderTable({(table_Abstinence())}, striped = TRUE)
     output$plot_Abstinence <- renderPlotly({plot_Abstinence()})
     
     table_MH <- reactive({ srh_flow_freq_df$`SRH - Answer - Mental Health` }) 
     plot_MH  <- reactive({
-      summary_plot(data = srh_flow_df$`SRH - Answer - Mental Health`, columns_to_summarise = ".id",
-                   replace = "SRH - Answer - ", plot_type = "histogram") + labs(x = "Answer")
+      summary_plot(data = srh_flow_df$`SRH - Answer - Mental Health`, columns_to_summarise = "flow",
+                   replace = "SRH - Answer - Mental Health - ", plot_type = "histogram") + labs(x = "Answer")
     }) 
     output$table_MH <- shiny::renderTable({(table_MH())}, striped = TRUE)
     output$plot_MH <- renderPlotly({plot_MH()})
     
     table_Violence <- reactive({ srh_flow_freq_df$`SRH - Answer - Violence & Abuse` }) 
     plot_Violence  <- reactive({
-      summary_plot(data = srh_flow_df$`SRH - Answer - Violence & Abuse`, columns_to_summarise = ".id",
-                   replace = "SRH - Answer - ", plot_type = "histogram") + labs(x = "Answer")
+      summary_plot(data = srh_flow_df$`SRH - Answer - Violence & Abuse`, columns_to_summarise = "flow",
+                   replace = "SRH - Answer - Violence & Abuse - ", plot_type = "histogram") + labs(x = "Answer")
     }) 
     output$table_Violence <- shiny::renderTable({(table_Violence())}, striped = TRUE)
     output$plot_Violence <- renderPlotly({plot_Violence()})
     
     table_Healthy <- reactive({ srh_flow_freq_df$`SRH - Answer - Healthy Relationships` }) 
     plot_Healthy  <- reactive({
-      summary_plot(data = srh_flow_df$`SRH - Answer - Healthy Relationships`, columns_to_summarise = ".id",
-                   replace = "SRH - Answer - ", plot_type = "histogram") + labs(x = "Answer")
+      summary_plot(data = srh_flow_df$`SRH - Answer - Healthy Relationships`, columns_to_summarise = "flow",
+                   replace = "SRH - Answer - Healthy Relationships - ", plot_type = "histogram") + labs(x = "Answer")
     }) 
     output$table_Healthy <- shiny::renderTable({(table_Healthy())}, striped = TRUE)
     output$plot_Healthy <- renderPlotly({plot_Healthy()})
     
     table_Parenting <- reactive({ srh_flow_freq_df$`SRH - Answer - Parenting` }) 
     plot_Parenting  <- reactive({
-      summary_plot(data = srh_flow_df$`SRH - Answer - Parenting`, columns_to_summarise = ".id",
-                   replace = "SRH - Answer - ", plot_type = "histogram") + labs(x = "Answer")
+      summary_plot(data = srh_flow_df$`SRH - Answer - Parenting`, columns_to_summarise = "flow",
+                   replace = "SRH - Answer - Parenting - ", plot_type = "histogram") + labs(x = "Answer")
     }) 
     output$table_Parenting <- shiny::renderTable({(table_Parenting())}, striped = TRUE)
     output$plot_Parenting <- renderPlotly({plot_Parenting()})

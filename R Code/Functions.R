@@ -15,6 +15,34 @@ set_rapidpro_uuid_names = function(uuid_names = get_flow_names()){
   pkg_env$rapidpro_uuid_names <- uuid_names 
 }
 
+get_data_from_rapidpro_api <- function(call_type, rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE,
+                                       date_from = NULL, date_to = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
+  if (is.null(rapidpro_site)){
+    stop("rapidpro_site is NULL. Set a website with `set_rapidpro_site`.")
+  }
+  if (is.null(token)){
+    stop("token is NULL. Set a token with `set_rapidpro_key`.")
+  }
+  if (is.null(call_type)){
+    stop("call_type is NULL. Expecting a valid call_type.")
+  }
+  if (!is.logical(flatten)){
+    stop("flatten should be TRUE or FALSE")
+  }
+  get_command <- paste(rapidpro_site, call_type, sep = "")
+  user_result <- httr_get_call(get_command = get_command, token = token)
+  if (flatten){
+    user_result <- jsonlite::flatten(user_result)
+  }
+  if (!is.null(date_from)){
+    user_result <- user_result %>% dplyr::filter(as.POSIXct(date_from, format=format_date, tzone = tzone_date) < as.POSIXct(user_result$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+  }
+  if (!is.null(date_to)){
+    user_result <- user_result %>% dplyr::filter(as.POSIXct(date_to, format=format_date, tzone = tzone_date) > as.POSIXct(user_result$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+  }
+  return(user_result)
+}
+
 days_active_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, call_type = "runs.json", rapidpro_site = get_rapidpro_site(),
                              token = get_rapidpro_key(), flatten = FALSE, include_archived_data = FALSE, runs_data = "result_flow_runs.RDS", read_runs = FALSE,
                              get_by = "gotit", data_from_archived = archived_data,
@@ -331,28 +359,28 @@ summarySE <- function(data=NULL, var, groups=NULL, na.rm=FALSE,
 }
 
 # SRH data
-srh_table_output <- function(flow_names = SRH_flow_names){
-  srh_table <- NULL
-  all_flow_names <- get_flow_names() %>% dplyr::select((name))
-  for (i in flow_names){
-    i_flow_names <- (all_flow_names %>% filter(grepl(i, name)))$name
-    if (length(i_flow_names) != 0){
-      i_flow <- get_flow_data(flow_name = i_flow_names)
-      i_flow$`.id` <- (gsub(".*- ", "", i_flow$`.id`))
-      srh_table[[which(flow_names == i)]] <- i_flow
-      names(srh_table)[[which(flow_names == i)]] <- i
-    }
-  }
-  return(srh_table)
-}
+# srh_table_output <- function(flow_names = SRH_flow_names){
+#   srh_table <- NULL
+#   all_flow_names <- get_flow_names() %>% dplyr::select((name))
+#   for (i in flow_names){
+#     i_flow_names <- (all_flow_names %>% filter(grepl(i, name)))$name
+#     if (length(i_flow_names) != 0){
+#       i_flow <- get_flow_data(flow_name = i_flow_names)
+#       i_flow$`.id` <- (gsub(".*- ", "", i_flow$`.id`))
+#       srh_table[[which(flow_names == i)]] <- i_flow
+#       names(srh_table)[[which(flow_names == i)]] <- i
+#     }
+#   }
+#   return(srh_table)
+# }
 
 flow_cat_frequency <- function(table = srh_data){
   freq_table <- NULL
   for (i in 1:length(table)){
     if (!is.null(table[[i]]) && nrow(table[[i]]) > 0){
       #table[[i]] <- table[[i]] %>% filter(interacted == TRUE)
-      i_flow_n <- summary_table(table[[i]], factors = `.id`)
-      i_flow_n$`.id` <- gsub(".*- ","", i_flow_n$`.id`)
+      i_flow_n <- summary_table(table[[i]], factors = flow)
+      i_flow_n$Flow <- gsub(".*- ","", i_flow_n$Flow)
       freq_table[[i]] <- i_flow_n
       names(freq_table)[[i]] <- names(table)[[i]]
     }

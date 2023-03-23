@@ -109,11 +109,15 @@ update_data <- function(type = "SRH", date_from = "2021-10-14", date_to = NULL, 
   SRH_flow_names <- paste0("SRH - Answer - ", c("Menstruation", "Pregnancy", "Puberty", "STIs",
                                                 "Gender", "Sexuality", "Abstinence", "Mental Health",
                                                 "Violence & Abuse", "Healthy Relationships", "Parenting"))
-  
-  srh_data <- srh_table_output(flow_names = SRH_flow_names)
-  #srh_data <- srh_data1
-  #srh_data <- srh_table_output(all_flow_names = all_flow_names1)
-  names(srh_data) <- SRH_flow_names
+  all_flow_names <- get_flow_names() %>% dplyr::select((name))
+  srh_data_all <- get_data_from_rapidpro_api(call_type="runs.json?joined=srh_user", flatten = TRUE)
+  srh_data <- NULL
+  for (i in SRH_flow_names){
+    i_flow_names <- (all_flow_names %>% filter(grepl(i, name)))$name
+    srh_data[[i]] <- srh_data_all %>% filter(`flow.name` %in% i_flow_names) %>%
+      dplyr::mutate(flow.name = naming_conventions(flow.name, replace = paste0(i, " - "))) %>%
+      dplyr::select(c(flow = flow.name, uuid = contact.uuid, interacted = responded, created_on))
+  }
   
   # Consented ---------------------------------------------
   if (consent_only){
