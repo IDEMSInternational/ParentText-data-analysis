@@ -115,126 +115,142 @@ srh_shiny <- function(country = "Jamaica", study = "SRH"){
                   ) #closes box
                 ), #closes fluid row
                 
-                fluidRow(
-                  box(width = 6,
-                      collapsible = TRUE,
-                      solidHeader = TRUE,
-                      title = "Menstruation",
-                      status = "primary", # info, success, info, warning, danger
-                      style='width:100%;overflow-x: scroll;',
-                      plotlyOutput(outputId = "plot_Menstruation", height = "240"),
-                      shiny::tableOutput("table_Menstruation")
-                  ), #closes box
-                  box(width = 6,
-                      collapsible = TRUE,
-                      solidHeader = TRUE,
-                      title = "Pregnancy",
-                      status = "primary",  
-                      style='width:100%;overflow-x: scroll;',
-                      plotlyOutput(outputId = "plot_Pregnancy", height = "240"), #generates graph
-                      shiny::tableOutput("table_Pregnancy")  #generates table
-                  ) #closes box
-                ), #closes fluidRow
-                
-                fluidRow(
-                  box(width = 6,
-                      collapsible = TRUE,
-                      solidHeader = TRUE,
-                      title = "Parent age",
-                      status = "primary",  
-                      style='width:100%;overflow-x: scroll;',
-                      plotlyOutput(outputId = "plot_Puberty", height = "240"),
-                      shiny::tableOutput("table_Puberty")
-                  ), #closes box
-                  
-                  box(width = 6,
-                      collapsible = TRUE,
-                      solidHeader = TRUE,
-                      title = "Parent gender",
-                      status = "primary",  
-                      style='width:100%;overflow-x: scroll;',
-                      plotlyOutput(outputId = "plot_STIs", height = "240"), #generates graph
-                      shiny::tableOutput("table_STIs")  #generates table
-                  ) #closes box
-                ), #closes fluidRow
-                
-                fluidRow(
-                  box(width = 6,
-                      collapsible = TRUE,
-                      solidHeader = TRUE,
-                      title = "Gender",
-                      status = "primary",  
-                      style='width:100%;overflow-x: scroll;',
-                      plotlyOutput(outputId = "plot_Gender", height = "240"),
-                      shiny::tableOutput("table_Gender")
-                  ), #closes box
-                  
-                  box(width = 6,
-                      collapsible = TRUE,
-                      solidHeader = TRUE,
-                      title = "Sexuality",
-                      status = "primary",  
-                      style='width:100%;overflow-x: scroll;',
-                      plotlyOutput(outputId = "plot_Sexuality", height = "240"), #generates graph
-                      shiny::tableOutput("table_Sexuality")  #generates table
-                  ) #closes box
-                ), #closes fluidRow
-                
-                fluidRow(
-                  box(width = 6,
-                      collapsible = TRUE,
-                      solidHeader = TRUE,
-                      title = "Abstinence",
-                      status = "primary",  
-                      style='width:100%;overflow-x: scroll;',
-                      plotlyOutput(outputId = "plot_Abstinence", height = "240"),
-                      shiny::tableOutput("table_Abstinence")
-                  ), #closes box
-                  
-                  box(width = 6,
-                      collapsible = TRUE,
-                      solidHeader = TRUE,
-                      title = "Mental Health",
-                      status = "primary",  
-                      style='width:100%;overflow-x: scroll;',
-                      plotlyOutput(outputId = "plot_MH", height = "240"), #generates graph
-                      shiny::tableOutput("table_MH")  #generates table
-                  ) #closes box
-                ), #closes fluidRow
-                
-                fluidRow(
-                  box(width = 6,
-                      collapsible = TRUE,
-                      solidHeader = TRUE,
-                      title = "Violence & Abuse",
-                      status = "primary",  
-                      style='width:100%;overflow-x: scroll;',
-                      plotlyOutput(outputId = "plot_Violence", height = "240"),
-                      shiny::tableOutput("table_Violence")
-                  ), #closes box
-                  
-                  box(width = 6,
-                      collapsible = TRUE,
-                      solidHeader = TRUE,
-                      title = "Healthy Relationships",
-                      status = "primary",  
-                      style='width:100%;overflow-x: scroll;',
-                      plotlyOutput(outputId = "plot_Healthy", height = "240"), #generates graph
-                      shiny::tableOutput("table_Healthy")  #generates table
-                  ) #closes box
-                ), #closes fluidRow
-                
-                fluidRow(
-                  box(width = 6,
-                      collapsible = TRUE,
-                      solidHeader = TRUE,
-                      title = "Parenting",
-                      status = "primary",  
-                      style='width:100%;overflow-x: scroll;',
-                      plotlyOutput(outputId = "plot_Parenting", height = "240"),
-                      shiny::tableOutput("table_Parenting")
-                  ) #closes box
-                ) #closes fluidRow
+                tabsetPanel(type = "tabs",
+                            tabPanel("Overview",
+                                     fluidRow(
+                                       box(width = 6,
+                                           collapsible = TRUE,
+                                           solidHeader = TRUE,
+                                           title = "Menstruation",
+                                           status = "primary", # info, success, info, warning, danger
+                                           style='width:100%;overflow-x: scroll;',
+                                           plotlyOutput(outputId = "plot_Menstruation", height = "240"),
+                                           shiny::tableOutput("table_Menstruation")
+                                       ), #closes box
+                                       box(width = 6,
+                                           collapsible = TRUE,
+                                           solidHeader = TRUE,
+                                           title = "Pregnancy",
+                                           status = "primary",  
+                                           style='width:100%;overflow-x: scroll;',
+                                           plotlyOutput(outputId = "plot_Pregnancy", height = "240"), #generates graph
+                                           shiny::tableOutput("table_Pregnancy")  #generates table
+                                       ) #closes box
+                                     ), #closes fluidRow
+                                     
+                                     fluidRow(
+                                       box(width = 6,
+                                           collapsible = TRUE,
+                                           solidHeader = TRUE,
+                                           title = "Parent age",
+                                           status = "primary",  
+                                           style='width:100%;overflow-x: scroll;',
+                                           plotlyOutput(outputId = "plot_Puberty", height = "240"),
+                                           shiny::tableOutput("table_Puberty")
+                                       ), #closes box
+                                       
+                                       box(width = 6,
+                                           collapsible = TRUE,
+                                           solidHeader = TRUE,
+                                           title = "Parent gender",
+                                           status = "primary",  
+                                           style='width:100%;overflow-x: scroll;',
+                                           plotlyOutput(outputId = "plot_STIs", height = "240"), #generates graph
+                                           shiny::tableOutput("table_STIs")  #generates table
+                                       ) #closes box
+                                     ), #closes fluidRow
+                                     
+                                     fluidRow(
+                                       box(width = 6,
+                                           collapsible = TRUE,
+                                           solidHeader = TRUE,
+                                           title = "Gender",
+                                           status = "primary",  
+                                           style='width:100%;overflow-x: scroll;',
+                                           plotlyOutput(outputId = "plot_Gender", height = "240"),
+                                           shiny::tableOutput("table_Gender")
+                                       ), #closes box
+                                       
+                                       box(width = 6,
+                                           collapsible = TRUE,
+                                           solidHeader = TRUE,
+                                           title = "Sexuality",
+                                           status = "primary",  
+                                           style='width:100%;overflow-x: scroll;',
+                                           plotlyOutput(outputId = "plot_Sexuality", height = "240"), #generates graph
+                                           shiny::tableOutput("table_Sexuality")  #generates table
+                                       ) #closes box
+                                     ), #closes fluidRow
+                                     
+                                     fluidRow(
+                                       box(width = 6,
+                                           collapsible = TRUE,
+                                           solidHeader = TRUE,
+                                           title = "Abstinence",
+                                           status = "primary",  
+                                           style='width:100%;overflow-x: scroll;',
+                                           plotlyOutput(outputId = "plot_Abstinence", height = "240"),
+                                           shiny::tableOutput("table_Abstinence")
+                                       ), #closes box
+                                       
+                                       box(width = 6,
+                                           collapsible = TRUE,
+                                           solidHeader = TRUE,
+                                           title = "Mental Health",
+                                           status = "primary",  
+                                           style='width:100%;overflow-x: scroll;',
+                                           plotlyOutput(outputId = "plot_MH", height = "240"), #generates graph
+                                           shiny::tableOutput("table_MH")  #generates table
+                                       ) #closes box
+                                     ), #closes fluidRow
+                                     
+                                     fluidRow(
+                                       box(width = 6,
+                                           collapsible = TRUE,
+                                           solidHeader = TRUE,
+                                           title = "Violence & Abuse",
+                                           status = "primary",  
+                                           style='width:100%;overflow-x: scroll;',
+                                           plotlyOutput(outputId = "plot_Violence", height = "240"),
+                                           shiny::tableOutput("table_Violence")
+                                       ), #closes box
+                                       
+                                       box(width = 6,
+                                           collapsible = TRUE,
+                                           solidHeader = TRUE,
+                                           title = "Healthy Relationships",
+                                           status = "primary",  
+                                           style='width:100%;overflow-x: scroll;',
+                                           plotlyOutput(outputId = "plot_Healthy", height = "240"), #generates graph
+                                           shiny::tableOutput("table_Healthy")  #generates table
+                                       ) #closes box
+                                     ), #closes fluidRow
+                                     
+                                     fluidRow(
+                                       box(width = 6,
+                                           collapsible = TRUE,
+                                           solidHeader = TRUE,
+                                           title = "Parenting",
+                                           status = "primary",  
+                                           style='width:100%;overflow-x: scroll;',
+                                           plotlyOutput(outputId = "plot_Parenting", height = "240"),
+                                           shiny::tableOutput("table_Parenting")
+                                       ) #closes box
+                                     ) #closes fluidRow
+                            ),
+                            tabPanel("By UUID",
+                              fluidRow(
+                                box(width = 12,
+                                    collapsible = TRUE,
+                                    solidHeader = TRUE,
+                                    title = "Accessed by UUID",
+                                    status = "primary",  
+                                    style='width:100%;overflow-x: scroll;',
+                                    plotlyOutput(outputId = "plot_by_uuid", height = "240"),
+                                    shiny::tableOutput("table_by_uuid")
+                                ) #closes box
+                              ) #closes fluidRow
+                            )) # closes tabPanel, tabsetPanel
         ), #closes second tabItem
         tabItem(tabName = "library",
                 fluidRow(
@@ -275,6 +291,7 @@ srh_shiny <- function(country = "Jamaica", study = "SRH"){
     srh_df <- data.frame(srh_bank[[1]])
     srh_flow_df <- srh_bank[[2]]
     srh_flow_freq_df <- srh_bank[[3]]
+    srh_by_uuid <- srh_bank[[4]]
     
     #SUMMARY STATS HEADER displays (same for all tabs)
     output$myvaluebox1 <- shinydashboard::renderValueBox({
@@ -455,6 +472,21 @@ srh_shiny <- function(country = "Jamaica", study = "SRH"){
     output$table_Parenting <- shiny::renderTable({(table_Parenting())}, striped = TRUE)
     output$plot_Parenting <- renderPlotly({plot_Parenting()})
     
+    table_by_uuid <- reactive({ srh_by_uuid }) 
+    plot_by_uuid  <- reactive({
+      srh_by_uuid_long <- pivot_longer(srh_by_uuid, cols = !uuid)
+      srh_by_uuid_long <- srh_by_uuid_long %>%
+        filter(name != "Total") %>%
+        filter(uuid != "Total")
+      ggplot(srh_by_uuid_long, aes(x = name, y = value, colour = factor(uuid), group = factor(uuid))) +
+        geom_point() +
+        geom_line() +
+        viridis::scale_colour_viridis(discrete = TRUE) +
+        theme(legend.position = "none") +
+        labs(x = "Category", y = "Count")
+    }) 
+    output$table_by_uuid <- shiny::renderTable({(table_by_uuid())}, striped = TRUE)
+    output$plot_by_uuid <- renderPlotly({plot_by_uuid()})
     
     # Data library
     # Reactive value for selected dataset ----

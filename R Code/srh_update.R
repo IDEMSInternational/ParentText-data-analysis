@@ -137,10 +137,28 @@ update_data <- function(type = "SRH", date_from = "2021-10-14", date_to = NULL, 
   # SRH Flow ---------------------------------------------
   srh_flow_freq <- flow_cat_frequency(table = srh_data)
   
+  # by UUID ----------------------------------------------
+  table <- NULL
+  SRH_names <- naming_conventions(SRH_flow_names, replace = "SRH - Answer - ")
+  for (i in 1:length(srh_data)){
+    if (is.null(srh_data[[i]])){
+      table[[i]] <- data.frame("0", 0)
+    } else {
+      table[[i]] <- srh_data[[i]] %>% group_by(uuid) %>% summarise(n())
+    }
+    names(table[[i]]) <- c("uuid", SRH_names[i])
+  }
+  srh_by_uuid <- table[[1]]
+  for (i in 2:length(table)){
+    srh_by_uuid <- full_join(srh_by_uuid, table[[i]])
+  }
+  srh_by_uuid <- srh_by_uuid %>% filter(uuid != 0) %>% mutate(across(SRH_names, ~replace_na(.x, 0)))
+  srh_by_uuid <- janitor::adorn_totals(srh_by_uuid, where = "both")
+  
   objects_to_return <- NULL
   objects_to_return[[1]] <- df
   objects_to_return[[2]] <- srh_data
   objects_to_return[[3]] <- srh_flow_freq
-  objects_to_return[[4]] <- "0"
+  objects_to_return[[4]] <- srh_by_uuid
   return(objects_to_return)
 }
