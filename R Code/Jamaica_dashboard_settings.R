@@ -1,12 +1,16 @@
 # Jamaica Configuration
 #set_rapidpro_key(file_path = "tokens/PT_jamaica_key.txt")
-type <- "KPI"
+type <- "SRH"
 if (type == "KPI"){
   key <- read.table("tokens/KPI_jamaica_key.txt", quote="\"", comment.char="")
+  site <- "http://rapidpro.ilhasoft.mobi/api/v2/"
+} else if (type == "SRH"){
+  key <- read.table("tokens/SRH_jamaica_key.txt", quote="\"", comment.char="")
+  site <- "https://rapidpro-next.idems.international/api/v2/"
 } else {
   key <- read.table("tokens/PT_jamaica_key.txt", quote="\"", comment.char="")
+  site <- "http://rapidpro.ilhasoft.mobi/api/v2/"
 }
-site <- "http://rapidpro.ilhasoft.mobi/api/v2/"
 include_archived_data <- FALSE # for now FALSE
 #if (include_archived_data){
 #  archived_data <- TODO
