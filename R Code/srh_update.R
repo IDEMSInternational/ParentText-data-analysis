@@ -119,6 +119,14 @@ update_data <- function(type = "SRH", date_from = "2021-10-14", date_to = NULL, 
       dplyr::select(c(flow = flow.name, uuid = contact.uuid, interacted = responded, created_on))
   }
   
+  # TODO: work with this
+  # SRH_flow_names <- paste0("SRH - Answer - ", c("Menstruation", "Pregnancy", "Puberty", "STIs",
+  #                                               "Gender", "Sexuality", "Abstinence", "Mental Health",
+  #                                               "Violence & Abuse", "Healthy Relationships", "Parenting"))
+  # srh_data <- srh_table_output(flow_names = SRH_flow_names)
+  # names(srh_data) <- SRH_flow_names
+  # flow then becomes .id in the summary_plot and in the flow_cat_frequency function
+  
   # Consented ---------------------------------------------
   if (consent_only){
     if (length(contacts_unflat$groups) > 0){

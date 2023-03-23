@@ -1,20 +1,3 @@
-#' Interaction with api
-#' Description: Make API call, specify query string, save data in dataframe
-
-#' 1. Defining package environment -------------------------------------------
-#' Sorting set and get calls for: key, site, uuid flow names
-#' 
-#' Define package environment
-utils::globalVariables(c("pkg_env"))
-pkg_env <- new.env(parent = emptyenv())
-pkg_env$rapidpro_key <- NULL
-pkg_env$rapidpro_site <- NULL
-pkg_env$rapidpro_uuid_names <- NULL 
-
-set_rapidpro_uuid_names = function(uuid_names = get_flow_names()){
-  pkg_env$rapidpro_uuid_names <- uuid_names 
-}
-
 get_data_from_rapidpro_api <- function(call_type, rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE,
                                        date_from = NULL, date_to = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
   if (is.null(rapidpro_site)){
@@ -359,20 +342,20 @@ summarySE <- function(data=NULL, var, groups=NULL, na.rm=FALSE,
 }
 
 # SRH data
-# srh_table_output <- function(flow_names = SRH_flow_names){
-#   srh_table <- NULL
-#   all_flow_names <- get_flow_names() %>% dplyr::select((name))
-#   for (i in flow_names){
-#     i_flow_names <- (all_flow_names %>% filter(grepl(i, name)))$name
-#     if (length(i_flow_names) != 0){
-#       i_flow <- get_flow_data(flow_name = i_flow_names)
-#       i_flow$`.id` <- (gsub(".*- ", "", i_flow$`.id`))
-#       srh_table[[which(flow_names == i)]] <- i_flow
-#       names(srh_table)[[which(flow_names == i)]] <- i
-#     }
-#   }
-#   return(srh_table)
-# }
+srh_table_output <- function(flow_names = SRH_flow_names){
+  srh_table <- NULL
+  all_flow_names <- get_flow_names() %>% dplyr::select((name))
+  for (i in flow_names){
+    i_flow_names <- (all_flow_names %>% filter(grepl(i, name)))$name
+    if (length(i_flow_names) != 0){
+      i_flow <- get_flow_data(flow_name = i_flow_names)
+      i_flow$`.id` <- (gsub(".*- ", "", i_flow$`.id`))
+      srh_table[[which(flow_names == i)]] <- i_flow
+      names(srh_table)[[which(flow_names == i)]] <- i
+    }
+  }
+  return(srh_table)
+}
 
 flow_cat_frequency <- function(table = srh_data){
   freq_table <- NULL
