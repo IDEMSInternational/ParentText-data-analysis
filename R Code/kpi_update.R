@@ -33,15 +33,15 @@ update_data <- function(){
   state_of_origin <- dplyr::recode(state_of_origin, "1" = state_1, "2" = state_2, "3" = state_3, "4" = state_4, "5" = state_5,
                                    "6" = state_6, "7" = state_7, "8" = state_8, "9" = state_9, "10" = state_10, "11" = state_11,
                                    "12" = state_12, "13" = state_13, "14" = state_14, "15" = state_15, "16" = state_16, "17" = state_17)
-  
   user_data <- user_data %>%
     dplyr::select(uuid = uuid) %>%
     mutate(gender = parent_gender,
-           parish = state_of_origin)
-  ticket_data <- full_join(ticket_data, user_data)
-  
+           parish = state_of_origin) %>%
+    filter(uuid %in% ticket_data$uuid)
+  ticket_data1 <- full_join(ticket_data, user_data)
+  ticket_data$link <- paste0("https://rapidpro.ilhasoft.mobi/ticket/all/open/", ticket_data$uuid) 
+  ticket_data$` ` <- NA
   # Counsellor Level ------------------------------
-
 
   # Counsellor/Ticket Level
   

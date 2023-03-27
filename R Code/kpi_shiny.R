@@ -35,7 +35,8 @@ kpi_shiny <- function(date_from = "2020-01-01", date_to = NULL){
               # Button
               downloadButton("downloadData", "Download"))),
         fluidRow(box(width = 12,
-                     dataTableOutput("table")))
+                     dataTableOutput("table"),
+                     style='width:100%;overflow-x: scroll;'))
       )
   )
   )
@@ -45,6 +46,10 @@ kpi_shiny <- function(date_from = "2020-01-01", date_to = NULL){
     updated_data <- update_data()
     ticket_data <- updated_data[[1]]
     user_data <- updated_data[[2]]
+    
+    createLink <- function(val) {
+      sprintf(paste0('<a href="', URLdecode(val),'" target="_blank">', substr(val, 1, 25) ,'</a>'))
+    }
     
     dates <- eventReactive(ifelse(input$goButton == 0, 1, input$goButton), {
       input$date_selector
@@ -57,12 +62,17 @@ kpi_shiny <- function(date_from = "2020-01-01", date_to = NULL){
     })
     ticket_data_date_to <- reactive({
       ticket_data_to <- ticket_data_date_from() %>%
-        filter(closed_on <= as.Date(dates()[2]))
+        filter(closed_on <= as.Date(dates()[2]) || is.na(closed_on))
       return(ticket_data_to)
     })
+    ticket_data_with_link <- reactive({
+      data <- ticket_data_date_to()
+      data$link <- createLink(data$link)
+      return(data)
+    })
     assignee_data_date_from <- reactive({
-      status_by_assignee <- summary_table(data = ticket_data_date_to(), factors = counsellor, columns_to_summarise = c("status"))
-      time_by_assignee <- summary_table(data = ticket_data_date_to(),
+      status_by_assignee <- summary_table(data = ticket_data_with_link(), factors = counsellor, columns_to_summarise = c("status"))
+      time_by_assignee <- summary_table(data = ticket_data_with_link(),
                                         factors = counsellor,
                                         columns_to_summarise = "time_to_close",
                                         summaries = "mean",
@@ -77,7 +87,7 @@ kpi_shiny <- function(date_from = "2020-01-01", date_to = NULL){
     })
     
     ticket_user_data_date <- reactive({
-      valid_uuids <- ticket_data_date_to()$uuid
+      valid_uuids <- ticket_data_with_link()$uuid
       ticket_user_data <- user_data %>% dplyr::filter(uuid %in% valid_uuids)
       return(ticket_user_data)
     })
@@ -94,10 +104,6 @@ kpi_shiny <- function(date_from = "2020-01-01", date_to = NULL){
     })
     
     t_u_gender <- reactive({
-      print(ticket_user_data_date())
-      print(ticket_user_data_date()$gender)
-      print(summary_table(ticket_user_data_date(),
-                          factors = gender))
        return(summary_table(ticket_user_data_date(),
                             factors = gender))
     })
@@ -110,7 +116,7 @@ kpi_shiny <- function(date_from = "2020-01-01", date_to = NULL){
     # Reactive value for selected dataset ----
     datasetInput <- reactive({
       switch(input$dataset,
-             "Ticket data" = ticket_data_date_to(),
+             "Ticket data" = ticket_data_with_link(),
              "Counsellor data" = assignee_data_date_from(),
              "Overall summaries" = summaries_overall(),
              "Gender summaries" = t_u_gender(),
@@ -118,9 +124,9 @@ kpi_shiny <- function(date_from = "2020-01-01", date_to = NULL){
     })
     
     # Table of selected dataset ----
-    output$table <- renderDataTable({
-      datasetInput()
-    })
+    output$table <- renderDataTable({ datatable({datasetInput()})
+      return(datasetInput())
+    }, escape = FALSE)
     
     # Downloadable csv of selected dataset ----
     output$downloadData <- downloadHandler(
