@@ -3,9 +3,9 @@ update_data <- function(){
   set_rapidpro_key(key[[1]])
   set_rapidpro_site(site)
   ticket_data <- get_data_from_rapidpro_api(call_type = "tickets.json",
-                               date_from = NULL,
-                               date_to = NULL,
-                               flatten = TRUE)
+                                            date_from = NULL,
+                                            date_to = NULL,
+                                            flatten = TRUE)
   user_data <- get_user_data(date_from = NULL,
                              date_to = NULL)
   
@@ -42,7 +42,7 @@ update_data <- function(){
   ticket_data$link <- paste0("https://rapidpro.ilhasoft.mobi/ticket/all/open/", ticket_data$uuid) 
   ticket_data$` ` <- NA
   # Counsellor Level ------------------------------
-
+  
   # Counsellor/Ticket Level
   
   objects_to_return <- NULL

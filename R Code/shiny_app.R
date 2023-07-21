@@ -1,17 +1,24 @@
 library(shiny)
 library(shinydashboard)
-library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(forcats)
 library(rjson)
 library(readxl)
 library(httr)
 library(jsonlite)
 library(rapidpror)
 library(plotly)
+library(DT)
 
 country <- "Jamaica" # Jamaica, Philippines, South Africa, Malaysia
-type <- "SRH" # ParentText, KPI, SRH for Jamaica only.
+type <- "KPI" # ParentText, KPI, SRH for Jamaica only.
 source("Functions.R")
 source(paste0(country, "_dashboard_settings.R"))
+print(country)
+print(type)
 if (country == "Jamaica"){
   if (type == "KPI"){
     source("kpi_update.R")

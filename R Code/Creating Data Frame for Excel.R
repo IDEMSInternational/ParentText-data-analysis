@@ -1,6 +1,7 @@
 library(rapidpror)
 library(tidyverse)
 just_ipv <- FALSE
+country <- "South_Africa"
 
 set_rapidpro_site(site = site)
 set_rapidpro_key(key = key[[1]])
@@ -12,7 +13,7 @@ date_to = default_date_to
 contacts_unflat <- get_user_data(flatten = FALSE, date_from = date_from, date_to = date_to)
 
 # base data -----------------------------------------------------
-created_on <- contacts_unflat$fields$starting_date # TODO: talk to Chiara why are there starting_date as today.
+created_on <- contacts_unflat$fields$starting_date
 did_not_consent <- contacts_unflat$fields$did_not_consent
 ID <- contacts_unflat$uuid
 last_online <- as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%d", tz = "UTC")
@@ -137,7 +138,7 @@ if (!is.null(date_from)){
 }
 if (!is.null(date_to)){
   df_created_on <- df_created_on %>%
-    filter(created_on >= as.Date(date_to))
+    filter(created_on <= as.Date(date_to))
 }
 list_of_ids <- df_created_on %>%
   filter(consent == "Yes")
@@ -189,7 +190,7 @@ parent_child_relationship <- forcats::fct_recode(parent_child_relationship,
                                                  `Aunt/Uncle`= "uncle",
                                                  `Foster Parent` = "foster",
                                                  Other = "other",
-                                                 `Prefer not to say`  = "no")
+                                                 `Prefer not to say` = "no")
 parent_child_relationship <- forcats::fct_relevel(parent_child_relationship,
                                                   c("Parent", "Grandparent", "Aunt/Uncle", "Foster Parent", "Other", "Prefer not to say"))
 
@@ -249,7 +250,6 @@ active_users <- forcats::fct_recode(active_users,
                                     "No" = "FALSE",
                                     "Yes" = "TRUE")
 active_users <- forcats::fct_relevel(active_users, c("Yes", "No"))
-
 active_users_7_days <- difftime(lubridate::now(tzone = "UTC"), as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"), units = "hours") <= 7*24
 active_users_7_days <- factor(active_users_7_days)
 if (length(levels(active_users_7_days)) == 1){
@@ -304,7 +304,7 @@ survey_consented_wk2_plus <- str_split(contacts_unflat$fields$surveyparentingbeh
 all_split_data <- NULL
 if (length(survey_consented_wk2_plus) > 0){
   for (j in 1:length(survey_consented_wk2_plus)){
-    if (is.na(survey_consented_wk2_plus[[j]])){
+    if (length(survey_consented_wk2_plus[[j]]) == 1 && is.na(survey_consented_wk2_plus[[j]])){
       split_data <- data.frame(V1 = NA, V2 = NA, V3 = NA, row = j)
     } else {
       split_parenting_2 <- stringr::str_split(survey_consented_wk2_plus[[j]], ",")
@@ -363,13 +363,19 @@ challenge_behav <- dplyr::case_when(
 
 challenge_behav <- forcats::fct_expand(challenge_behav, c("Crying", "Problems sleeping", "Acting clingy", "Whining", "Bad tempered", "Problems eating", "Stubborn/fussy", "Naughty behaviour", "Temper Tantrums", "Refuses to obey", "Gets angry", "Rude behaviour", "Mood swings", "Does not follow rules", "Stubbornness", "Breaks things", "Gets into fights", "Teases others", "Hyperactivity", "Hits others"))
 challenge_behav <- forcats::fct_relevel(challenge_behav, c("Crying", "Problems sleeping", "Acting clingy", "Whining", "Bad tempered", "Problems eating", "Stubborn/fussy", "Naughty behaviour", "Temper Tantrums", "Refuses to obey", "Gets angry", "Rude behaviour", "Mood swings", "Does not follow rules", "Stubbornness", "Breaks things", "Gets into fights", "Teases others", "Hyperactivity", "Hits others"))
+IPV_tips_accessed <- contacts_unflat$fields$ipv_list_of_tips
 
 df <- data.frame(ID, created_on, last_online, enrolled, consent, program,
                  gamification, personalisation, n_messages, language, parent_gender, child_gender, child_age_group, parent_child_relationship,
                  state_of_origin, 
                  parent_relationship, child_disabilities, recruitment_channel, parenting_goal,
                  active_users, active_users_7_days, comp_prog_overall, next_tip_main, next_tip_morning, next_tip_evening, parent_age, completed_welcome, comp_survey_w1, comp_survey_w2, consent_survey_w1,
-                 challenge_behav)
+                 challenge_behav, IPV_tips_accessed)
+
+if (country %in% c("South Africa", "South_Africa", "Jamaica")){
+  get_ipv_content <- contacts_unflat$fields$get_ipv_content
+  df <- data.frame(df, get_ipv_content)
+}
 
 if (country %in% c("South Africa", "South_Africa")){
   df <- data.frame(df, ipv_version)
@@ -417,18 +423,50 @@ if (length(hook_messages) > 0){
   for (i in 1:length(hook_messages)){
     hook_messages_all <- hook_messages[[i]]
     ID_hook_all <- ID[i]
-    hook_data_all[[i]] <- data.frame(hook_message_time_all = hook_messages_all, ID = ID_hook_all)
+    hook_data_all[[i]] <- data.frame(recent_hook_message_time = hook_messages_all, ID = ID_hook_all)
   }
   hook_message_all <- data.frame(plyr::ldply(hook_data_all))
   hook_message_all <- hook_message_all %>%
-    mutate(hook_message_time_all = ifelse(stringi::stri_sub(hook_message_time_all,-1) == "|",
+    mutate(hook_message_count = 1 + stringr::str_count(hook_message_all$recent_hook_message_time, pattern = fixed("|"))) %>%
+    mutate(recent_hook_message_time = ifelse(stringi::stri_sub(recent_hook_message_time,-1) == "|",
                                           NA,
-                                          hook_message_time_all))
-  hook_message_all$hook_message_time_all <- as.POSIXct(gsub(".*,","",hook_message_all$hook_message_time_all), format="%Y-%m-%dT%H:%M:%OS", tz = "EST") - lubridate::hm("6, 0")
+                                          recent_hook_message_time)) %>%
+    mutate(hook_message_count = ifelse(is.na(recent_hook_message_time), 0, hook_message_count))
+  hook_message_all$recent_hook_message_time <- as.POSIXct(gsub(".*,","",hook_message_all$recent_hook_message_time), format="%Y-%m-%dT%H:%M:%OS", tz = "EST") - lubridate::hm("6, 0")
   df <- dplyr::left_join(df, hook_message_all)
   df$created_on <- as.POSIXct(gsub(".*,","",df$created_on), format="%Y-%m-%dT%H:%M:%OS", tz = "EST") - lubridate::hm("6, 0")
-  df$time_in_study <- df$hook_message_time_all - df$created_on
+  df$time_in_study <- df$recent_hook_message_time - df$created_on
 }
+
+
+################################
+##### Hook message data frame ####
+# Creating sheet with just hook messages
+hook_messages <- contacts_unflat$fields$hook_message
+hook_data_all <- NULL
+  for (i in 1:length(hook_messages)){
+    hook_messages_all <- hook_messages[[i]]
+    ID_hook_all <- ID[i]
+    hook_data_all[[i]] <- data.frame(recent_hook_message_time = hook_messages_all, ID = ID_hook_all)
+  }
+  hook_message_all <- data.frame(plyr::ldply(hook_data_all))
+  
+  # get all hook messages, in a long df. Create a new row at every "|"
+  hook_message_all2 <- hook_message_all %>%
+    separate_longer_delim(recent_hook_message_time, c(recent_hook_message_time = "|")) %>%
+    filter(recent_hook_message_time != "") %>%
+    filter(!is.na(recent_hook_message_time))
+  
+  hook_message <- data.frame(stringr::str_split(hook_message_all2$recent_hook_message_time, pattern = ",", simplify = TRUE))
+  #hook_message <- data.frame(stringr::str_split(hook_message_all2$recent_hook_message_time, pattern = "-05:00", simplify = TRUE))
+  names(hook_message) <- c("Message", "Time sent", "Time opened")
+  
+  hook_message_all2 <- bind_cols(hook_message, hook_message_all2)
+  hook_message_all2$`Time sent` <- as.POSIXct(gsub(".*,","",hook_message_all2$`Time sent`), format="%Y-%m-%dT%H:%M:%OS", tz = "EST") - lubridate::hm("6, 0")
+  hook_message_all2$`Time opened` <- as.POSIXct(gsub(".*,","",hook_message_all2$`Time opened`), format="%Y-%m-%dT%H:%M:%OS", tz = "EST") - lubridate::hm("6, 0")
+  
+  hook_message_all2 <- full_join(hook_message_all2, df_created_on)
+################################
 
 if (length(list_of_ids) > 0){
   if (consent){
@@ -478,12 +516,12 @@ if (country == "Jamaica"){
 # flow level data --------------------------------
 # sum of response to content, calm, check in, supportive, praise messages
 supportive_flow_names <- c("PLH - Supportive - Family", "PLH - Supportive - Help reminder", "PLH - Supportive - Share", "PLH - Supportive - Share - Enrollment",
-                           paste0(prefix, " - PLH - Supportive - Share - Enrollment"), "PLH - Supportive - Budget", "PLH - Supportive - Activities for babies", "PLH - Supportive - Activities",
+                           paste0(prefix, " - PLH - Supportive - Share - Enrollment"), "PLH - Supportive - Budget",
                            "PLH - Supportive - Behave reminder", "PLH - Supportive - Children reminder", "PLH - Supportive - Covid", "PLH - Supportive - Development",
                            "PLH - Supportive - Disabilities")
 supportive_calm <- "PLH - Supportive - Calm"
 supportive_praise <- "PLH - Supportive - Praise"
-supportive_activities <- "PLH - Supportive - Activities"
+supportive_activities <-  c("PLH - Supportive - Activities for babies", "PLH - Supportive - Activities")
 check_in_flow_names <- c("PLH - Content - Extra - CheckIn - COVID", "PLH - Content - Positive - CheckIn - Book sharing", "PLH - Content - Positive - CheckIn - Budget adults", "PLH - Content - Positive - CheckIn - Budget with children", "PLH - Content - Positive - CheckIn - Community safety", "PLH - Content - Positive - CheckIn - Consequences", "PLH - Content - Positive - CheckIn - Crisis", "PLH - Content - Positive - CheckIn - Crying", "PLH - Content - Positive - CheckIn - Education", "PLH - Content - Positive - CheckIn - Emotion", "PLH - Content - Positive - CheckIn - Family", "PLH - Content - Positive - CheckIn - Ignore",
                          #"PLH - Content - Positive - CheckIn - Instructions",
                          "PLH - Content - Positive - CheckIn - IPV 1", "PLH - Content - Positive - CheckIn - IPV 2", "PLH - Content - Positive - CheckIn - IPV 3", "PLH - Content - Positive - CheckIn - IPV 4", "PLH - Content - Positive - CheckIn - IPV 5", "PLH - Content - Positive - CheckIn - Online adults", "PLH - Content - Positive - CheckIn - Online children", "PLH - Content - Positive - CheckIn - Praise", "PLH - Content - Positive - CheckIn - ProblemSolving", "PLH - Content - Positive - CheckIn - Redirect", "PLH - Content - Positive - CheckIn - Routines", "PLH - Content - Positive - CheckIn - Rules", "PLH - Content - Positive - CheckIn - Safe or unsafe touch", "PLH - Content - Relax - CheckIn - Anger management", "PLH - Content - Relax - CheckIn - List of things",
@@ -500,15 +538,16 @@ if (country %in% c("Malaysia", "Philippines") && include_archived_data){
   archived_data <- update_archived_data(curr_data = archived_data,
                                         date_to = date_to)
   }
+#saveRDS(archived_data, file = paste0(country, "_archived.RDS"))
 
-if (!country %in% c("Malaysia", "Philippines", "Jamaica", "South Africa", "South_Africa")){
-  supportive_praise_flow <- get_flow_data(flow_name = supportive_praise, flow_type = "praise", include_archived_data = include_archived_data, date_to = "1970-01-01")
-  supportive_calm_flow <- get_flow_data(flow_name = supportive_calm, flow_type = "calm", include_archived_data = include_archived_data, date_to = "1970-01-01")
-  supportive_activities_flow <- get_flow_data(flow_name = supportive_activities, include_archived_data = include_archived_data, date_to = "1970-01-01")
-  supportive_flow_names_flow <- get_flow_data(flow_name = supportive_flow_names, include_archived_data = include_archived_data, date_to = "1970-01-01")
-  check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names, flow_type = "check_in", include_archived_data = include_archived_data, date_to = "1970-01-01")
-  content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names, flow_type = "tips", include_archived_data = include_archived_data, date_to = "1970-01-01")
-} else {
+if ((country %in% c("Malaysia", "Philippines")) && include_archived_data){
+  supportive_praise_flow <- get_flow_data(flow_name = supportive_praise, flow_type = "praise", include_archived_data = include_archived_data, get_by = "gotit", data_from_archived = archived_data)
+  supportive_calm_flow <- get_flow_data(flow_name = supportive_calm, flow_type = "calm", include_archived_data = include_archived_data, get_by = "gotit", data_from_archived = archived_data)
+  supportive_activities_flow <- get_flow_data(flow_name = supportive_activities, include_archived_data = include_archived_data, get_by = "gotit", data_from_archived = archived_data)
+  supportive_flow_names_flow <- get_flow_data(flow_name = supportive_flow_names, include_archived_data = include_archived_data, get_by = "gotit", data_from_archived = archived_data)
+  check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names, flow_type = "check_in", include_archived_data = include_archived_data, get_by = "gotit", data_from_archived = archived_data)
+  content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names, flow_type = "tips", include_archived_data = include_archived_data, get_by = "gotit", data_from_archived = archived_data)
+  } else {
   supportive_praise_flow <- get_flow_data(flow_name = supportive_praise, flow_type = "praise", include_archived_data = include_archived_data)
   supportive_calm_flow <- get_flow_data(flow_name = supportive_calm, flow_type = "calm", include_archived_data = include_archived_data)
   supportive_activities_flow <- get_flow_data(flow_name = supportive_activities, include_archived_data = include_archived_data)
@@ -519,7 +558,7 @@ if (!country %in% c("Malaysia", "Philippines", "Jamaica", "South Africa", "South
 supportive_praise_flow$ID <- supportive_praise_flow$uuid
 supportive_praise_flow$uuid <- NULL
 supportive_praise_flow <- supportive_praise_flow %>% mutate(Flow = "Supportive Praise")
-supportive_praise_flow$response <- replace_na(supportive_praise_flow$response, "No Response")
+supportive_praise_flow$response <- replace_na(supportive_praise_flow$response, "No response")
 
 supportive_calm_flow$ID <- supportive_calm_flow$uuid
 supportive_calm_flow$uuid <- NULL
@@ -544,13 +583,13 @@ if (nrow(check_in_flow_names_flow) > 0){
   check_in_flow_names_flow <- check_in_flow_names_flow %>% mutate(response = ifelse(response == "neutral", "Neutral", response))
 }
 check_in_flow_names_flow <- check_in_flow_names_flow %>% mutate(Flow = "Check in")
-check_in_flow_names_flow$response <- replace_na(check_in_flow_names_flow$response, "No Response")
-check_in_flow_names_flow$managed_to_do_something <- replace_na(check_in_flow_names_flow$managed_to_do_something, "No Response")
+check_in_flow_names_flow$response <- replace_na(check_in_flow_names_flow$response, "No response")
+check_in_flow_names_flow$managed_to_do_something <- replace_na(check_in_flow_names_flow$managed_to_do_something, "No response")
 
 content_tip_flow_names_flow$ID <- content_tip_flow_names_flow$uuid
 content_tip_flow_names_flow$uuid <- NULL
 content_tip_flow_names_flow <- content_tip_flow_names_flow %>% mutate(Flow = "Content Tip")
-content_tip_flow_names_flow$category <- replace_na(content_tip_flow_names_flow$category, "No Response")
+content_tip_flow_names_flow$category <- replace_na(content_tip_flow_names_flow$category, "No response")
 
 all_flows <- dplyr::bind_rows(supportive_praise_flow, supportive_calm_flow, supportive_activities_flow, supportive_flow_names_flow,
                               check_in_flow_names_flow, content_tip_flow_names_flow)
@@ -576,6 +615,10 @@ food_insecurity <- get_survey_data(contacts_unflat$fields$surveymoneymonth_datet
 psychological_abuse <- get_survey_data(contacts_unflat$fields$surveyshout_datetime) %>% mutate(Group = "Psychological abuse")
 financial_stress <- get_survey_data(contacts_unflat$fields$surveymoneyweek_datetime) %>% mutate(Group = "Financial stress")
 parenting_efficacy <- get_survey_data(contacts_unflat$fields$surveypositive_datetime) %>% mutate(Group = "Parenting efficacy")
+contacts_unflat$fields$surveysexualabusetalk_datetime <- str_replace_all(contacts_unflat$fields$surveysexualabusetalk_datetime, "no", "0")
+contacts_unflat$fields$surveysexualabusetalk_datetime <- str_replace_all(contacts_unflat$fields$surveysexualabusetalk_datetime, "yes", "1")
+sex_abuse_talk <- get_survey_data(contacts_unflat$fields$surveysexualabusetalk_datetime) %>% mutate(Group = "Sexual abuse talk", row = 1:nrow(.)) %>%
+  mutate(vals = ifelse(vals == "yes,", 1, 0))
 sex_prevention <- get_survey_data(contacts_unflat$fields$surveysexualabuse_datetime) %>% mutate(Group = "Sexual abuse prevention")
 child_behave <- get_survey_data(contacts_unflat$fields$surveybehave_rate_datetime) %>% mutate(Group = "Child Behaviour")
 # using datetime not just _rate because in _rate it doesn't state which survey the score is corresponding to
@@ -605,7 +648,7 @@ if (nrow(child_mal) > 0){
                                 vals.x + vals.y))) %>%
     dplyr::select(c(vals, row, week, dt, Group))
 }
-parenting_survey <- rbind(positive_parenting, child_maltreatment, play, praise, stress, physical_abuse, psychological_abuse, financial_stress, food_insecurity, parenting_efficacy, sex_prevention, child_behave)
+parenting_survey <- rbind(positive_parenting, child_maltreatment, play, praise, stress, physical_abuse, psychological_abuse, financial_stress, food_insecurity, parenting_efficacy, sex_abuse_talk, sex_prevention, child_behave)
 parenting_survey <- parenting_survey %>% mutate(week = fct_relevel(as.character(week), c("Baseline", "2", "3", "4", "5", "6", "7", "8", "9")))
 parenting_survey <- parenting_survey %>% mutate(Group = fct_expand(Group, c("Positive parenting", "Child maltreatment", "Play", "Praise", "Stress", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
 parenting_survey <- parenting_survey %>% mutate(Group = fct_relevel(Group, c("Positive parenting", "Child maltreatment", "Play", "Praise", "Stress", "Physical abuse", "Psychological abuse", "Financial stress", "Food insecurity", "Parenting efficacy", "Sexual abuse prevention", "Child Behaviour")))
@@ -634,6 +677,8 @@ df_uuid_challenge <- df %>%
   dplyr::select(c(ID, challenge_behav, created_on, consent))
 parenting_survey_wider <- merge(parenting_survey_wider, df_uuid_challenge)
 parenting_survey_wider <- parenting_survey_wider %>% filter(!is.na(week))
+parenting_survey_wider$`date_Positive parenting` <- NULL
+parenting_survey_wider$`date_Child maltreatment` <- NULL
 nrow(parenting_survey_wider)
 #survey_consent_IDs <- unique(parenting_survey_wider$ID)
 
@@ -646,6 +691,8 @@ names(parenting_survey_even_wider)<-gsub("vals_","", names(parenting_survey_even
 names(parenting_survey_even_wider)<-gsub("dt_","date_", names(parenting_survey_even_wider))
 parenting_survey_even_wider <- merge(parenting_survey_even_wider, df_uuid_challenge)
 
+parenting_survey_even_wider <- parenting_survey_even_wider %>%
+  dplyr::select(-c(starts_with("date_Child Behaviour"), starts_with("date_Positive parenting")))
 # list of tips
 #df_created_on <- df_created_on %>% mutate(row = 1:nrow(.))
 #list_of_tips <- contacts_unflat$fields %>% dplyr::select(contains("list_of_tips"))
@@ -747,7 +794,7 @@ toolkit_skills$created_on <- as.POSIXct(toolkit_skills$created_on, format="%Y-%m
 full_list_of_flows$created_on <- as.POSIXct(full_list_of_flows$created_on, format="%Y-%m-%d", tzone = "UTC")
 full_data <- dplyr::full_join(dplyr::full_join(dplyr::full_join(df, toolkit_skills), parenting_survey_even_wider), full_list_of_flows)
 
-super_list_of_datasets <- list("Demographics" = df, "Parenting Survey" = parenting_survey_wider, "Parenting Survey (Wide)" = parenting_survey_even_wider,
+super_list_of_datasets <- list("Demographics" = df, "Hook_Messages_draft" = hook_message_all2, "Parenting Survey" = parenting_survey_wider, "Parenting Survey (Wide)" = parenting_survey_even_wider,
                                "Toolkit Skills" = toolkit_skills, "Calm flow" = supportive_calm_flow, "Praise flow" = supportive_praise_flow,
                                "Activities flow" = supportive_activities_flow,
                                "Supportive flow" = supportive_flow_names_flow, "Check in flow" = check_in_flow_names_flow,
@@ -867,15 +914,26 @@ contacts_group$values <- group_values[,2]
 contacts_group <- contacts_group %>% pivot_wider(id_cols = c(ID, created_on, consent), names_from = group, values_from = values)
 contacts_group$"NA" <- NULL
 
+
+
 # Just IPV for SA:
 if (just_ipv){
-  if (country %in% c("South Africa", "South_Africa", "Jamaica")){
-    df_consent_ipv <- (df_consent %>% filter(ipv_version != "yes"))$ID
+  if (country %in% c("Jamaica")){
+    ipv_jam <- "PLH - Content - Positive - IPV"
+    ipv_jam_inds <- get_flow_data(flow_name = ipv_jam, flow_type = "tips", include_archived_data = include_archived_data)
+    ipv_jam <- unique(ipv_jam_inds$uuid)
+    df_consent_ipv <- (df_consent %>% filter(is.na(ipv_version)))
+    df_consent_ipv <- (df_consent_ipv %>% filter(ID %in% ipv_jam))$ID
+  }
+  if (country %in% c("South Africa", "South_Africa")){
+    df_consent_ipv <- (df_consent %>% filter(ipv_version == "yes"))$ID
   }
 }
 
-df <- df %>% dplyr::select(-c(order, consent_survey_wNA))
-super_list_of_datasets <- list("Demographics" = df, "Contacts Groups" = contacts_group, "Parenting Survey" = parenting_survey_wider, "Parenting Survey (Wide)" = parenting_survey_even_wider,
+#################################
+
+if ("consent_survey_wNA" %in% names(df)) df <- df %>% dplyr::select(-c(order, consent_survey_wNA))
+super_list_of_datasets <- list("Demographics" = df, "Hook_Messages_draft" = hook_message_all2, "Contacts Groups" = contacts_group, "Parenting Survey" = parenting_survey_wider, "Parenting Survey (Wide)" = parenting_survey_even_wider,
                                "Toolkit Skills" = toolkit_skills, "Calm flow" = supportive_calm_flow, "Praise flow" = supportive_praise_flow,
                                "Supportive flow" = supportive_flow_names_flow, "Check in flow" = check_in_flow_names_flow,
                                "Activities flow" = supportive_activities_flow,
@@ -883,11 +941,13 @@ super_list_of_datasets <- list("Demographics" = df, "Contacts Groups" = contacts
                                "Full data" = full_data, "Engagement Data" = engagement_data)
 for (i in 1:length(super_list_of_datasets)){
   
-  if (just_ipv){
-    super_list_of_datasets[[i]] <- super_list_of_datasets[[i]] %>% filter(ID %in% df_consent_ipv)
+  if (country %in% c("South Africa", "South_Africa", "Jamaica")){
+    if (just_ipv){
+      super_list_of_datasets[[i]] <- super_list_of_datasets[[i]] %>% filter(ID %in% df_consent_ipv)
+    }
   }
   
-  if (i %in% c(6:11)){
+  if (i %in% c(7:12)){
     super_list_of_datasets[[i]] <- super_list_of_datasets[[i]] %>% mutate(interacted = ifelse(interacted == TRUE, "Yes", "No"))
   }
   super_list_of_datasets[[i]] <- super_list_of_datasets[[i]] %>% filter(consent == "Yes")
@@ -898,34 +958,40 @@ for (i in 1:length(super_list_of_datasets)){
   #list_of_datasets[[i]] <- list_of_datasets[[i]] %>% select(-c("row"))
 }
 
-write_xlsx(super_list_of_datasets, path = "Jamaica_not_IPV_data_20221214.xlsx")
+write_xlsx(super_list_of_datasets, path = "SA_Data_20230712.xlsx")
 
-# Additional IPV info for Moa:
-rapidpro_site = get_rapidpro_site()
-token = get_rapidpro_key()
-uuid_data = get_rapidpro_uuid_names()
-call_type = "runs.json?flow="
-uuid_flow <- uuid_data[which(uuid_data$name == "PLH - Content - Positive - IPV"),]
-get_command <- paste(rapidpro_site, call_type, uuid_flow[1], sep = "")
-result_flow <- httr_get_call(get_command = get_command, token = token)
-
-ID <- result_flow$contact$uuid
-tip_no_ipv <- result_flow$values$list_of_tips$value
-
-df_ipv <- data.frame(flow_name = "PLH - Content - Positive - IPV", ID, tip_no_ipv)
-head(df_ipv)
-
-ipv_flow <- dplyr::left_join(df_ipv, df_created_on, by = "ID")
-ipv_flow <- ipv_flow
-ipv_flow$row <- NULL
-
-ipv_flow <- ipv_flow %>% filter(ID %in% df_consent_ipv)
-ipv_flow <- ipv_flow %>% filter(consent == "Yes")
-ipv_flow <- ipv_flow %>% dplyr::filter(as.POSIXct(date_from, format="%Y-%m-%d", tzone = "UTC") < as.POSIXct(ipv_flow$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
-if (!is.null(date_to)) {
-  ipv_flow <- ipv_flow %>% dplyr::filter(as.POSIXct(date_to, format="%Y-%m-%d", tzone = "UTC") > as.POSIXct(ipv_flow$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
-}
-#list_of_datasets[[i]] <- list_of_datasets[[i]] %>% select(-c("row"))
-
-
-write_xlsx(ipv_flow, path = "Jamaica_not_IPV_bonus_data_20221214.xlsx")
+# 
+# IPV_tips_accessed <- contacts_unflat$fields$ipv_list_of_tips
+# ID <- contacts_unflat$uuid
+# df_IPV_tips <- data.frame(ID, IPV_tips_accessed)
+# 
+# # Additional IPV info for Moa:
+# rapidpro_site = get_rapidpro_site()
+# token = get_rapidpro_key()
+# uuid_data = get_rapidpro_uuid_names()
+# call_type = "runs.json?flow="
+# uuid_flow <- uuid_data[which(uuid_data$name == "PLH - Content - Positive - IPV"),]
+# get_command <- paste(rapidpro_site, call_type, uuid_flow[1], sep = "")
+# result_flow <- httr_get_call(get_command = get_command, token = token)
+# ID <- result_flow$contact$uuid
+# tip_no_ipv <- result_flow$values$list_of_tips$value
+# 
+# df_ipv <- data.frame(flow_name = "PLH - Content - Positive - IPV", ID, tip_no_ipv)
+# df_ipv <- full_join(df_ipv, df_IPV_tips)
+# 
+# ipv_flow <- dplyr::left_join(df_ipv, df_created_on, by = "ID")
+# ipv_flow <- ipv_flow
+# ipv_flow$row <- NULL
+# 
+# ipv_flow <- ipv_flow %>% filter(ID %in% df_consent_ipv)
+# ipv_flow <- ipv_flow %>% filter(consent == "Yes")
+# ipv_flow <- ipv_flow %>% dplyr::filter(as.POSIXct(date_from, format="%Y-%m-%d", tzone = "UTC") < as.POSIXct(ipv_flow$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+# if (!is.null(date_to)) {
+#   ipv_flow <- ipv_flow %>% dplyr::filter(as.POSIXct(date_to, format="%Y-%m-%d", tzone = "UTC") > as.POSIXct(ipv_flow$created_on, format="%Y-%m-%dT%H:%M:%OS", tz = "UTC"))
+# }
+# 
+# #list_of_datasets[[i]] <- list_of_datasets[[i]] %>% select(-c("row"))
+# 
+# 
+# write_xlsx(ipv_flow, path = "SA_IPV_bonus_data_20221231.xlsx")
+# 

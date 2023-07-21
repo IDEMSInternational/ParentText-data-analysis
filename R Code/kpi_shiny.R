@@ -20,7 +20,7 @@ kpi_shiny <- function(date_from = "2020-01-01", date_to = NULL){
                                       inputId = "date_selector",
                                       label   = "Select dates",
                                       start   = Sys.Date() - 365,
-                                      end     = Sys.Date() - 1
+                                      end     = Sys.Date()
                                     ),
                                     actionButton("goButton", "Submit", class = "btn-success"),
                                     cellArgs = list(style = "vertical-align: top"),
@@ -46,6 +46,7 @@ kpi_shiny <- function(date_from = "2020-01-01", date_to = NULL){
     updated_data <- update_data()
     ticket_data <- updated_data[[1]]
     user_data <- updated_data[[2]]
+    print(ticket_data)
     
     createLink <- function(val) {
       sprintf(paste0('<a href="', URLdecode(val),'" target="_blank">', substr(val, 1, 25) ,'</a>'))
@@ -54,15 +55,14 @@ kpi_shiny <- function(date_from = "2020-01-01", date_to = NULL){
     dates <- eventReactive(ifelse(input$goButton == 0, 1, input$goButton), {
       input$date_selector
     })
-    
     ticket_data_date_from <- reactive({
       ticket_data_from <- ticket_data %>%
-        filter(opened_on >= as.Date(dates()[1]))
+      filter(opened_on >= as.Date(dates()[1]))
       return(ticket_data_from)
     })
     ticket_data_date_to <- reactive({
       ticket_data_to <- ticket_data_date_from() %>%
-        filter(closed_on <= as.Date(dates()[2]) || is.na(closed_on))
+       filter(closed_on <= as.Date(dates()[2]) || is.na(closed_on))
       return(ticket_data_to)
     })
     ticket_data_with_link <- reactive({

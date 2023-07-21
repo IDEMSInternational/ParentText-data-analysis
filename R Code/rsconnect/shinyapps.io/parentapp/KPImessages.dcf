@@ -1,0 +1,14 @@
+name: KPImessages
+title: KPImessages
+username:
+account: parentapp
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 8617289
+bundleId: 7378985
+url: https://parentapp.shinyapps.io/KPImessages/
+when: 1687509171.29623
+lastSyncTime: 1687509171.29623
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: app/app.R|app/www/rstudio.png.png|Creating Data Frame for Excel.R|Data Cleaning.R|data_saved_Malaysia.RDS|engagement code.R|malaysia_archived.RDS|models_in_create_code.R|philippines_archived.RDS|R Shiny Template.R|Script to get archived data.R|srh_shiny.R|srh_update.R

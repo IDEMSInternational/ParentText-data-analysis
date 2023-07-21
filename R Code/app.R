@@ -8,9 +8,10 @@ library(jsonlite)
 library(rapidpror)
 library(plotly)
 library(DT)
+library(rapidpror)
 
-country <- "Jamaica" # Jamaica, Philippines, South Africa, Malaysia
-type <- "KPI" # ParentText, KPI, SRH for Jamaica only.
+country <- "South_Africa" # Jamaica, Philippines, South Africa, Malaysia
+type <- "ParentText" # ParentText, KPI, SRH for Jamaica only.
 source("Functions.R")
 source(paste0(country, "_dashboard_settings.R"))
 if (country == "Jamaica"){
