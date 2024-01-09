@@ -29,7 +29,7 @@ if (type == "ParentText2"){
     title <- "South Africa: ParentText 2.0"
   } else {
     #data_l <- import_list("data/PT2_shiny_Malaysia.xlsx")
-    data_l <- import_list("data/PT2_shiny.xlsx")
+    data_l <- import_list("data/PT2_shiny_malaysia.xlsx")
     source("shiny_cleaning_PT2.R")
     title <- "Malaysia: ParentText 2.0"
   }

@@ -1,5 +1,6 @@
 
 #average goals and modules completed from a percentage of total to a M number and SD
+country <- "Malaysia_2"
 
 library(survminer)
 library(survival)
@@ -213,12 +214,51 @@ if (country == "Malaysia_2"){
   result_flow2 <- bind_rows(result_flow2)
   
   # For Home Activity Checkin:
-  result_flow <- result_flow2 %>%
-    filter(grepl("home_activity_checkin", flow$name))
-  
+  result_flow <- result_flow2 %>% filter(grepl("home_activity_checkin", flow$name))
   flow_checkin_data <- flow_data_calculation(result_flow = result_flow, flow_type = "check_in_2")
+  flow_checkin_data <- flow_checkin_data %>% mutate(response = fct_recode(response, Yes = "yes", `Not yet` = "not yet"))
+  flow_checkin_data <- flow_checkin_data %>% mutate(response = fct_relevel(response, c("Yes", "Not yet", "No response")))
   flow_checkin_data$ID <- sub(".* ", "", result_flow$flow$name)
   flow_checkin_data$ID <- str_remove(flow_checkin_data$ID, "_yc")
+  
+  # Etc for module and bits.
+  result_flow <- result_flow2 %>% filter(grepl("module", flow$name))
+  flow_module_checkin_data <- flow_data_calculation(result_flow = result_flow, flow_type = "other", flow_handle_type = "will_complete")
+  flow_module_checkin_data$ID <- sub(".* ", "", result_flow$flow$name)
+  flow_module_checkin_data$ID <- str_remove(flow_module_checkin_data$ID, "_yc")
+  flow_module_checkin_data <- flow_module_checkin_data %>% mutate(response = fct_recode(response, Yes = "yes", `No` = "No"))
+  flow_module_checkin_data <- flow_module_checkin_data %>% mutate(response = fct_relevel(response, c("Yes", "No", "No response")))
+
+  # safeguarding
+  result_flow <- result_flow2 %>% filter(grepl("safeguarding_help", flow$name))
+  flow_safeguarding_data <- flow_data_calculation(result_flow = result_flow, flow_type = "other", flow_handle_type = "emergency")
+  flow_safeguarding_data$ID <- sub(".* ", "", result_flow$flow$name)
+  flow_safeguarding_data$response <- factor(flow_safeguarding_data$response)
+  flow_safeguarding_data$interacted <- factor(flow_safeguarding_data$interacted)
+  
+  # pre-goal
+  # pre-goal checkin
+  pre_goal_checkin <- paste0("pre_goal_checkin - ", goals)
+  result_flow <- result_flow2 %>% filter(grepl("pre_goal_checkin - ", flow$name))
+  pre_goal_checkin_data <- flow_data_calculation(result_flow = result_flow, flow_type = "other", flow_handle_type = "value", flow_handle_type_sub = "value")
+  pre_goal_checkin_data <- pre_goal_checkin_data %>% mutate(response = fct_recode(response, Negative = "negative", `Positive` = "positive"))
+  pre_goal_checkin_data <- pre_goal_checkin_data %>% mutate(response = fct_relevel(response, c("Positive", "Negative", "No response")))
+  pre_goal_checkin_data$ID <- sub(".* ", "", result_flow$flow$name)
+  
+  # post-goal checkin - want IMPROVEMENT and VALUE
+  post_goal_checkin <- paste0("post_goal_checkin - ", goals)
+  result_flow <- result_flow2 %>% filter(grepl("post_goal_checkin - ", flow$name))
+  post_goal_checkin_data_value <- flow_data_calculation(result_flow = result_flow, flow_type = "other", flow_handle_type = "value", flow_handle_type_sub = "value")
+  post_goal_checkin_data_value$ID <- sub(".* ", "", result_flow$flow$name)
+  post_goal_checkin_data_improvement <- flow_data_calculation(result_flow = result_flow, flow_type = "other", flow_handle_type = "improvement", flow_handle_type_sub = "category")
+  post_goal_checkin_data_improvement <- post_goal_checkin_data_improvement %>%
+    dplyr::mutate(improvement = response) %>% dplyr::select(-response)
+  post_goal_checkin_data_improvement$ID <- sub(".* ", "", result_flow$flow$name)
+  post_goal_checkin_data <- full_join(post_goal_checkin_data_value, post_goal_checkin_data_improvement)
+  post_goal_checkin_data <- post_goal_checkin_data %>% mutate(response = fct_recode(response, Negative = "negative", `Positive` = "positive"))
+  post_goal_checkin_data <- post_goal_checkin_data %>% mutate(response = fct_relevel(response, c("Positive", "Negative", "No response")))
+  post_goal_checkin_data <- post_goal_checkin_data %>% mutate(improvement = fct_recode(improvement, Better = "better", `Same` = "same", `Worse` = "worse"))
+  post_goal_checkin_data <- post_goal_checkin_data %>% mutate(improvement = fct_relevel(improvement, c("Better", "Same", "Worse", "No response")))
 } else {
   # If it is South Africa:
   
