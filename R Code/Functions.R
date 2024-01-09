@@ -13,7 +13,7 @@ get_data_from_rapidpro_api <- function(call_type, rapidpro_site = get_rapidpro_s
     stop("flatten should be TRUE or FALSE")
   }
   get_command <- paste(rapidpro_site, call_type, sep = "")
-  user_result <- httr_get_call(get_command = get_command, token = token)
+  user_result <- rapidpror:::httr_get_call(get_command = get_command, token = token)
   if (flatten){
     user_result <- jsonlite::flatten(user_result)
   }
@@ -37,7 +37,7 @@ days_active_data <- function(uuid_data = get_rapidpro_uuid_names(), flow_name, c
     result_flow_runs <- readRDS(runs_data)
   } else {
     get_command <- paste(rapidpro_site, call_type, sep = "")
-    result_flow <- httr_get_call(get_command = get_command, token = token)
+    result_flow <- rapidpror:::httr_get_call(get_command = get_command, token = token)
     result_flow_runs <- result_flow
   }
   
@@ -382,7 +382,7 @@ srh_table_output <- function(flow_names = SRH_flow_names){
   for (i in flow_names){
     i_flow_names <- (all_flow_names %>% filter(grepl(i, name)))$name
     if (length(i_flow_names) != 0){
-      i_flow <- get_flow_data(flow_name = i_flow_names)
+      i_flow <- rapidpror::get_flow_data(flow_name = i_flow_names)
       i_flow$`.id` <- (gsub(".*- ", "", i_flow$`.id`))
       srh_table[[which(flow_names == i)]] <- i_flow
       names(srh_table)[[which(flow_names == i)]] <- i

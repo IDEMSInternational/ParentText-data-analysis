@@ -81,6 +81,28 @@ srh_shiny <- function(country = "Jamaica", study = "SRH"){
                   box(width = 6,
                       collapsible = TRUE,
                       solidHeader = TRUE,
+                      title = "Feedback Rate",
+                      status = "primary",  
+                      style='width:100%;overflow-x: scroll;',
+                      plotlyOutput(outputId = "plot_feedback_rate", height = "240"),
+                      shiny::tableOutput("table_feedback_rate")
+                  ), #closes box
+                  
+                  box(width = 6,
+                      collapsible = TRUE,
+                      solidHeader = TRUE,
+                      title = "Region",
+                      status = "primary",  
+                      style='width:100%;overflow-x: scroll;',
+                      plotlyOutput(outputId = "plot_region", height = "240"), #generates graph
+                      shiny::tableOutput("table_region")  #generates table
+                  ) #closes box
+                ), #closes fluidRow
+                
+                fluidRow(
+                  box(width = 6,
+                      collapsible = TRUE,
+                      solidHeader = TRUE,
                       title = "Avatar",
                       status = "primary",  
                       style='width:100%;overflow-x: scroll;',
@@ -230,11 +252,11 @@ srh_shiny <- function(country = "Jamaica", study = "SRH"){
                                        box(width = 6,
                                            collapsible = TRUE,
                                            solidHeader = TRUE,
-                                           title = "Parenting",
+                                           title = "Contraceptives",
                                            status = "primary",  
                                            style='width:100%;overflow-x: scroll;',
-                                           plotlyOutput(outputId = "plot_Parenting", height = "240"),
-                                           shiny::tableOutput("table_Parenting")
+                                           plotlyOutput(outputId = "plot_Contraceptives", height = "240"),
+                                           shiny::tableOutput("table_Contraceptives")
                                        ) #closes box
                                      ) #closes fluidRow
                             ),
@@ -272,10 +294,11 @@ srh_shiny <- function(country = "Jamaica", study = "SRH"){
                       selectInput("dataset", "Choose a dataset:",
                                   choices = c("Demographics Data",  "Menstruation", "Pregnancy", "Puberty", "STIs",
                                               "Gender", "Sexuality", "Abstinence", "Mental Health", "Violence & Abuse",
-                                              "Healthy Relationships", "Parenting")),
+                                              "Healthy Relationships", "Contraceptives")),
                       # Button
                       downloadButton("downloadData", "Download")),
                   fluidRow(box(width = 12,
+                               style='width:100%;overflow-x: scroll;',
                                dataTableOutput("table")))
                 )
         ) # closes third tabitem
@@ -375,6 +398,22 @@ srh_shiny <- function(country = "Jamaica", study = "SRH"){
     output$table_urn <- shiny::renderTable({(table_urn())}, striped = TRUE)
     output$plot_urn <- renderPlotly({plot_urn()})
     
+    # region plot and table
+    table_region <- reactive({ summary_table(data = srh_df, factors = region) }) 
+    plot_region  <- reactive({
+      summary_plot(data = srh_df, columns_to_summarise = "region", plot_type = "histogram")
+    }) 
+    output$table_region <- shiny::renderTable({(table_region())}, striped = TRUE)
+    output$plot_region <- renderPlotly({plot_region()})
+    
+    # feedback rate plot and table
+    table_feedback_rate <- reactive({ summary_table(data = srh_df, factors = feedback_rate) }) 
+    plot_feedback_rate  <- reactive({
+      summary_plot(data = srh_df, columns_to_summarise = "feedback_rate", plot_type = "histogram")
+    }) 
+    output$table_feedback_rate <- shiny::renderTable({(table_feedback_rate())}, striped = TRUE)
+    output$plot_feedback_rate <- renderPlotly({plot_feedback_rate()})
+    
     # Engagement Tab ---------------------------------------------------
     table_Menstruation <- reactive({ srh_flow_freq_df$`SRH - Answer - Menstruation` }) 
     plot_Menstruation  <- reactive({
@@ -432,37 +471,37 @@ srh_shiny <- function(country = "Jamaica", study = "SRH"){
     output$table_Abstinence <- shiny::renderTable({(table_Abstinence())}, striped = TRUE)
     output$plot_Abstinence <- renderPlotly({plot_Abstinence()})
     
-    table_MH <- reactive({ srh_flow_freq_df$`SRH - Answer - Mental Health` }) 
+    table_MH <- reactive({ srh_flow_freq_df$`SRH - Answer - Mental health` }) 
     plot_MH  <- reactive({
-      summary_plot(data = srh_flow_df$`SRH - Answer - Mental Health`, columns_to_summarise = "flow",
-                   replace = "SRH - Answer - Mental Health - ", plot_type = "histogram") + labs(x = "Answer")
+      summary_plot(data = srh_flow_df$`SRH - Answer - Mental health`, columns_to_summarise = "flow",
+                   replace = "SRH - Answer - Mental health - ", plot_type = "histogram") + labs(x = "Answer")
     }) 
     output$table_MH <- shiny::renderTable({(table_MH())}, striped = TRUE)
     output$plot_MH <- renderPlotly({plot_MH()})
     
-    table_Violence <- reactive({ srh_flow_freq_df$`SRH - Answer - Violence & Abuse` }) 
+    table_Violence <- reactive({ srh_flow_freq_df$`SRH - Answer - Violence abuse` }) 
     plot_Violence  <- reactive({
-      summary_plot(data = srh_flow_df$`SRH - Answer - Violence & Abuse`, columns_to_summarise = "flow",
-                   replace = "SRH - Answer - Violence & Abuse - ", plot_type = "histogram") + labs(x = "Answer")
+      summary_plot(data = srh_flow_df$`SRH - Answer - Violence abuse`, columns_to_summarise = "flow",
+                   replace = "SRH - Answer - Violence abuse - ", plot_type = "histogram") + labs(x = "Answer")
     }) 
     output$table_Violence <- shiny::renderTable({(table_Violence())}, striped = TRUE)
     output$plot_Violence <- renderPlotly({plot_Violence()})
     
     table_Healthy <- reactive({ srh_flow_freq_df$`SRH - Answer - Healthy Relationships` }) 
     plot_Healthy  <- reactive({
-      summary_plot(data = srh_flow_df$`SRH - Answer - Healthy Relationships`, columns_to_summarise = "flow",
-                   replace = "SRH - Answer - Healthy Relationships - ", plot_type = "histogram") + labs(x = "Answer")
+      summary_plot(data = srh_flow_df$`SRH - Answer - Healthy relationships`, columns_to_summarise = "flow",
+                   replace = "SRH - Answer - Healthy relationships - ", plot_type = "histogram") + labs(x = "Answer")
     }) 
     output$table_Healthy <- shiny::renderTable({(table_Healthy())}, striped = TRUE)
     output$plot_Healthy <- renderPlotly({plot_Healthy()})
     
-    table_Parenting <- reactive({ srh_flow_freq_df$`SRH - Answer - Parenting` }) 
-    plot_Parenting  <- reactive({
-      summary_plot(data = srh_flow_df$`SRH - Answer - Parenting`, columns_to_summarise = "flow",
-                   replace = "SRH - Answer - Parenting - ", plot_type = "histogram") + labs(x = "Answer")
+    table_Contraceptives <- reactive({ srh_flow_freq_df$`SRH - Answer - Contraceptives` }) 
+    plot_Contraceptives  <- reactive({
+      summary_plot(data = srh_flow_df$`SRH - Answer - Contraceptives`, columns_to_summarise = "flow",
+                   replace = "SRH - Answer - Contraceptives - ", plot_type = "histogram") + labs(x = "Answer")
     }) 
-    output$table_Parenting <- shiny::renderTable({(table_Parenting())}, striped = TRUE)
-    output$plot_Parenting <- renderPlotly({plot_Parenting()})
+    output$table_Contraceptives <- shiny::renderTable({(table_Contraceptives())}, striped = TRUE)
+    output$plot_Contraceptives <- renderPlotly({plot_Contraceptives()})
     
     table_by_uuid <- reactive({ srh_by_uuid }) 
     plot_by_uuid  <- reactive({
@@ -492,10 +531,10 @@ srh_shiny <- function(country = "Jamaica", study = "SRH"){
              "Gender" = srh_flow_df$`SRH - Answer - Gender`,
              "Sexuality" = srh_flow_df$`SRH - Answer - Sexuality`,
              "Abstinence" = srh_flow_df$`SRH - Answer - Abstinence`,
-             "Mental Health" = srh_flow_df$`SRH - Answer - Mental Health`,
-             "Violence & Abuse" = srh_flow_df$`SRH - Answer - Violence & Abuse`,
-             "Healthy Relationships" = srh_flow_df$`SRH - Answer - Healthy Relationships`,
-             "Parenting" = srh_flow_df$`SRH - Answer - Parenting`)
+             "Mental Health" = srh_flow_df$`SRH - Answer - Mental health`,
+             "Violence & Abuse" = srh_flow_df$`SRH - Answer - Violence abuse`,
+             "Healthy Relationships" = srh_flow_df$`SRH - Answer - Healthy relationships`,
+             "Contraceptives" = srh_flow_df$`SRH - Answer - Contraceptives`)
     })
     
     # Table of selected dataset ----

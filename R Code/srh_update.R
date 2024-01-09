@@ -4,7 +4,14 @@ update_data <- function(type = "SRH", date_from = "2021-10-14", date_to = NULL, 
   set_rapidpro_key(key = key[[1]])
   set_rapidpro_uuid_names()
   
-  contacts_unflat <- get_user_data(call_type="contacts.json?joined=srh_user")
+  # what is the UUID for the SRH user group?
+  #x <- get_user_data(call_type="contacts.json")
+  #plyr::ldply(x) %>% filter(name == "srh user")
+  # can see the group ID.
+  
+  contacts_unflat <- get_user_data(call_type="contacts.json?group=4db95dd7-fb47-4394-9ff5-0e9f5bce2db5")
+  # srh user: 4db95dd7-fb47-4394-9ff5-0e9f5bce2db5
+  # srh completed registration: 19713029-0c5f-4e9c-a611-7329304068b6
   
   created_on <- contacts_unflat$created_on
   did_not_consent <- contacts_unflat$fields$did_not_consent
@@ -12,18 +19,15 @@ update_data <- function(type = "SRH", date_from = "2021-10-14", date_to = NULL, 
   last_online <- as.POSIXct(contacts_unflat$last_seen_on, format="%Y-%m-%d", tz = "UTC")
   
   enrolled <- NULL
-  true_consent <- NULL
   program <- NULL
   if (length(contacts_unflat$groups) > 0){
     for (i in 1:length(contacts_unflat$groups)){
       contact_name <- contacts_unflat$groups[[i]]
       if (length(contact_name)==0) {
         enrolled[i] <- NA
-        true_consent[i] <- NA
         program[i] <- NA
       } else{
         enrolled[i] <- ifelse(any(contact_name$name %in% "joined"), "Yes", "No")
-        true_consent[i] <- ifelse(any(contact_name$name %in% "consent"), "Yes", "No")
         program[i] <- ifelse(any(contact_name$name %in% "in program"), "Yes", "No")
       }
     }
@@ -40,14 +44,11 @@ update_data <- function(type = "SRH", date_from = "2021-10-14", date_to = NULL, 
   }
   
   enrolled <- factor(enrolled)
-  true_consent <- factor(true_consent)
   program <- factor(program)
   group <- factor(group)
   enrolled <- forcats::fct_expand(enrolled, c("Yes", "No"))
-  true_consent <- forcats::fct_expand(true_consent, c("Yes", "No"))
   program <- forcats::fct_expand(program, c("Yes", "No"))
   enrolled <- forcats::fct_relevel(enrolled, c("Yes", "No"))
-  true_consent <- forcats::fct_relevel(true_consent, c("Yes", "No"))
   program <- forcats::fct_relevel(program, c("Yes", "No"))
   
   #Show number of active users in the last 24 hours and 7 days (based on the last_seen_on variable)
@@ -99,52 +100,52 @@ update_data <- function(type = "SRH", date_from = "2021-10-14", date_to = NULL, 
   #Contact level info  (# of users for each level):
   #  Urn type (whatsapp, facebook, instagram, sms, telegram)
   avatar <- factor(contacts_unflat$fields$avatar)
-  urn <- unlist(contacts_unflat$urns)
+  urn <- unlist(contacts_unflat$urns) # error here
   urn <- factor(gsub("\\:.*", "", urn))
   
-  df <- data.frame(ID, group, created_on, true_consent, program, active_users_24_hrs, active_users_7_days, avatar, urn,
-                   gender, age)
+  # region
+  region <- contacts_unflat$fields$region
+  region <- gsub(".*> ","",region)
+  
+  # feedback text
+  feedback_text <- contacts_unflat$fields$srh_feedback_text
+  feedback_rate <- contacts_unflat$fields$srh_feedback_rate
+  feedback_rate <- forcats::fct_relevel(feedback_rate, c("Absolutely love it!", "It was good",
+                                                         "Could be better", "Did not help at all"))
+  
+  df <- data.frame(ID, group, created_on, program, active_users_24_hrs, active_users_7_days, avatar, urn,
+                   gender, age, region, feedback_text, feedback_rate)
   
   # SRH Data Frame - Flows ----------------------------------------------------
   SRH_flow_names <- paste0("SRH - Answer - ", c("Menstruation", "Pregnancy", "Puberty", "STIs",
-                                                "Gender", "Sexuality", "Abstinence", "Mental Health",
-                                                "Violence & Abuse", "Healthy Relationships", "Parenting"))
-  all_flow_names <- get_flow_names() %>% dplyr::select((name))
-  srh_data_all <- get_data_from_rapidpro_api(call_type="runs.json?joined=srh_user", flatten = TRUE)
+                                                "Gender", "Sexuality", "Abstinence", "Mental health",
+                                                "Violence abuse", "Healthy relationships", "Contraceptives"))
+  all_flow_names <- get_flow_names() %>% dplyr::select(c(name, uuid))
+  
+  # if the number of individuals is GREATER than the number of flows, run this instead:
+  # srh_data <- NULL
+  # for (i in SRH_flow_names){
+  #   i_flow_names <- (all_flow_names %>% filter(grepl(i, name)))$uuid
+  #   flow_uuid <- i_flow_names
+  #   runs_unflat_i <- purrr::map(.x = i_flow_names,
+  #                             .f = ~get_user_data(call_type=paste0("runs.json?flow=", .x)))
+  #   srh_data[[i]] <- bind_rows(runs_unflat_i, `.id` = "ID")
+  # }
+  # names(srh_data) <- SRH_flow_names
+
+  # if the number of flows is GREATER than the number of individuals, run this:
+  runs_unflat <- purrr::map(.x = df$ID,
+                            .f = ~get_user_data(call_type=paste0("runs.json?contact=", .x), flatten = TRUE))
+  all_flow_data <- bind_rows(runs_unflat, `.id` = "ID")
   srh_data <- NULL
-  for (i in SRH_flow_names){
+  for (i in SRH_flow_names){   # SRH - Answer - Violence abuse, 
     i_flow_names <- (all_flow_names %>% filter(grepl(i, name)))$name
-    srh_data[[i]] <- srh_data_all %>% filter(`flow.name` %in% i_flow_names) %>%
+    srh_data[[i]] <- all_flow_data %>% filter(`flow.name` %in% i_flow_names) %>%
       dplyr::mutate(flow.name = naming_conventions(flow.name, replace = paste0(i, " - "))) %>%
       dplyr::select(c(flow = flow.name, uuid = contact.uuid, interacted = responded, created_on))
   }
   
-  # TODO: work with this
-  # SRH_flow_names <- paste0("SRH - Answer - ", c("Menstruation", "Pregnancy", "Puberty", "STIs",
-  #                                               "Gender", "Sexuality", "Abstinence", "Mental Health",
-  #                                               "Violence & Abuse", "Healthy Relationships", "Parenting"))
-  # srh_data <- srh_table_output(flow_names = SRH_flow_names)
-  # names(srh_data) <- SRH_flow_names
-  # flow then becomes .id in the summary_plot and in the flow_cat_frequency function
-  
-  # Consented ---------------------------------------------
-  if (consent_only){
-    if (length(contacts_unflat$groups) > 0){
-      row <- 1:length(ID)
-    } else {
-      row <- NULL
-      row <- factor(row)
-    }
-    df_created_on <- data.frame(ID, created_on, true_consent, program, row = row)
-    consented_ind <- (df_created_on %>% filter(true_consent == TRUE))$ID
-    
-    df <- df %>% filter(true_consent %in% consented_ind)
-    for (i in 1:length(srh_data)){
-      if (!is.null(srh_data[[i]])){
-        srh_data[[i]] <- srh_data[[i]] %>% filter(uuid %in% consented_ind)
-      }
-    }
-  }
+  #get_user_data(call_type=paste0("runs.json?contact=27cc8393-e8be-44bf-b964-cb1a4cddc007&ad9f75a6-e222-405e-9ff6-c8a44b3aba94"), flatten = TRUE)
   
   # SRH Flow ---------------------------------------------
   srh_flow_freq <- flow_cat_frequency(table = srh_data)
