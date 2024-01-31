@@ -387,21 +387,21 @@ if (country == "Malaysia_2"){
   checkin_data <- bind_rows(pre_goal_checkin_data, post_goal_checkin_data) %>%
     mutate(time = fct_relevel(time, c("Pre", "Post")))
 
-  # For goals: Pre and Post -
-  list_goal_transition_data <- NULL
-  for (i in goals){
-    list_goal_transition_data[[i]] <- goal_transitions(i)
-  }
-  names(list_goal_transition_data) <- goals
-  stress_df <- list_goal_transition_data$stress
-  relation_df <- list_goal_transition_data$relation
-  develop_df <- list_goal_transition_data$develop
-  learning_df <- list_goal_transition_data$learning
-  structure_df <- list_goal_transition_data$structure
-  behave_df <- list_goal_transition_data$behave
-  safety_df <- list_goal_transition_data$safety
-  ipv_df <- list_goal_transition_data$ipv
-  budget_df <- list_goal_transition_data$budget
+  # # For goals: Pre and Post -
+  # list_goal_transition_data <- NULL
+  # for (i in goals){
+  #   list_goal_transition_data[[i]] <- goal_transitions(i)
+  # }
+  # names(list_goal_transition_data) <- goals
+  # stress_df <- list_goal_transition_data$stress
+  # relation_df <- list_goal_transition_data$relation
+  # develop_df <- list_goal_transition_data$develop
+  # learning_df <- list_goal_transition_data$learning
+  # structure_df <- list_goal_transition_data$structure
+  # behave_df <- list_goal_transition_data$behave
+  # safety_df <- list_goal_transition_data$safety
+  # ipv_df <- list_goal_transition_data$ipv
+  # budget_df <- list_goal_transition_data$budget
 }
 
 # TODO set uuid to be id in 

@@ -1,7 +1,8 @@
 library(rapidpror)
 library(tidyverse)
-just_ipv <- FALSE
-country <- "South_Africa"
+just_ipv <- TRUE
+#country <- "South_Africa"
+country <- "Jamaica"
 
 set_rapidpro_site(site = site)
 set_rapidpro_key(key = key[[1]])
@@ -958,7 +959,7 @@ for (i in 1:length(super_list_of_datasets)){
   #list_of_datasets[[i]] <- list_of_datasets[[i]] %>% select(-c("row"))
 }
 
-write_xlsx(super_list_of_datasets, path = "SA_Data_20230712.xlsx")
+write_xlsx(super_list_of_datasets, path = "SA_Data_20230912.xlsx")
 
 # 
 # IPV_tips_accessed <- contacts_unflat$fields$ipv_list_of_tips

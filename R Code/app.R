@@ -30,7 +30,7 @@ if (type == "ParentText2"){
   } else if (country == "Malaysia_2") {
     data_l <- import_list("data/PT2_shiny_malaysia1.xlsx")
     source("shiny_cleaning_PT2.R")
-    #save(df, result_flow2, checkin_data, goal_transitions_table, transitions, flow_module_checkin_data, flow_safeguarding_data, post_goal_checkin_data, pre_goal_checkin_data, stress_df, relation_df, develop_df, learning_df, structure_df, behave_df, safety_df, ipv_df, budget_df, file = "malaysia_20240118.rds")
+    #save(df, result_flow2, checkin_data, goal_transitions_table, transitions, flow_module_checkin_data, flow_safeguarding_data, post_goal_checkin_data, pre_goal_checkin_data, file = "malaysia_20240118.rds")
     #load("malaysia_20240118.rds")
     title <- "Malaysia: ParentText 2.0"
     df$uuid <- df$id

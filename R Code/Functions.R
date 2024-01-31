@@ -1,3 +1,39 @@
+goal_transitions <- function(data = checkin_data, goal_id = "learning") {
+
+  data <- data %>%
+    mutate(time_type = ifelse(time == "Pre", "Pre", "Post"))
+  
+  # Separate checkin_data into pre_goal_checkin_data and post_goal_checkin_data
+  pre_goal_checkin_data <- data %>%
+    filter(time_type == "Pre") %>%
+    filter(ID == goal_id) %>%
+    select(uuid, response_old = response, ID, time_old = time)
+  
+  post_goal_checkin_data <- data %>%
+    filter(time_type == "Post") %>%
+    filter(ID == goal_id) %>%
+    select(uuid, response_new = response, ID, time_new = time, improvement)
+  
+  # Perform a full join
+  count_df <- full_join(pre_goal_checkin_data, post_goal_checkin_data, by = "uuid") %>%
+    filter(!is.na(time_new)) %>%
+    count(uuid, response_old, response_new, time_old, time_new)
+  
+  return(count_df)
+}
+
+goal_transitions_table <- function(data = checkin_data, ID_goal = "learning"){
+  return(data %>%
+    dplyr::filter(ID == ID_goal) %>%
+    dplyr::group_by(time) %>%
+    dplyr::mutate(total = n()) %>%
+    dplyr::group_by(time, response, total) %>%
+    dplyr::summarise(Count = n()) %>%
+    dplyr::mutate(`Count (%)` = paste0(Count, " (", round(Count/total * 100, 1), "%)")) %>%
+    dplyr::select(-c(total, Count)) %>%
+    pivot_wider(names_from = time, values_from = `Count (%)`, values_fill = "0 (0%)"))
+}
+
 get_data_from_rapidpro_api <- function(call_type, rapidpro_site = get_rapidpro_site(), token = get_rapidpro_key(), flatten = FALSE,
                                        date_from = NULL, date_to = NULL, format_date = "%Y-%m-%d", tzone_date = "UTC"){
   if (is.null(rapidpro_site)){
@@ -396,7 +432,8 @@ flow_cat_frequency <- function(table = srh_data){
   for (i in 1:length(table)){
     if (!is.null(table[[i]]) && nrow(table[[i]]) > 0){
       #table[[i]] <- table[[i]] %>% filter(interacted == TRUE)
-      i_flow_n <- summary_table(table[[i]], factors = flow)
+      table[[i]]$flow <- table[[i]]$flow$name
+      i_flow_n <- summary_table(table[[i]], factors = `flow`)
       i_flow_n$Flow <- gsub(".*- ","", i_flow_n$Flow)
       freq_table[[i]] <- i_flow_n
       names(freq_table)[[i]] <- names(table)[[i]]
