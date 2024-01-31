@@ -123,27 +123,39 @@ update_data <- function(type = "SRH", date_from = "2021-10-14", date_to = NULL, 
   all_flow_names <- get_flow_names() %>% dplyr::select(c(name, uuid))
   
   # if the number of individuals is GREATER than the number of flows, run this instead:
-  # srh_data <- NULL
-  # for (i in SRH_flow_names){
-  #   i_flow_names <- (all_flow_names %>% filter(grepl(i, name)))$uuid
-  #   flow_uuid <- i_flow_names
-  #   runs_unflat_i <- purrr::map(.x = i_flow_names,
-  #                             .f = ~get_user_data(call_type=paste0("runs.json?flow=", .x)))
-  #   srh_data[[i]] <- bind_rows(runs_unflat_i, `.id` = "ID")
+  #fun2 <- function(all_flow_names, rapidpro_site, call_type, token){
+    srh_data <- NULL
+    for (i in SRH_flow_names){
+      i_flow_names <- (all_flow_names %>% filter(grepl(i, name)))$uuid
+      flow_uuid <- i_flow_names
+      runs_unflat_i <- purrr::map(.x = i_flow_names,
+                                  .f = ~get_user_data(call_type=paste0("runs.json?flow=", .x)))
+      srh_data[[i]] <- bind_rows(runs_unflat_i, `.id` = "ID")
+    }
+  names(srh_data) <- SRH_flow_names
+  #   return(srh_data)
   # }
-  # names(srh_data) <- SRH_flow_names
-
+  # system.time(fun2(all_flow_names, rapidpro_site, call_type, token))
+  all_flow_data <- bind_rows(srh_data, `.id` = "ID")
+  
   # if the number of flows is GREATER than the number of individuals, run this:
-  runs_unflat <- purrr::map(.x = df$ID,
-                            .f = ~get_user_data(call_type=paste0("runs.json?contact=", .x), flatten = TRUE))
-  all_flow_data <- bind_rows(runs_unflat, `.id` = "ID")
-  srh_data <- NULL
-  for (i in SRH_flow_names){   # SRH - Answer - Violence abuse, 
-    i_flow_names <- (all_flow_names %>% filter(grepl(i, name)))$name
-    srh_data[[i]] <- all_flow_data %>% filter(`flow.name` %in% i_flow_names) %>%
-      dplyr::mutate(flow.name = naming_conventions(flow.name, replace = paste0(i, " - "))) %>%
-      dplyr::select(c(flow = flow.name, uuid = contact.uuid, interacted = responded, created_on))
-  }
+  
+  # system.time for the other methodis:
+  # system.time(get_user_data(call_type="runs.json?group=4db95dd7-fb47-4394-9ff5-0e9f5bce2db5",
+  #                     flatten = TRUE))
+  # # system.time for the purrr method is: 
+  # #user  system elapsed 
+  # #10.76    0.44  259.03 
+  # runs_unflat <- purrr::map(.x = df$ID,
+  #                           .f = ~get_user_data(call_type=paste0("runs.json?contact=", .x), flatten = TRUE))
+  # all_flow_data <- bind_rows(runs_unflat, `.id` = "ID")
+  # srh_data <- NULL
+  # for (i in SRH_flow_names){   # SRH - Answer - Violence abuse, 
+  #   i_flow_names <- (all_flow_names %>% filter(grepl(i, name)))$name
+  #   srh_data[[i]] <- all_flow_data %>% filter(`flow.name` %in% i_flow_names) %>%
+  #     dplyr::mutate(flow.name = naming_conventions(flow.name, replace = paste0(i, " - "))) %>%
+  #     dplyr::select(c(flow = flow.name, uuid = contact.uuid, interacted = responded, created_on))
+  # }
   
   #get_user_data(call_type=paste0("runs.json?contact=27cc8393-e8be-44bf-b964-cb1a4cddc007&ad9f75a6-e222-405e-9ff6-c8a44b3aba94"), flatten = TRUE)
   

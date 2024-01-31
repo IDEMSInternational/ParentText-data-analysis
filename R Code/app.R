@@ -18,7 +18,7 @@ library(httr)
 library(jsonlite)
 library(rlang)
 
-country <- "Malaysia_2" #South_Africa_2" # Jamaica, Philippines, South Africa, Malaysia
+country <- "Malaysia_2" #South_Africa_2" # Jamaica, Philippines, South Africa, Malaysia, Malaysia_2
 type <- "ParentText2" #ParentText2" # ParentText, KPI, SRH for Jamaica only.
 source("Functions.R")
 source(paste0(country, "_dashboard_settings.R"))
@@ -27,17 +27,22 @@ if (type == "ParentText2"){
     data_l <- import_list("data/PT2_shiny.xlsx")
     source("shiny_cleaning_PT2.R") 
     title <- "South Africa: ParentText 2.0"
-  } else {
-    #data_l <- import_list("data/PT2_shiny_Malaysia.xlsx")
-    data_l <- import_list("data/PT2_shiny_malaysia.xlsx")
+  } else if (country == "Malaysia_2") {
+    data_l <- import_list("data/PT2_shiny_malaysia1.xlsx")
     source("shiny_cleaning_PT2.R")
+    #save(df, result_flow2, checkin_data, goal_transitions_table, transitions, flow_module_checkin_data, flow_safeguarding_data, post_goal_checkin_data, pre_goal_checkin_data, stress_df, relation_df, develop_df, learning_df, structure_df, behave_df, safety_df, ipv_df, budget_df, file = "malaysia_20240118.rds")
+    #load("malaysia_20240118.rds")
     title <- "Malaysia: ParentText 2.0"
+    df$uuid <- df$id
+  } else {
+    stop("Unknown country")
   }
   PLH_shiny(title = title,
             data_list = data_l,
             data_frame = df,
             status = "primary",
-            colour = "blue")
+            colour = "blue",
+            key = "uuid")
 } else {
   if (country == "Jamaica"){
     if (type == "KPI"){
@@ -59,3 +64,7 @@ if (type == "ParentText2"){
     parenttext_shiny(country = country, date_from = default_date_from, date_to = default_date_to, include_archived_data = include_archived_data)
   }
 }
+
+
+# either group by isn't working
+# or we're just repeating the first plot on each tab?
