@@ -1,3 +1,23 @@
+flow_data_table_function2 <- function(flow_interaction, flow_name = NULL){
+  if (!is.data.frame(flow_interaction)){
+    flow_interaction <- plyr::ldply(flow_interaction) 
+  }
+  
+  if (!is.null(flow_interaction$interacted)){
+    #flow_interaction$interacted <- ifelse(flow_interaction$interacted == TRUE, "Yes", "No")
+    flow_interaction$interacted <- forcats::fct_expand(flow_interaction$interacted, c("Yes", "No"))
+  } else {
+    flow_interaction$interacted <- NA
+  }
+  flow_interaction_output <- flow_interaction %>%
+    group_by({{ flow_name }}, interacted, .drop = FALSE) %>%
+    summarise(Count = n()) %>% #, perc = round(n()/nrow(.)*100,2)) %>%
+    #mutate("Count (%)" := str_c(`Count`, ' (', round(`perc`, 1), ")")) %>%
+    #dplyr::select(-c(count, perc)) %>%
+    map_df(rev)
+  return(flow_interaction_output)
+}
+
 goal_transitions <- function(data = checkin_data, goal_id = "learning") {
 
   data <- data %>%
