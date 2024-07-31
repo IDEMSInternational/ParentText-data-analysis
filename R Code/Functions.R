@@ -1,3 +1,6 @@
+
+
+
 flow_data_table_function2 <- function(flow_interaction, flow_name = NULL){
   if (!is.data.frame(flow_interaction)){
     flow_interaction <- plyr::ldply(flow_interaction) 

@@ -511,19 +511,19 @@ update_data <- function(country = "Malaysia", date_from = "2021-10-14", date_to 
                                           date_to = date_to)}
 
   if (!country %in% c("Malaysia", "Philippines", "Jamaica", "South Africa", "South_Africa")){
-    supportive_praise_flow <- get_flow_data(flow_name = supportive_praise, flow_type = "praise", include_archived_data = include_archived_data, date_to = "1970-01-01")
-    supportive_calm_flow <- get_flow_data(flow_name = supportive_calm, flow_type = "calm", include_archived_data = include_archived_data, date_to = "1970-01-01")
-    supportive_activities_flow <- get_flow_data(flow_name = supportive_activities, include_archived_data = include_archived_data, date_to = "1970-01-01")
-    supportive_flow_names_flow <- get_flow_data(flow_name = supportive_flow_names, include_archived_data = include_archived_data, date_to = "1970-01-01")
-    check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names, flow_type = "check_in", include_archived_data = include_archived_data, date_to = "1970-01-01")
-    content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names, flow_type = "tips", include_archived_data = include_archived_data, date_to = "1970-01-01")
+    supportive_praise_flow <- get_flow_data1(flow_name = supportive_praise, flow_type = "praise", include_archived_data = include_archived_data, date_to = "1970-01-01")
+    supportive_calm_flow <- get_flow_data1(flow_name = supportive_calm, flow_type = "calm", include_archived_data = include_archived_data, date_to = "1970-01-01")
+    supportive_activities_flow <- get_flow_data1(flow_name = supportive_activities, include_archived_data = include_archived_data, date_to = "1970-01-01")
+    supportive_flow_names_flow <- get_flow_data1(flow_name = supportive_flow_names, include_archived_data = include_archived_data, date_to = "1970-01-01")
+    check_in_flow_names_flow <- get_flow_data1(flow_name = check_in_flow_names, flow_type = "check_in", include_archived_data = include_archived_data, date_to = "1970-01-01")
+    content_tip_flow_names_flow <- get_flow_data1(flow_name = content_tip_flow_names, flow_type = "tips", include_archived_data = include_archived_data, date_to = "1970-01-01")
   } else {
-    supportive_praise_flow <- get_flow_data(flow_name = supportive_praise, flow_type = "praise", include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
-    supportive_calm_flow <- get_flow_data(flow_name = supportive_calm, flow_type = "calm", include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
-    supportive_activities_flow <- get_flow_data(flow_name = supportive_activities, include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
-    supportive_flow_names_flow <- get_flow_data(flow_name = supportive_flow_names, include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
-    check_in_flow_names_flow <- get_flow_data(flow_name = check_in_flow_names, flow_type = "check_in", include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
-    content_tip_flow_names_flow <- get_flow_data(flow_name = content_tip_flow_names, flow_type = "tips", include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
+    supportive_praise_flow <- get_flow_data1(flow_name = supportive_praise, flow_type = "praise", include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
+    supportive_calm_flow <- get_flow_data1(flow_name = supportive_calm, flow_type = "calm", include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
+    supportive_activities_flow <- get_flow_data1(flow_name = supportive_activities, include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
+    supportive_flow_names_flow <- get_flow_data1(flow_name = supportive_flow_names, include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
+    check_in_flow_names_flow <- get_flow_data1(flow_name = check_in_flow_names, flow_type = "check_in", include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
+    content_tip_flow_names_flow <- get_flow_data1(flow_name = content_tip_flow_names, flow_type = "tips", include_archived_data = include_archived_data, date_from = date_from, date_to = date_to)
   }
   supportive_praise_flow$ID <- supportive_praise_flow$uuid
   supportive_praise_flow$uuid <- NULL

@@ -1,39 +1,100 @@
-# to install most recent
-library(readxl)
-library(rapidpror)
 
-# set-up
-set_rapidpro_site(site = site)
-set_rapidpro_key(key = key$V1)
-set_rapidpro_uuid_names()
-
-# from rapidpror
-handle_type_flow <- function(data, type = "completed", type_2 = "category") {
-  response <- ifelse(is.na(data$values[[type]][[type_2]]), "No response", data$values[[type]][[type_2]])
-  return(tibble::tibble(uuid = data$contact$uuid, interacted = data$responded, response, created_run_on = data$created_on))
+#average goals and modules completed from a percentage of total to a M number and SD
+# library(survminer)
+# library(survival)
+add_na_variable <- function(data = contacts_unflat, variable){
+  for (names in variable) {
+    if (!names %in% colnames(data)) {
+      data[, names] <- NA
+      warning(paste(names, "does not exist. Adding NAs"))
+    }
+  }
+  return(data)
 }
 
-#### Get the data ##############################################################
-contacts_unflat <- get_user_data(flatten = FALSE, date_from = NULL)
+replace_none <- function(input_string) {
+  # Check if the string contains "kemas" or "csos"
+  if(any(grepl("KEMAS", input_string))) {
+    # Replace "none" with "kemas"
+    return(gsub("None", "KEMAS", input_string))
+  } else if(any(grepl("csos", input_string))) {
+    # Replace "none" with "csos"
+    return(gsub("None", "CSOS", input_string))
+  } else {
+    # If neither "KEMAS" nor "csos" is found, return the original string
+    return(input_string)
+  }
+}
+
+### ParentText 2.0 ###
+set_rapidpro_site(site = site)
+set_rapidpro_key(key = key[[1]])
+set_rapidpro_uuid_names()
+
+contacts_unflat <- get_user_data(flatten = FALSE, date_from = NULL, call_type = "contacts.json")
+
+# no date filter required
+#contacts_unflat <- contacts_unflat %>% dplyr::filter(as.Date(created_on) >= as.Date("2023-08-17"))
+
+## Set up of variables
+
+# TOP BOXES ----------------------------------------------------
 names(contacts_unflat$groups) <- contacts_unflat$uuid
 groups_data <- plyr::ldply(contacts_unflat$groups, .id = "id")
 groups_data <- groups_data %>%
-  dplyr::filter(name %in% c("mexicopilot")) %>%
+  dplyr::filter(name %in% c("socialmedia", "share", "thsn")) %>%
   dplyr::mutate(value = 1) %>%
   dplyr::select(-uuid)
 groups_data <- groups_data %>% pivot_wider(names_from = name, values_from = value, values_fill = 0)
 
-valid_ids <- groups_data$id
-contacts_unflat <- contacts_unflat %>% filter(uuid %in% valid_ids)
+df <- data.frame(groups_data) %>%
+  mutate(id = as.character(id)) %>%
+  arrange(id)
 
-df <- data.frame(groups_data)
 valid_ids <- df$id
-contacts_unflat <- contacts_unflat %>% dplyr::filter(uuid %in% valid_ids)
 
-#### user data #################################################################
-df$enrolled <- ifelse(is.na(contacts_unflat$fields$research_id), "no", "yes")
+contacts_unflat <- contacts_unflat %>%
+  dplyr::filter(uuid %in% valid_ids) %>%
+  arrange(uuid)
+
+#contacts_unflat <- flatten(contacts_unflat)
+# writexl::write_xlsx(contacts_unflat, path = "sa_users_snapshot_20240306.xlsx")
+# saveRDS(contacts_unflat, file = "malaysia_users_snapshot_29022024.rds")
+
+x <- data.frame(df = df$id, cu = contacts_unflat$uuid) %>%
+  mutate(hi = ifelse(df == cu, 1, 0)) %>%
+  filter(hi == 0)
+if (nrow(x) > 0) stop("Check ID order")
+
+# enrolled
+df$enrolled <- "yes"
+
 df$research_id <- contacts_unflat$fields$research_id
+
 df$created_on <- lubridate::as_date(contacts_unflat$created_on)
+
+df$start_time <- as.Date(contacts_unflat$fields$start_time)
+
+
+if ("share" %in% names(df)){
+  df <- df %>% mutate(group_name = ifelse(socialmedia == 1, "unicef",
+                                          ifelse(share == 1, "share", 
+                                                 ifelse(thsn == 1, "thsn", "other"))))
+} else {
+  df <- df %>% mutate(group_name = ifelse(socialmedia == 1, "unicef",
+                                          ifelse(thsn == 1, "thsn", "other")))
+}
+
+
+# start time for KEMAS - fields$start_time
+valid_ids <- df$id
+contacts_unflat <- contacts_unflat %>%
+  dplyr::filter(uuid %in% valid_ids) %>%
+  arrange(uuid)
+x <- data.frame(df = df$id, cu = contacts_unflat$uuid) %>%
+  mutate(hi = ifelse(df == cu, 1, 0)) %>%
+  filter(hi == 0)
+if (nrow(x) > 0) stop("Check ID order")
 
 # registered - done, under "completed_onboarding"
 df$last_online <- as.Date(contacts_unflat$last_seen_on)
@@ -47,14 +108,25 @@ df$child_age <- contacts_unflat$fields$child_age
 df$marital_status <- contacts_unflat$fields$marital_status
 df$child_gender <- contacts_unflat$fields$child_gender
 df$has_disability <- contacts_unflat$fields$has_disability
+df$ethnicity <- contacts_unflat$fields$ethnicity
+df$ethnicity <- factor(ifelse(is.na(df$ethnicity), "NA", df$ethnicity))
+df$education_level <- contacts_unflat$fields$education_level
+df$education_level <- factor(ifelse(is.na(df$education_level), "NA", df$education_level))
+df$parent_prog_exp <- contacts_unflat$fields$parent_prog_exp
+df$location <- contacts_unflat$fields$location
+df$location <- factor(ifelse(is.na(df$location), "NA", df$location))
 
 df <- df %>%
+  dplyr::mutate(parent_prog_exp = recode_factor(parent_prog_exp,
+                                                no = "No",
+                                                yes = "Yes",
+                                                .missing = "NA")) %>%
   dplyr::mutate(language = recode_factor(language,
                                          eng = "English",
-                                         spa = "Spanish",
+                                         msa = "Malay / Bahasa Melayu",
                                          .missing = "NA"),
-                language = if_else(!language %in% c("English", "Spanish", "NA"), "Other", language),
-                language = fct_relevel(language, c("English", "Spanish", "NA", "Other"))) %>%
+                language = if_else(!language %in% c("English", "Malay / Bahasa Melayu", "NA"), "Other", language),
+                language = fct_relevel(language, c("English", "Malay / Bahasa Melayu", "NA", "Other"))) %>%
   dplyr::mutate(gender = recode_factor(gender,
                                        woman = "Female",
                                        man = "Male",
@@ -73,6 +145,25 @@ df <- df %>%
                                                no = "No",
                                                yes = "Yes"))
 
+# NEW BITS ------------------------------------------------------
+# constraints to have:
+# group_name - unicef, thsn, share
+
+df$parent_age <- as.numeric(contacts_unflat$fields$parent_age)
+
+df <- df %>%
+  mutate(parent_age_group = ifelse(is.na(parent_age), "NA", 
+                                   ifelse(parent_age <= 17, "17 and below",
+                                   ifelse(parent_age <= 19, "18-19",
+                                          ifelse(parent_age <= 29, "20-29",
+                                                 ifelse(parent_age <= 39, "30-39",
+                                                        ifelse(parent_age <= 49, "40-49",
+                                                               ifelse(parent_age <= 59, "50-59",
+                                                                      ifelse(parent_age <= 69, "60-69",
+                                                                             ifelse(parent_age <= 79, "70-79",
+                                                                                    ifelse(parent_age > 79, "80+",
+                                                                                                  "Other")))))))))))
+df$parent_age_group <- factor(df$parent_age_group)
 
 # DEMOGRAPHICS -------------------------------------------------
 df$completed_onboarding <- contacts_unflat$fields$completed_onboarding
@@ -93,6 +184,9 @@ df$n_goals_completed <- as.numeric(contacts_unflat$fields$n_goals_completed)
 df$n_goals_prog <- as.numeric(contacts_unflat$fields$n_goals_prog)
 df$perc_goals_completed <- round(df$n_goals_completed / df$n_goals_prog * 100, 1)
 df$perc_goals_completed_f <- df$perc_goals_completed # _f <- factor(df$perc_goals_completed)
+df$helpful <- contacts_unflat$fields$helpful
+df$useful_goal <- contacts_unflat$fields$useful_goal
+df$recommend <- contacts_unflat$fields$recommend
 
 # first goal
 # df$first_goal <- gsub( " .*$", "", contacts_unflat$fields$goals_accessed)
@@ -102,13 +196,14 @@ df$perc_goals_completed_f <- df$perc_goals_completed # _f <- factor(df$perc_goal
 # table(contacts_unflat$fields$goals_accessed)
 
 # goal ids
-goals <- c("relation", "stress")
-#              "develop_t", "learning_t", "structure_t",
-#              "behave_t", "wellbeing_t", "safety_t",
-#              "develop_c", "learning_c", "structure_c",
-#              "behave_c", "wellbeing_c", "safety_c", "ipv", "budget")
+goals <- c("stress", "relation", "develop", "learning",
+           "structure", "behave", "safety", "ipv", "budget")
+
 n_mod_completed <- paste0("goal_", goals, "_n_mod_compl")
 n_mod_total <- paste0("goal_", goals, "_n_mod")
+
+# mught put in modules later. 
+
 
 contacts_unflat$fields <- add_na_variable(contacts_unflat$fields, n_mod_completed)
 contacts_unflat$fields <- add_na_variable(contacts_unflat$fields, n_mod_total)
@@ -165,7 +260,10 @@ df$time_in_study_n <- as.numeric(as.character(df$time_in_study))
 # df %>% group_by(cens) %>% summarise(mean(time_in_study))
 # if they've not left yet, make them censored?
 
-# transitions on "flow" page #####################################################
+#  df <- df %>% dplyr::mutate(group = ifelse(kemas == 1, "KEMAS",
+#                                            ifelse(csos == 1, "CSOS", "None")))
+
+# transitions on "flow" page
 goals_accessed <- data.frame(stringr::str_split(contacts_unflat$fields$goals_accessed, " ", simplify = TRUE))
 goals_accessed <- bind_cols(ID = contacts_unflat$uuid, goals_accessed) %>%
   pivot_longer(cols = !ID) %>%
@@ -191,17 +289,11 @@ valid_ids <- df$id
 rm(contacts_unflat)
 
 # ENGAGEMENT info FROM RUNS -------------------------------------------------------------
-# module ID
-#mexico_goals <- read_excel(path = "...", sheet = "Copy of module_data")
-#modules <- mexico_goals$ID
+modules <- c("stress", "relation", "develop", "learning", "structure", "behave", "safety", "ipv", "budget")
 
-#mod_home_activity_checkin <- paste0("home_activity_checkin - ", modules)
-# 
-# get_command <- paste(rapidpro_site, call_type, valid_ids[1], sep = "")
-# response <- httr::GET(get_command, config = httr::add_headers(Authorization = paste("Token", 
-#                                                                                     token)))
-# raw <- httr::content(response, as = "text")
-# # results <- jsonlite::fromJSON(raw)
+mod_home_activity_checkin <- paste0("home_activity_checkin - ", modules)
+
+df$uuid <- df$id
 
 uuid_data = get_rapidpro_uuid_names()
 rapidpro_site = get_rapidpro_site()
@@ -213,64 +305,13 @@ for (i in 1:length(valid_ids)){ # get each individual
                        sep = "")
   result_flow2[[i]] <- rapidpror:::httr_get_call(get_command = get_command, token = token)
 }
+
 #result_flow2 <- result_flow21
-result_flow2 <- bind_rows(result_flow2) %>%
-  filter(
-    grepl("module -", flow$name) | 
-      grepl("safeguarding_help", flow$name) | 
-      grepl("pre_goal_checkin - ", flow$name) | 
-      grepl("post_goal_checkin - ", flow$name)
-  )
+result_flow2 <- bind_rows(result_flow2)
 
-# get archived data for these flows
-# get archived data for these flows - we have Jan and Feb stored in a sheet already.
-# quicker to read this in. 
-archived_flow_data_monthly_1 <- readRDS("data/MX_PT2_archived_data_20240101_20240229.RDS")
-archived_flow_data_monthly <- get_archived_data(date_from = "2024-04-01", period = "monthly")
-archived_flow_data_monthly <- bind_rows(archived_flow_data_monthly)
-
-if (nrow(archived_flow_data_monthly) > 0){
-  archived_flow_data_monthly <- archived_flow_data_monthly  %>%
-    filter(
-      grepl("module -", flow$name) | 
-        grepl("safeguarding_help", flow$name) | 
-        grepl("pre_goal_checkin - ", flow$name) | 
-        grepl("post_goal_checkin - ", flow$name)
-    ) %>%
-    filter(contact$uuid %in% valid_ids) %>%
-    filter(contact$uuid %in% valid_ids)
-  archived_flow_data_monthly <- bind_rows(archived_flow_data_monthly_1, archived_flow_data_monthly)
-} else {
-  archived_flow_data_monthly <- archived_flow_data_monthly_1
-  rm(archived_flow_data_monthly_1)
-}
-#saveRDS(archived_flow_data_monthly, "data/MX_PT2_archived_data_20240101_20240229.RDS")
-
-archived_flow_data_daily <- get_archived_data(date_from = "2024-04-01", period = "daily")
-archived_flow_data_daily <- bind_rows(archived_flow_data_daily) 
-
-
-if (nrow(archived_flow_data_daily) > 0){
-  archived_flow_data_daily <- archived_flow_data_daily %>%
-    filter(
-      grepl("module -", flow$name) | 
-        grepl("safeguarding_help", flow$name) | 
-        grepl("pre_goal_checkin - ", flow$name) | 
-        grepl("post_goal_checkin - ", flow$name)
-    ) %>% filter(contact$uuid %in% valid_ids)
-  result_flow2 <- bind_rows(result_flow2, archived_flow_data_daily, archived_flow_data_monthly)
-} else {
-  result_flow2 <- bind_rows(result_flow2, archived_flow_data_monthly)
-  }
-
-
-
-# for goals:
-# result_flow <- result_flow2 %>% dplyr::filter(grepl("home_activity_checkin -", flow$name))
-# flow_checkin_data <- flow_data_calculation(result_flow = result_flow, flow_type = "check_in_2")
-# flow_checkin_data$ID <- sub(".* ", "", result_flow$flow$name)
-# flow_checkin_data <- flow_checkin_data %>% dplyr::mutate(response = fct_recode(response, Yes = "yes", `Not yet` = "not yet"))
-# flow_checkin_data <- flow_checkin_data %>% dplyr::mutate(response = fct_relevel(response, c("Yes", "Not yet", "No response")))
+#result_flow21 <- flatten(result_flow2)
+#writexl::write_xlsx(result_flow21, path = "malaysia_flows_snapshot_29022024.xlsx")
+#saveRDS(result_flow2, path = "malaysia_flows_snapshot_29022024.rds")
 
 # For Module:
 result_flow <- result_flow2 %>% dplyr::filter(grepl("module -", flow$name))
@@ -295,10 +336,6 @@ pre_goal_checkin_data <- flow_data_calculation(result_flow = result_flow, flow_t
 pre_goal_checkin_data$response <- str_to_title(pre_goal_checkin_data$response)
 #pre_goal_checkin_data <- pre_goal_checkin_data %>% dplyr::mutate(response = fct_relevel(response, c("Positive", "Negative", "No response")))
 pre_goal_checkin_data$ID <- sub(".* ", "", result_flow$flow$name)
-pre_goal_checkin_data_for_engagement <- pre_goal_checkin_data %>% 
-  dplyr::filter(interacted) %>%
-  dplyr::select(c(uuid, ID)) %>%
-  unique()
 
 # post-goal checkin - want IMPROVEMENT and VALUE
 post_goal_checkin <- paste0("post_goal_checkin - ", goals)
@@ -316,22 +353,14 @@ post_goal_checkin_data$improvement <- str_to_title(post_goal_checkin_data$improv
 #post_goal_checkin_data <- post_goal_checkin_data %>% dplyr::mutate(improvement = fct_relevel(improvement, c("Better", "Same", "Worse", "No response")))
 rm(result_flow2)
 
-############
-
-
-
-
-
-
-# Transitions Code
 
 # For goals - all checkin data:
-pre_goal_checkin_data <- pre_goal_checkin_data %>% 
+pre_goal_checkin_data <- pre_goal_checkin_data %>%
   dplyr::filter(interacted) %>%
   dplyr::select(uuid, response, ID) %>%
   dplyr::mutate(time = "Pre")
 
-post_goal_checkin_data <- post_goal_checkin_data %>% 
+post_goal_checkin_data <- post_goal_checkin_data %>%
   filter(interacted) %>%
   select(uuid, response, ID, improvement) %>%
   mutate(time = "Post")
@@ -340,126 +369,3 @@ post_goal_checkin_data <- post_goal_checkin_data %>%
 checkin_data <- bind_rows(pre_goal_checkin_data, post_goal_checkin_data) %>%
   mutate(time = fct_relevel(time, c("Pre", "Post")))
 
-# 
-
-df$uuid <- df$id
-
-df <- df %>% dplyr::mutate(group = ifelse(mexicopilot == 1, "mexicopilot", "None"))
-
-#Connect to Database to get original data
-source("config/personal_setup_mx.R")
-faciNK_data <- postgresr::get_user_data(site = plh_con, filter = FALSE)
-names(faciNK_data) <- gsub(x = names(faciNK_data), pattern = "\\-", replacement = ".")  
-
-# faciNK_data <- faciNK_data %>%
-#   filter(rp.contact.field.current_package %in% c("cdmx_dif", "cdmx_bs", "bc_dif", "edomx_bs", 
-#                                                  "mich_dif", "chih_dif"))
-
-parent_data <- purrr::map(
-  faciNK_data$`rp.contact.field.parent_data`, 
-  ~ if(!is.na(.x)) jsonlite::fromJSON(.x)
-)
-family_data <- purrr::map(
-  faciNK_data$`rp.contact.field.family_data`, 
-  ~ if(!is.na(.x)) jsonlite::fromJSON(.x)
-)
-parent_data_table <- NULL
-family_data_table <- NULL
-valid_research_id <- df$research_id
-facilitators <- NULL
-j <- 1
-for (i in 1:length(parent_data)){
-  parent_data_table_i <- bind_rows(parent_data[[i]])
-  
-  group <- faciNK_data$`rp.contact.field.current_package`[[i]]
-  
-  # get external if it is one of valid_research_id
-  external_id <- parent_data_table_i$external_id 
-  match_id <- match(external_id, valid_research_id)
-  
-  
-  # [1]   9  30  51  54  70  78  84  92 115 127
-  
-  # or if no masw 5, 28, 46, 49, 52, 64, 68
-  if (!is.na(match_id) && any(match_id)){
-    facilitators[j] <- i
-    my_list <- family_data[[i]]
-    indices <- rep(seq_along(my_list), times = sapply(my_list, length))
-    parent_data_table_i <- parent_data_table_i %>% mutate(group_name = group)
-    parent_data_table_i$parent_group_no <- indices
-    parent_data_table_i <- parent_data_table_i %>%
-      mutate(duplicated_parent_group = as.integer(!duplicated(indices)))
-    parent_data_table[[j]] <- parent_data_table_i
-    j <- j+1
-  }
-}
-names(parent_data_table) <- faciNK_data$app_user_id[facilitators]
-parent_data_table <- bind_rows(parent_data_table, .id = "facilitator")
-
-# ok so now we want to find people who are parent_group_no > 1 so that we can filter the children to the 
-# unique children in the analysis. 
-parent_data_table <- parent_data_table %>% dplyr::select(c(facilitator, parent_group_no, external_id, group_name, duplicated_parent_group))
-parent_data_table <- unique(parent_data_table)
-
-parent_data_table$group_name <- case_match(
-  parent_data_table$group_name,
-  "bc_dif" ~ 1,             # randomly generated
-  "mich_dif" ~ 2,
-  "cdmx_dif" ~ 3,
-  "chih_dif" ~ 4,
-  "cdmx_bs" ~ 5,
-  "edomx_bs" ~ 6
-)
-# which IDs are repeated in parent_data_table?
-
-# merge with df   #df_unjoin is a copy of df
-df <- left_join(df, parent_data_table, by = c("research_id" = "external_id"))
-df <- df %>%
-  
-  group_by(facilitator) %>%
-  
-  mutate(duplicated_parent_group = ifelse(is.na(duplicated_parent_group) | duplicated_parent_group == 1, 1, 2)) %>%
-  
-  # remove the ungrouped individuals.
-  #' if someone is Unknown and they have no facilitator then is it safe to assume these are not individuals who are on the Chatbot.
-  #' # Since we're now reading in all individuals who are in mexicopilot or no group.
-  mutate(indicator = ifelse(group == "None" & is.na(facilitator), 1, 0)) %>%
-  filter(indicator != 1)
-
-df <- df %>% ungroup()
-
-
-#
-#
-#
-#
-# Data to send to Chiara - 15/02 --------------------
-# df <- data.frame(name = contacts_unflat$fields$first_user_name,
-#                  surname = contacts_unflat$fields$family_name,
-#                  research_id = contacts_unflat$fields$research_id,
-#                  start_time = lubridate::as_date(contacts_unflat$fields$start_time),
-#                  phone_number = unlist(contacts_unflat$urns),
-#                  completed_onboarding = contacts_unflat$fields$completed_onboarding,
-#                  goal_relation_n_mod_compl = contacts_unflat$fields$goal_relation_n_mod_compl,
-#                  goal_relation_n_mod_started = contacts_unflat$fields$goal_relation_n_mod_started,
-#                  completed_language = contacts_unflat$fields$completed_language,
-#                  completed_consent = contacts_unflat$fields$completed_consent,
-#                  completed_first_name = contacts_unflat$fields$completed_first_name,
-#                  completed_family_name = contacts_unflat$fields$completed_family_name,
-#                  completed_gender = contacts_unflat$fields$completed_gender,
-#                  completed_location = contacts_unflat$fields$completed_location,
-#                  completed_orientation = contacts_unflat$fields$completed_orientation,
-#                  completed_media = contacts_unflat$fields$completed_media,
-#                  completed_marital_status = contacts_unflat$fields$completed_marital_status,
-#                  completed_child_name = contacts_unflat$fields$completed_child_name,
-#                  completed_child_gender = contacts_unflat$fields$completed_child_gender,
-#                  completed_child_dob = contacts_unflat$fields$completed_child_dob,
-#                  completed_pause = contacts_unflat$fields$completed_pause)
-# 
-# df_type_number <- data.frame(stringr::str_split(df$phone_number, ":", simplify = TRUE))
-# names(df_type_number) <- c("device_type", "number")
-# df <- cbind(df, df_type_number)
-# 
-# writexl::write_xlsx(df, path = "mexico_pilot_data_20240219.xlsx")
-# 
-# writexl::write_xlsx(contacts_unflat, path = "mexico_complete_data_20240219.xlsx")

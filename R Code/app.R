@@ -1,4 +1,4 @@
-#devtools::install_github("IDEMSInternational/plhr", force = TRUE)
+#devtools::install_github("IDEMSInternational/plhR", force = TRUE)
 library(shiny)
 library(shinydashboard)
 library(tidyr)
@@ -25,14 +25,21 @@ library(shinyjs)
 
 # TODO: work for multiple group boxes.
 
+# created a set of deprecated_functions.R - if there's issues with flow data, make sure that i'm running get_flow_data1 
+
 # put changes from main_page_group up and on
 # changes from plh_shiny up and on
 # but remove chnages I made
 
-country <- "Malaysia_2" #South_Africa_2" #Mexico" #South_Africa "" #South_Africa_2" # Jamaica, Philippines, South Africa, Malaysia, Malaysia_2
+# todo: check SA and Rohingya for archiving.
+country <- "Mexico" #Rohingya #Malaysia_3" #South_Africa_2" #Mexico" #South_Africa "" #South_Africa_2" # Jamaica, Philippines, South Africa, Malaysia, Malaysia_2
 type <- "ParentText2" #ParentText2" # ParentText, KPI, SRH for Jamaica only.
 source("Functions.R")
-source(paste0(country, "_dashboard_settings.R"))
+if (country == "Malaysia_3"){
+  source(paste0("Malaysia_2", "_dashboard_settings.R"))
+} else {
+  source(paste0(country, "_dashboard_settings.R"))
+}
 if (type == "ParentText2"){
   if (country == "South_Africa_2"){
     data_l <- import_list("data/PT2_shiny.xlsx")
@@ -55,11 +62,23 @@ if (type == "ParentText2"){
     #save(df, checkin_data, goal_transitions_table, goal_transitions, transitions, flow_module_checkin_data, flow_safeguarding_data, post_goal_checkin_data, pre_goal_checkin_data, goals_accessed_size, file = "malaysia_20240229.rds")
     #load("malaysia_20240118.rds")
     title <- "Malaysia: ParentText 2.0"
+  } else if (country == "Malaysia_3") {
+    data_l <- import_list("data/PT2_shiny_malaysia_2.xlsx")
+    source("MY3_shiny_cleaning_PT.R")
+    title <- "Malaysia: Localised Data"
+    df$uuid <- df$id
   } else if (country == "Mexico") {
     #data_l$main_page <- NULL
     source("MX_shiny_cleaning_PT.R")                          # group_by_data
     data_l <- import_list("data/PT2_shiny_mexico.xlsx")
     title <- "Mexico: ParentText 2.0"
+    df$uuid <- df$id
+    # bug if there's no filtering, but there is multiple dfs
+  } else if (country == "Rohingya") {
+    source("RH_shiny_cleaning.R")                          # group_by_data
+    data_l <- import_list("data/PT2_shiny_rohingya.xlsx")
+    title <- "Rohingya Text"
+    df$uuid <- df$id
     # bug if there's no filtering, but there is multiple dfs
   } else {
     stop("Unknown country")
@@ -73,7 +92,19 @@ if (type == "ParentText2"){
             status = "primary",
             colour = "blue",
             key = "uuid")
+} else if (type == "facilitator") {
+  data_l <- import_list("data/fac_shiny_mexico.xlsx")
+  title <- "Facilitator Data: Mexico"
+  x$uuid <- x$id
+  
+  PLH_shiny(title = title,
+            data_list = data_l,
+            data_frame = x,
+            status = "primary",
+            colour = "blue",
+            key = "id")
 } else {
+  source("deprecated_functions.R")
   if (country == "Jamaica"){
     if (type == "KPI"){
       source("kpi_update.R")
@@ -100,7 +131,3 @@ if (type == "ParentText2"){
     }
   }
 }
-
-
-# either group by isn't working
-# or we're just repeating the first plot on each tab?
