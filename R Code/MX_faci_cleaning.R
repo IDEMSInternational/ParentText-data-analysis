@@ -30,7 +30,7 @@ read_corpora <- function(data, nested = TRUE){
   # If it isn't a data frame, we check each element of the `data` argument
   data_unlist <- NULL
   for (i in 1:length(data)){
-    print(class(data[[i]]))
+    #print(class(data[[i]]))
     # first, check for description and metadata
     if (!is.null(names(data[i])) && names(data[i]) == "description") {
       description <- data[i][[1]]
@@ -118,7 +118,7 @@ for (i in 1:length(parent_data)){
   match_id <- match(external_id, valid_research_id)
   
   if (!is.na(match_id) && any(match_id)){
-    print(i)
+    #print(i)
     facilitators[j] <- i
     my_list <- family_data[[i]]
     indices <- rep(seq_along(my_list), times = sapply(my_list, length))
@@ -229,7 +229,8 @@ faci1_o1 <- bind_rows(faci1_o1) %>%
 
 df_id <- data.frame(research_id = research_ids, id = valid_ids)
 
-x <- full_join(faci_all, faci1_o1)
+# left join -- only have facilitators who have used the app.
+x <- left_join(faci_all, faci1_o1)
 
 
 # faci_all
@@ -244,20 +245,27 @@ x <- x %>%
          ID_indicator = LETTERS[as.integer(facilitator_id)])
 
 x <- x %>% mutate(variable = if_else(variable == "present", "parent", variable))
-x_parent <- x %>% filter(!is.na(research_id))
-x_non_parent <- x %>% filter(is.na(research_id))
+x_parent <- x %>% filter(variable == "parent")
+x_non_parent <- x %>% filter(variable != "parent")
 y <- left_join(x_parent, df_id)
 x <- bind_rows(y, x_non_parent)
 x <- x %>% arrange(ID_indicator)
 
+#all_parents <- full_join(x_parent, df_id)
+
 # # number of individuals each week
 x_parent1 <- x_parent %>%
-  mutate(week = replace_na(week, "unknown")) %>%
+  mutate(week = factor(week)) %>%
   dplyr::select(facilitator_id, ID_indicator, value, week) %>%
   unique() %>%
-  group_by(facilitator_id, ID_indicator, week) %>%
-  summarise(`number of parents` = n()) #%>%
-#pivot_wider(names_from = week, values_from = `number of parents`)
+  filter(!is.na(value), .preserve = TRUE) %>%
+  group_by(facilitator_id, ID_indicator, week, .drop = FALSE) %>%
+  summarise(`Number present` = n()) #%>%
+faci1_o1_total_parents <- faci1_o1 %>% group_by(facilitator) %>% summarise(`Total parents` = n())
+x_parent1 <- left_join(x_parent1, faci1_o1_total_parents, by = c("facilitator_id" = "facilitator")) 
+
+# x_parent1 %>% pivot_wider(names_from = week, values_from = `Number present`) %>%
+#   dplyr::select(c(Facilitator = facilitator_id, ID = ID_indicator, Onboarding = onboarding, `Week 1` = week_1, `Total parents`)) 
 # 
 # # time
 df_time_spent <- x_non_parent %>%
@@ -286,21 +294,26 @@ x_non_parent_msgs <- x_non_parent %>%
 #' submitted over time.
 #' You might have 1 line for each report type with weeks or months on the x-axis
 
-View(x)
-
 # value = time, week = onbording or week1, 
 
 # TODO: check with esmee that variable == "edited" is the report time.
-# x_report_time <- x %>%
-#   filter(variable == "edited") %>%
-#   mutate(time = as.Date(value))
-# 
-# ggplot(x_report_time, aes(x = time, y = "1")) + geom_line()
+# yes she thinks so - can double check 
+x_report_time <- x %>%
+  filter(variable == "edited") %>%
+  mutate(time = as.Date(value)) %>%
+  group_by(week, year = lubridate::year(time), month = lubridate::month(time)) %>%
+  summarise(n = n()) %>%
+  mutate(month = sprintf("%02d", month)) %>%
+  mutate(month = as.Date(paste(year, month, "01", sep = "-"))) %>%
+  complete(month = seq.Date(min(month), max(month), by = "month"), fill = list(n = 0)) 
+
+ggplot(x_report_time) +
+  geom_line(aes(x = month, y = `n`, colour = week), linewidth = 1) + labs(y = "Number of Reports Edited", x = "Month") + ylim(0, 5)
 
 #' On top: The total number of parents currently enrolled via Facilitator App. 
-x <- x %>%
-  mutate(unique_facilitator = ifelse(is.na(facilitator) | duplicated(facilitator), 2, 1),
-         unique_researcher = ifelse(is.na(research_id) | duplicated(research_id), 2, 1))
+#x_report_time %>%
+#  pivot_wider(names_from = "week", values_from = `n`) %>% ungroup() %>% mutate(month = lubridate::month(month, label = TRUE)) %>% mutate(month = paste(month, year, sep = "-")) %>% dplyr::select(-c(year)) %>% rename(., Date = month, Onboarding = onboarding, `Week 1` = week_1)
+
 
 x <- x %>%
   mutate(week_parent = ifelse(is.na(research_id), "NA",
@@ -308,6 +321,13 @@ x <- x %>%
                                       ifelse(week == "onboarding" & variable == "parent", "onboarding",
                                              ifelse(week == "week_1" & variable == "parent", "week_1", 
                                                     "check")))))
+
+x <- x %>%
+  mutate(unique_facilitator = ifelse(is.na(facilitator) | duplicated(facilitator), 2, 1),
+         unique_researcher = ifelse(is.na(week)| is.na(research_id) | duplicated(research_id), 2, 1))
+# number of unique researchers == onboarding #, is this correct? - check with code
+#x %>% group_by(week_parent, unique_researcher) %>% summarise(n())
+# yes this is. 
 
 #' The total parents reported as participating in a given week
 # participated in onboarding week

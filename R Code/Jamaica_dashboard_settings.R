@@ -1,6 +1,6 @@
 # Jamaica Configuration
 #set_rapidpro_key(file_path = "tokens/PT_jamaica_key.txt")
-type <- "SRH"
+type <- "KPI"
 if (type == "KPI"){
   key <- read.table("tokens/KPI_jamaica_key.txt", quote="\"", comment.char="")
   site <- "http://rapidpro.ilhasoft.mobi/api/v2/"

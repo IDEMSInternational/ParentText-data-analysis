@@ -3,10 +3,20 @@
 #' We need to estimate costing for the implementation, and there should be some relevant data
 #' (e.g. time spent by facilitators) collected in FaciNK. If it isn’t ready to send,
 #' could you give us a summary of the results relating to that data?
+source("config/personal_setup.R")
+faciNK_data <- postgresr::get_user_data(site = plh_con, filter = FALSE)
+#faciNK_data <- faciNK_data1
+names(faciNK_data) <- gsub(x = names(faciNK_data), pattern = "\\-", replacement = ".")  
 
-our_facilitators <- unique(df$facilitator)
+# from email on WC 8th April
+if ("rp.contact.field.user_name" %in% names(faciNK_data)){
+  faciNK_data <- faciNK_data %>% mutate(rp.contact.field.user_name = ifelse(app_user_id == "506e80691d2c74f9", "Nurshuhada", rp.contact.field.user_name))
+}
 
-faciNK_data <- faciNK_data %>% filter(app_user_id %in% our_facilitators)
+facs <- readxl::read_excel("MY_facilitator_data_20240416.xlsx")
+facs <- unique(facs$facilitator)
+
+faciNK_data <- faciNK_data %>% filter(app_user_id %in% facs) #our_facilitators)
 
 faciNK_data <- faciNK_data %>%
   rename_with(~str_replace(., "rp.contact.field.\\.", ""), starts_with("rp.contact.field."))
@@ -30,6 +40,8 @@ faci_all <- bind_rows(faci_all)
 faci_all <- faci_all %>% mutate(group = ifelse(package == "masw",
                                                "CSOS",
                                                "KEMAS"))
+faci_all <- faci_all %>%
+  mutate(group = ifelse(facilitator == "bd38993f-c783-4d0a-a7c0-a17ae806bce0", "CSOS", package))
 faci_all <- faci_all %>% dplyr::select(facilitator, week, variable = variable1, value = list, group)
 faci_all <- faci_all %>% filter(!variable %in% c("report_id", "parent_group_no"))
 faci_all$rp.contact.field.current_package <- NULL
@@ -62,7 +74,7 @@ for (j in 1:length(faciNK_data$rp.contact.field.archived_parent_data)){
   if (length(faci1) > 0){
     faci1_o <- read_corpora(faci1) %>% dplyr::filter(variable2 %in% c("parent_no", "external_id"))
     faci1_o <- faci1_o %>% dplyr::select(-c("variable1"))
-    if (j == 11){ faci1_o <- faci1_o %>% filter(list != 1) }
+    if (j == 7){ faci1_o <- faci1_o %>% filter(list != 1) }
     faci1_o$ID <- rep(seq(1, nrow(faci1_o) / 2), each = 2)
     faci1_o12[[j]] <- pivot_wider(faci1_o, names_from = "variable2", values_from = "list") %>%
       mutate(facilitator = faciNK_data$app_user_id[j]) %>%
@@ -74,21 +86,26 @@ faci1_o12 <- bind_rows(faci1_o12) %>%
   dplyr::select(facilitator, value = parent_no, research_id = external_id)
 
 
-x <- left_join(faci_all, faci1_o1)
-x <- left_join(x, faci1_o12, by = c("facilitator", "value"))
-#x %>% filter(!is.na(research_id.x)) %>% filter(!is.na(research_id.y))
+x <- full_join(faci_all, faci1_o1)
+x <- full_join(x, faci1_o12, by = c("facilitator", "value"))
+x %>% filter(!is.na(research_id.x)) %>% filter(!is.na(research_id.y))
 x <- x %>%
   mutate(research_id = ifelse(is.na(research_id.x), research_id.y,
                               ifelse(is.na(research_id.y), research_id.x,
                                      NA))) %>%
   dplyr::select(-c(research_id.x, research_id.y))
-
 x <- x %>% mutate(variable = if_else(variable == "present", "parent", variable))
-x <- full_join(x, df_id)
-writexl::write_xlsx(x, "MY_facilitator_data_20240416.xlsx") # overall together
+x_parent <- x %>% filter(!is.na(research_id))
+x_non_parent <- x %>% filter(is.na(research_id))
+y <- left_join(x_parent, df_id)
+x <- bind_rows(y, x_non_parent)
+x <- x %>% arrange(facilitator)
+writexl::write_xlsx(x, "MY_facilitator_data_20240611.xlsx") # overall together
+
+#df$research_id <- contacts_unflat$fields$research_id
+#df_id <- df %>% dplyr::select(c(research_id, id))
 
 
-# df_id <- df %>% dplyr::select(c(research_id, id))
 # x_parent_data <- x %>% filter(variable == "parent") %>%
 #   dplyr::select(-c(variable))
 # x_parent_data <- full_join(x_parent_data, df_id)
@@ -101,7 +118,7 @@ writexl::write_xlsx(x, "MY_facilitator_data_20240416.xlsx") # overall together
 
 
 
-read_corpora <- function(data){
+read_corpora <- function(data, nested = TRUE){
   data_all <- NULL
   description <- NULL
   # check different data types that are in the rcorpora package
@@ -112,6 +129,7 @@ read_corpora <- function(data){
   # If it isn't a data frame, we check each element of the `data` argument
   data_unlist <- NULL
   for (i in 1:length(data)){
+    print(class(data[[i]]))
     # first, check for description and metadata
     if (!is.null(names(data[i])) && names(data[i]) == "description") {
       description <- data[i][[1]]
@@ -121,23 +139,44 @@ read_corpora <- function(data){
     } else if (class(data[[i]]) %in% c("character", "factor", "logical", "numeric", "integer")){
       data_unlist[[i]] <- data.frame(list = data[[i]])
     } else if ("matrix" %in% class(data[[i]])){
-      data_unlist[[i]] <- data.frame(list = do.call(paste, c(data.frame(data[[i]]), sep="-")))
+      data_unlist[[i]] <- data.frame(variable1 = names(data)[i], list = do.call(paste, c(data.frame(data[[i]]), sep="-")))
     } else if (class(data[[i]]) == "data.frame"){
       data_unlist[[i]] <- data.frame(list = data[[i]])
     } else if (class(data[[i]]) == "list"){
       if (length(data[[i]]) == 0) {
         data_unlist[[i]] <- data.frame(NA)
       } else {
-        # unlist the list, to create a data frame with two elements: list name ("rowname") and value
-        # if there are nested lists, the "rowname" variable combines the different lists together.
-        # We want to separate these into separate variables to make the data more usable and readable.
-        # We do this by `str_split_fixed`, and `gsub`.
-        new_data <- tidyr::as_tibble(unlist(data), rownames = "rowname")
-        split <- stringr::str_split_fixed(string=new_data$rowname, pattern=stringr::coll(pattern="."), n=Inf)
-        split <- gsub("[0-9]$|[0-9][0-9]$","",split)
-        # add in the separated list to the value variable, and rename the variables
-        data_unlist[[i]] <- cbind(data.frame(split), value = new_data$value)
+        
+        # if (nested){
+          # unlist the list, to create a data frame with two elements: list name ("rowname") and value
+          # if there are nested lists, the "rowname" variable combines the different lists together.
+          # We want to separate these into separate variables to make the data more usable and readable.
+          # We do this by `str_split_fixed`, and `gsub`.
+          
+          # if there's nesting, but it's not named, then we get issues I think
+          # for (k in 1:length(data)){
+          #   if (length(data[[k]]) > 1 && is.null(names(data[[k]]))){
+          #     names(data[[k]]) <- paste0(letters[1:length(data[[k]])])
+          #   }
+          # }
+          # 
+          new_data <- tidyr::as_tibble(unlist(data[[i]]), rownames = "rowname")
+          split <- stringr::str_split_fixed(string=new_data$rowname, pattern=stringr::coll(pattern="."), n=Inf)
+          #split <- gsub("[0-9]$|[0-9][0-9]$","",split)
+          data_unlist[[i]] <- cbind(names(data)[i], data.frame(split), value = new_data$value)
+          # add in the separated list to the value variable, and rename the variables
+        # } else {
+        #   new_data <- do.call(rbind, lapply(names(data[[i]]), function(key) {
+        #     vals <- unlist(data[[key]])
+        #     data.frame(ID = key, Value = vals, stringsAsFactors = FALSE)
+        #   }))
+        #   data_unlist[[i]] <- new_data
+        # }
+
         names(data_unlist[[i]]) <- c(paste0("variable", 1:(length(data_unlist[[i]])-1)), "list")
+        
+#        data_unlist[[i]] <- cbind(data.frame(split), value = new_data$value)
+#        names(data_unlist[[i]]) <- c(paste0("variable", 1:(length(data_unlist[[i]])-1)), "list")
       } # end of ifelse lists
     } # end of list
   } # end of for loop
@@ -149,3 +188,4 @@ read_corpora <- function(data){
   } 
   return (data.frame(data_all))
 }
+

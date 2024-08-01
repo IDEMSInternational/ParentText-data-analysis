@@ -33,7 +33,7 @@ library(shinyjs)
 
 # todo: check SA and Rohingya for archiving.
 country <- "Mexico" #Rohingya #Malaysia_3" #South_Africa_2" #Mexico" #South_Africa "" #South_Africa_2" # Jamaica, Philippines, South Africa, Malaysia, Malaysia_2
-type <- "ParentText2" #ParentText2" # ParentText, KPI, SRH for Jamaica only.
+type <- "facilitator" #facilitator" #ParentText2" # ParentText, KPI, SRH for Jamaica only.
 source("Functions.R")
 if (country == "Malaysia_3"){
   source(paste0("Malaysia_2", "_dashboard_settings.R"))
@@ -93,7 +93,8 @@ if (type == "ParentText2"){
             colour = "blue",
             key = "uuid")
 } else if (type == "facilitator") {
-  data_l <- import_list("data/fac_shiny_mexico.xlsx")
+  source("MX_faci_cleaning.R")
+  data_l <- import_list("data/fac_shiny_mexico1.xlsx")
   title <- "Facilitator Data: Mexico"
   x$uuid <- x$id
   

@@ -31,7 +31,7 @@ replace_none <- function(input_string) {
 ### ParentText 2.0 ###
 set_rapidpro_site(site = site)
 set_rapidpro_key(key = key[[1]])
-#set_rapidpro_uuid_names()
+set_rapidpro_uuid_names()
 
 contacts_unflat <- get_user_data(flatten = FALSE, date_from = NULL, call_type = "contacts.json")
 
@@ -39,7 +39,11 @@ contacts_unflat <- get_user_data(flatten = FALSE, date_from = NULL, call_type = 
 #if (country == "Malaysia_2"){
 #  contacts_unflat <- contacts_unflat %>% dplyr::filter(as.Date(created_on) >= as.Date("2024-01-01"))
 #} else {
-  contacts_unflat <- contacts_unflat %>% dplyr::filter(as.Date(created_on) >= as.Date("2023-08-17"))
+contacts_unflat <- contacts_unflat %>% dplyr::filter(as.Date(created_on) >= as.Date("2023-08-17"))
+
+if (country == "South_Africa_2"){
+  contacts_unflat <- contacts_unflat %>% dplyr::filter(as.Date(created_on) <= as.Date("2023-11-01"))
+}
 #}
 ## Set up of variables
 
@@ -77,6 +81,8 @@ df <- data.frame(groups_data) %>%
   arrange(id)
 
 valid_ids <- df$id
+
+length(valid_ids)
 
 contacts_unflat <- contacts_unflat %>%
   dplyr::filter(uuid %in% valid_ids) %>%
@@ -142,22 +148,22 @@ df <- df %>%
          language = if_else(!language %in% c("English", "Swati", "Zulu", "NA"), "Other", language),
          language = fct_relevel(language, c("English", "Swati", "Zulu", "NA", "Other"))) %>%
   dplyr::mutate(gender = recode_factor(gender,
-                                woman = "Female",
-                                man = "Male",
-                                no = "Prefer not to say",
-                                .missing = "NA")) %>%
+                                       woman = "Female",
+                                       man = "Male",
+                                       no = "Prefer not to say",
+                                       .missing = "NA")) %>%
   dplyr::mutate(child_age = as.numeric(child_age)) %>%
   dplyr::mutate(marital_status = recode_factor(marital_status,
-                                        no = "Prefer not to say",
-                                        .missing = "NA")) %>%
+                                               no = "Prefer not to say",
+                                               .missing = "NA")) %>%
   dplyr::mutate(child_gender = recode_factor(child_gender,
-                                      woman = "Female",
-                                      man = "Male",
-                                      no = "Prefer not to say",
-                                      .missing = "NA")) %>%
+                                             woman = "Female",
+                                             man = "Male",
+                                             no = "Prefer not to say",
+                                             .missing = "NA")) %>%
   dplyr::mutate(has_disability = recode_factor(has_disability,
-                                        no = "No",
-                                        yes = "Yes"))
+                                               no = "No",
+                                               yes = "Yes"))
 
 
 # DEMOGRAPHICS -------------------------------------------------
@@ -166,11 +172,11 @@ df$type_of_media <- contacts_unflat$fields$type_of_media
 
 df <- df %>%
   dplyr::mutate(type_of_media = recode_factor(type_of_media,
-                                       high = "High",
-                                       medium = "Medium",
-                                       low = "Low",
-                                       .missing = "NA"),
-         type_of_media = fct_relevel(type_of_media, c("High", "Medium", "Low", "NA")))
+                                              high = "High",
+                                              medium = "Medium",
+                                              low = "Low",
+                                              .missing = "NA"),
+                type_of_media = fct_relevel(type_of_media, c("High", "Medium", "Low", "NA")))
 
 
 # ENGAGEMENT FROM VARIABLES ----------- GOALS COMPLETED
@@ -257,7 +263,7 @@ df$time_in_study_n <- as.numeric(as.character(df$time_in_study))
 
 if (country == "Malaysia_2"){
   df <- df %>% dplyr::mutate(group = ifelse(kemas == 1, "KEMAS",
-                                     ifelse(csos == 1, "CSOS", "None")))
+                                            ifelse(csos == 1, "CSOS", "None")))
   
   #' The CSOs trainers used the wrong trigger to start their training yesterday,
   #' and instead of using the one for testing, they used the one that was for
@@ -269,7 +275,7 @@ if (country == "Malaysia_2"){
   #' i.e. only consider users in the "csos" group for which created_on is >= 13 Jan.
   df <- df %>%
     dplyr::mutate(filter_row = ifelse((created_on < as.Date("2024-01-13")) &
-                                 group == "CSOS", 1, 0))
+                                        group == "CSOS", 1, 0))
   
   # check
   #df %>% group_by(group, filter_row) %>% summarise(min(created_on), max(created_on), n())
@@ -300,6 +306,7 @@ if (country == "Malaysia_2"){
 }
 
 df <- df %>% dplyr::filter(id != "c6c2a981-24a8-45cc-a8b9-3ac9a9f39a38")
+
 valid_ids <- df$id
 rm(contacts_unflat)
 
@@ -361,9 +368,9 @@ if (country == "Malaysia_2"){
     # get external if it is one of valid_research_id
     external_id <- parent_data_table_i$external_id 
     match_id <- match(external_id, valid_research_id)
-  
     
-   # [1]   9  30  51  54  70  78  84  92 115 127
+    
+    # [1]   9  30  51  54  70  78  84  92 115 127
     
     # or if no masw 5, 28, 46, 49, 52, 64, 68
     if (any(!is.na(match_id)) && any(match_id)){
@@ -387,12 +394,12 @@ if (country == "Malaysia_2"){
   
   parent_data_table <- parent_data_table %>%
     mutate(kemas_group = ifelse(facilitator == "bd38993f-c783-4d0a-a7c0-a17ae806bce0", "masw", kemas_group))
-
+  
   # ok so now we want to find people who are parent_group_no > 1 so that we can filter the children to the 
   # unique children in the analysis. 
   parent_data_table <- parent_data_table %>% dplyr::select(c(facilitator, parent_group_no, external_id, kemas_group, duplicated_parent_group))
   parent_data_table <- unique(parent_data_table)
-
+  
   parent_data_table$kemas_group <- case_match(
     parent_data_table$kemas_group,
     "kemas_group_a" ~ 1,             # randomly generated
@@ -418,7 +425,7 @@ if (country == "Malaysia_2"){
   df <- df %>%
     #' CSOS in group 2 - correct to be group 5.
     #mutate(kemas_group = ifelse(group == "CSOS" & kemas_group != 5, 5, kemas_group)) %>%
-  
+    
     # replace missing "group" (group = "None") with KEMAS if they have "kemas" defined for them. 
     group_by(facilitator) %>%
     mutate(group = ifelse(!is.na(kemas_group), replace_none(group), group)) %>%
@@ -437,6 +444,10 @@ if (country == "Malaysia_2"){
 df <- df %>% ungroup()
 
 if (country == "Malaysia_2"){
+  
+  # todo: check if this works now:
+  #get_flow_names2(by = "id_name", id_names = valid_ids)
+  
   uuid_data = get_rapidpro_uuid_names()
   rapidpro_site = get_rapidpro_site()
   token = get_rapidpro_key()
@@ -447,8 +458,49 @@ if (country == "Malaysia_2"){
                          sep = "")
     result_flow2[[i]] <- rapidpror:::httr_get_call(get_command = get_command, token = token)
   }
+  
   #result_flow2 <- result_flow21
-  result_flow2 <- bind_rows(result_flow2)
+  result_flow2 <- bind_rows(result_flow2) %>%
+    filter(
+      grepl("module -", flow$name) | 
+        grepl("safeguarding_help", flow$name) | 
+        grepl("pre_goal_checkin - ", flow$name) | 
+        grepl("post_goal_checkin - ", flow$name)
+    )
+  
+  # get archived data for these flows - we have Jan and Feb stored in a sheet already.
+  # quicker to read this in. 
+  archived_flow_data_monthly_1 <- readRDS("data/MY_PT2_archived_data_20240101_20240331.RDS")
+
+  archived_flow_data_monthly <- get_archived_data(date_from = "2024-04-01", period = "monthly")
+  archived_flow_data_monthly <- bind_rows(archived_flow_data_monthly)
+  if (nrow(archived_flow_data_monthly) > 0){
+    archived_flow_data_monthly <- archived_flow_data_monthly %>% filter(contact$uuid %in% valid_ids)
+    archived_flow_data_monthly <- archived_flow_data_monthly %>%
+      filter(
+        grepl("module -", flow$name) | 
+          grepl("safeguarding_help", flow$name) | 
+          grepl("pre_goal_checkin - ", flow$name) | 
+          grepl("post_goal_checkin - ", flow$name)
+      )
+  }
+  archived_flow_data_monthly <- bind_rows(archived_flow_data_monthly_1, archived_flow_data_monthly)
+  #saveRDS(archived_flow_data_monthly, "data/MY_PT2_archived_data_20240101_20240331.RDS")
+  
+  archived_flow_data_daily <- get_archived_data(date_from = "2024-04-01", period = "daily")
+  archived_flow_data_daily <- bind_rows(archived_flow_data_daily)
+  archived_flow_data_daily <- archived_flow_data_daily %>% filter(contact$uuid %in% valid_ids)
+  if (nrow(archived_flow_data_daily) > 0){
+    archived_flow_data_daily <- archived_flow_data_daily %>%
+    filter(
+      grepl("module -", flow$name) | 
+        grepl("safeguarding_help", flow$name) | 
+        grepl("pre_goal_checkin - ", flow$name) | 
+        grepl("post_goal_checkin - ", flow$name)
+    )
+  }
+  result_flow2 <- bind_rows(result_flow2, archived_flow_data_daily, archived_flow_data_monthly)
+  result_flow2 <- result_flow2 %>% filter(contact$uuid %in% valid_ids)
   
   #result_flow21 <- flatten(result_flow2)
   #writexl::write_xlsx(result_flow21, path = "malaysia_flows_snapshot_29022024.xlsx")
@@ -457,6 +509,7 @@ if (country == "Malaysia_2"){
   # For Module:
   result_flow <- result_flow2 %>% dplyr::filter(grepl("module -", flow$name))
   flow_module_checkin_data <- flow_data_calculation(result_flow = result_flow, flow_type = "other", flow_handle_type = "will_complete")
+  #flow_checkin_data <- flow_data_calculation(result_flow = result_flow, flow_type = "other", flow_handle_type = "completed", flow_handle_type_sub  = "category")
   flow_module_checkin_data$ID <- sub(".* ", "", result_flow$flow$name)
   #flow_module_checkin_data$ID <- str_remove(flow_module_checkin_data$ID, "_yc")
   flow_module_checkin_data <- flow_module_checkin_data %>% dplyr::mutate(response = fct_recode(response, Yes = "yes", `No` = "No"))
@@ -506,10 +559,49 @@ if (country == "Malaysia_2"){
     result_flow2[[i]] <- rapidpror:::httr_get_call(get_command = get_command, token = token)
   }
   #result_flow2 <- result_flow21
-  result_flow2 <- bind_rows(result_flow2)
+  result_flow2 <- bind_rows(result_flow2) %>%
+    filter(
+      grepl("module -", flow$name) | 
+        grepl("home_activity_checkin -", flow$name) |
+        grepl("safeguarding_help", flow$name) | 
+        grepl("pre_goal_checkin - ", flow$name) | 
+        grepl("post_goal_checkin - ", flow$name)
+    )
+  
+  # archived data - have saved before Apr 1st in SA_PT2_archived_data_20240101_20240331.RDS
+  archived_flow_data_monthly_1 <- readRDS("data/SA_PT2_archived_data_20240101_20240331.RDS")
+  archived_flow_data_monthly <- get_archived_data(date_from = "2024-04-01", period = "monthly")
+  archived_flow_data_monthly <- bind_rows(archived_flow_data_monthly)
+  if (!is.null(archived_flow_data_monthly)){
+    archived_flow_data_monthly_1 <- archived_flow_data_monthly_1 %>% filter(
+      grepl("module -", flow$name) | 
+        grepl("home_activity_checkin -", flow$name) |
+        grepl("safeguarding_help", flow$name) | 
+        grepl("pre_goal_checkin - ", flow$name) | 
+        grepl("post_goal_checkin - ", flow$name)
+    )
+  }
+  archived_flow_data_monthly <- rbind(archived_flow_data_monthly_1, archived_flow_data_monthly)
+  archived_flow_data_monthly <- archived_flow_data_monthly  %>% filter(contact$uuid %in% valid_ids)
+  #saveRDS(archived_flow_data_monthly, "data/SA_PT2_archived_data_20240101_20240331.RDS")
+  
+  archived_flow_data_daily <- get_archived_data(date_from = "2024-04-01", period = "daily")
+  archived_flow_data_daily <- bind_rows(archived_flow_data_daily) %>%
+    filter(
+      grepl("module -", flow$name) | 
+        grepl("home_activity_checkin -", flow$name) |
+        grepl("safeguarding_help", flow$name) | 
+        grepl("pre_goal_checkin - ", flow$name) | 
+        grepl("post_goal_checkin - ", flow$name)
+    )
+  archived_flow_data_daily <- archived_flow_data_daily %>% filter(contact$uuid %in% valid_ids)
+  
+  result_flow2 <- bind_rows(result_flow2, archived_flow_data_daily, archived_flow_data_monthly)
   
   result_flow <- result_flow2 %>% dplyr::filter(grepl("home_activity_checkin -", flow$name))
-  flow_checkin_data <- flow_data_calculation(result_flow = result_flow, flow_type = "check_in_2")
+  #flow_checkin_data <- flow_data_calculation(result_flow = result_flow, flow_type = "check_in_2")
+  # values$completed$category
+  flow_checkin_data <- flow_data_calculation(result_flow = result_flow, flow_type = "other", flow_handle_type = "completed", flow_handle_type_sub  = "category")
   flow_checkin_data$ID <- sub(".* ", "", result_flow$flow$name)
   flow_checkin_data <- flow_checkin_data %>% dplyr::mutate(response = fct_recode(response, Yes = "yes", `Not yet` = "not yet"))
   flow_checkin_data <- flow_checkin_data %>% dplyr::mutate(response = fct_relevel(response, c("Yes", "Not yet", "No response")))

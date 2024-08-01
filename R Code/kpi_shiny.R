@@ -46,8 +46,7 @@ kpi_shiny <- function(date_from = "2020-01-01", date_to = NULL){
     updated_data <- update_data()
     ticket_data <- updated_data[[1]]
     user_data <- updated_data[[2]]
-    print(ticket_data)
-    
+
     createLink <- function(val) {
       sprintf(paste0('<a href="', URLdecode(val),'" target="_blank">', substr(val, 1, 25) ,'</a>'))
     }

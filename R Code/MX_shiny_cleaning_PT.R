@@ -261,7 +261,7 @@ if (nrow(archived_flow_data_daily) > 0){
   result_flow2 <- bind_rows(result_flow2, archived_flow_data_daily, archived_flow_data_monthly)
 } else {
   result_flow2 <- bind_rows(result_flow2, archived_flow_data_monthly)
-  }
+}
 
 
 
