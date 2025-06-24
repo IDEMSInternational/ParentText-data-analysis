@@ -1,46 +1,65 @@
-#devtools::install_github("IDEMSInternational/plhR", force = TRUE)
-library(shiny)
-library(shinydashboard)
-library(tidyr)
-library(dplyr)
-library(ggplot2)
-library(stringr)
-library(forcats)
-library(rjson)
-library(readxl)
-library(httr)
-library(jsonlite)
-library(rapidpror)
-library(plotly)
-library(DT)
-library(rio)
-library(plhR)
-library(httr)
-library(jsonlite)
-#library(rlang)
-library(shinythemes)
-library(shinyjs)
-#library(rpivotTable)
-#library(survminer)
+devtools::install_github("IDEMSInternational/ExcelToShiny")
+devtools::install_github("IDEMSInternational/rapidpror")
+{
+  library(shiny)
+  library(shinydashboard)
+  library(tidyr)
+  library(dplyr)
+  library(ggplot2)
+  library(stringr)
+  library(forcats)
+  library(rjson)
+  library(readxl)
+  library(httr)
+  library(jsonlite)
+  library(rapidpror)
+  library(plotly)
+  library(DT)
+  library(rio)
+  library(openappr)
+  library(httr)
+  library(jsonlite)
+  #library(rlang)
+  library(shinythemes)
+  library(shinyjs)
+  library(ExcelToShiny)
+  library(rapidpror)
+  #library(rpivotTable)
+  #library(survminer)
+}
 
 # TODO: work for multiple group boxes.
 
 # created a set of deprecated_functions.R - if there's issues with flow data, make sure that i'm running get_flow_data1 
 
 # put changes from main_page_group up and on
-# changes from plh_shiny up and on
+# changes from build_shiny up and on
 # but remove chnages I made
 
 # todo: check SA and Rohingya for archiving.
-country <- "Mexico" #Rohingya #Malaysia_3" #South_Africa_2" #Mexico" #South_Africa "" #South_Africa_2" # Jamaica, Philippines, South Africa, Malaysia, Malaysia_2
-type <- "facilitator" #facilitator" #ParentText2" # ParentText, KPI, SRH for Jamaica only.
+country <- "SWIFT" #"Malaysia_2" #South_Africa_2" #Rohingya #Malaysia_3" #South_Africa_2" #Mexico" #South_Africa "" #South_Africa_2" # Jamaica, Philippines, South Africa, Malaysia, Malaysia_2
+type <- "SWIFT" #facilitator" #ParentText2" # ParentText, KPI, SRH for Jamaica only.
 source("Functions.R")
 if (country == "Malaysia_3"){
   source(paste0("Malaysia_2", "_dashboard_settings.R"))
 } else {
   source(paste0(country, "_dashboard_settings.R"))
 }
-if (type == "ParentText2"){
+if (type == "SWIFT"){
+  source("SWIFT_cleaning.R")
+  data_l <- import_list("data/SWIFT_shiny.xlsx")
+  title <- "SWIFT Text"
+
+#data_l$main_page <- data_l$main_page[c(1:9, 11),]
+# todo: bug with data_manip filter for "bar_summary"
+build_shiny(title = title,
+            data_list = data_l,
+            data_frame = full_data,
+            status = "primary",
+            colour = "blue",
+            key = "uuid")
+  
+} else if (type == "ParentText2"){
   if (country == "South_Africa_2"){
     data_l <- import_list("data/PT2_shiny.xlsx")
     source("shiny_cleaning_PT2.R") 
@@ -86,19 +105,27 @@ if (type == "ParentText2"){
   
   #data_l$main_page <- data_l$main_page[c(1:9, 11),]
   # todo: bug with data_manip filter for "bar_summary"
-  PLH_shiny(title = title,
+  build_shiny(title = title,
             data_list = data_l,
             data_frame = df,
             status = "primary",
             colour = "blue",
             key = "uuid")
 } else if (type == "facilitator") {
-  source("MX_faci_cleaning.R")
-  data_l <- import_list("data/fac_shiny_mexico1.xlsx")
-  title <- "Facilitator Data: Mexico"
-  x$uuid <- x$id
-  
-  PLH_shiny(title = title,
+  if (country == "Malaysia_2") {
+    source("MY_faci_cleaning.R")
+    data_l <- import_list("data/fac_shiny_malaysia1.xlsx")
+    title <- "Facilitator Data: Malaysia"
+    faci_main_df$uuid <- faci_main_df$facilitator
+    x <- faci_main_df
+  } else {
+    source("MX_faci_cleaning.R")
+    data_l <- import_list("data/fac_shiny_mexico.xlsx")
+    title <- "Facilitator Data: Mexico"
+    x$uuid <- x$id 
+  }
+  data_l$contents$icon <- "user"
+  build_shiny(title = title,
             data_list = data_l,
             data_frame = x,
             status = "primary",
